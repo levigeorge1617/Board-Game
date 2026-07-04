@@ -1,0 +1,344 @@
+[
+  {
+    "id": "paladin",
+    "name": "Paladin",
+    "abilities": "2☼: Give +1☼ to an ally hero's roll. Lose 1 life.\n\n3☼: Draw an extra card.\n\nOnly Lose -3 life if 2 or less spaces away from the monster in line of sight.\n\nRegain 2 life if you end your turn next to an ally.\n\nDoes +1 to minions.",
+    "objectiveAbilities": "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 6☼: Move next to an ally hero who is alive. Lose 2 life.\n\n7◆: Gain ☼ Bonus\n7◆: Allies 1 space away get +2 to any roll.\n\n8◆:",
+    "raw": [
+      "4",
+      "",
+      "2☼: Give +1☼ to an ally hero's roll. Lose 1 life.\n\n3☼: Draw an extra card.\n\nOnly Lose -3 life if 2 or less spaces away from the monster in line of sight.\n\nRegain 2 life if you end your turn next to an ally.\n\nDoes +1 to minions.",
+      "1",
+      "4",
+      "6",
+      "RED",
+      "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 6☼: Move next to an ally hero who is alive. Lose 2 life.\n\n7◆: Gain ☼ Bonus\n7◆: Allies 1 space away get +2 to any roll.\n\n8◆:",
+      "",
+      "12",
+      "",
+      "Paladin",
+      "RED"
+    ],
+    "color": "RED",
+    "pair": "red",
+    "cardFace": "front",
+    "art": "players/red2.jpg",
+    "stats": {
+      "actionDie": 4,
+      "movementDie": 6,
+      "life": 12,
+      "bonusDice": [
+        4
+      ],
+      "specialDie": null
+    }
+  },
+  {
+    "id": "barbarian",
+    "name": "Barbarian",
+    "abilities": "4☼: During your next movement, kill all minions who would be in range for combat while moving\n\nOnly Lose -3 life if 2 or less spaces away from the monster in line of sight.\n\nIf caught by a monster in a building, lose -2 life and escape the building.\n\nDefeating a minion restores +2 life.\n\nDoes +2 to minions and Minions do -1 to hero.",
+    "objectiveAbilities": "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 3☼: Move all minions that are 6+X☼ spaces away next to you. Engage combat. use any extra ☼ for X.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
+    "raw": [
+      "4",
+      "",
+      "4☼: During your next movement, kill all minions who would be in range for combat while moving\n\nOnly Lose -3 life if 2 or less spaces away from the monster in line of sight.\n\nIf caught by a monster in a building, lose -2 life and escape the building.\n\nDefeating a minion restores +2 life.\n\nDoes +2 to minions and Minions do -1 to hero.",
+      "",
+      "4",
+      "6",
+      "RED",
+      "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 3☼: Move all minions that are 6+X☼ spaces away next to you. Engage combat. use any extra ☼ for X.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
+      "",
+      "12",
+      "",
+      "Barbarian",
+      ""
+    ],
+    "color": "RED",
+    "pair": "red",
+    "cardFace": "back",
+    "art": "players/red1.jpg",
+    "stats": {
+      "actionDie": 4,
+      "movementDie": 6,
+      "life": 12,
+      "bonusDice": [
+        4
+      ],
+      "specialDie": null
+    }
+  },
+  {
+    "id": "hunter",
+    "name": "Hunter",
+    "abilities": "3☼: Summon your pet. Can only have 1 summoned at a time.\n\n2☼: Pet performs an action.\n\nPet can fly over obstacles(not walls).\nMovement rolls are shared between the pet and hero. NOT bonus Dice.\n\nPet dies in any combat with monster.",
+    "objectiveAbilities": "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 6☼: Summon a second pet.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
+    "raw": [
+      "4",
+      "",
+      "3☼: Summon your pet. Can only have 1 summoned at a time.\n\n2☼: Pet performs an action.\n\nPet can fly over obstacles(not walls).\nMovement rolls are shared between the pet and hero. NOT bonus Dice.\n\nPet dies in any combat with monster.",
+      "1",
+      "6",
+      "12",
+      "YELLOW",
+      "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 6☼: Summon a second pet.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
+      "",
+      "20",
+      "",
+      "Hunter",
+      "YELLOW"
+    ],
+    "color": "YELLOW",
+    "pair": "yellow",
+    "cardFace": "front",
+    "art": "players/yellow1.jpg",
+    "stats": {
+      "actionDie": 6,
+      "movementDie": 12,
+      "life": 20,
+      "bonusDice": [
+        4
+      ],
+      "specialDie": null
+    }
+  },
+  {
+    "id": "scout",
+    "name": "Scout",
+    "abilities": "1☼: Increase movement roll by 2.\n\n5֍: Perform an action.\n\nOnly lose -3 life if 7 or more spaces away from the monster in line of sight.\n\n\n\nRoll a 4 with ☼ to avoid death when caught by a monster in a building.",
+    "objectiveAbilities": "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 4☼: Move to any wall in line of sight. End Turn.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
+    "raw": [
+      "4",
+      "",
+      "1☼: Increase movement roll by 2.\n\n5֍: Perform an action.\n\nOnly lose -3 life if 7 or more spaces away from the monster in line of sight.\n\n\n\nRoll a 4 with ☼ to avoid death when caught by a monster in a building.",
+      "",
+      "6",
+      "12",
+      "YELLOW",
+      "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 4☼: Move to any wall in line of sight. End Turn.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
+      "",
+      "20",
+      "",
+      "Scout",
+      ""
+    ],
+    "color": "YELLOW",
+    "pair": "yellow",
+    "cardFace": "back",
+    "art": "players/yellow2.jpg",
+    "stats": {
+      "actionDie": 6,
+      "movementDie": 12,
+      "life": 20,
+      "bonusDice": [
+        4
+      ],
+      "specialDie": null
+    }
+  },
+  {
+    "id": "wizard",
+    "name": "Wizard",
+    "abilities": "2☼: Reroll any dice this turn.\n\n4☼: Draw an extra card\n\nMay discard a card to draw another card.\n\nHas -2 to every roll in combat. Always goes second in combat.",
+    "objectiveAbilities": "2,5,6◇: Draw a card\n\n3◇: Relocate 1 door\n\n4◆: Gain ֍ Bonus\n\n5◆: 6☼: Trade places with any object.\n5◇: Relocate 1 door\n\n7◆: Gain ☼ Bonus",
+    "raw": [
+      "6",
+      "",
+      "2☼: Reroll any dice this turn.\n\n4☼: Draw an extra card\n\nMay discard a card to draw another card.\n\nHas -2 to every roll in combat. Always goes second in combat.",
+      "1",
+      "4",
+      "4",
+      "BLUE",
+      "2,5,6◇: Draw a card\n\n3◇: Relocate 1 door\n\n4◆: Gain ֍ Bonus\n\n5◆: 6☼: Trade places with any object.\n5◇: Relocate 1 door\n\n7◆: Gain ☼ Bonus",
+      "4",
+      "4",
+      "",
+      "Wizard",
+      "BLUE"
+    ],
+    "color": "BLUE",
+    "pair": "blue",
+    "cardFace": "front",
+    "art": "players/blue2.jpg",
+    "stats": {
+      "actionDie": 4,
+      "movementDie": 4,
+      "life": 4,
+      "bonusDice": [
+        6
+      ],
+      "specialDie": 4
+    }
+  },
+  {
+    "id": "enchantress",
+    "name": "Enchantress",
+    "abilities": "4☼: Walk through a wall.\n\n5☼: Move a monster or ally 1 space.\n\nMay discard a card to draw another card.\n\nCan only use 1 dice for combat and escaping.\n\n\nHas -1 to every roll in combat. Always goes second in combat.",
+    "objectiveAbilities": "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n4◆: 6☼: Use any ally card on any hero.\n\n5◆: 7☼: Use an action anywhere.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
+    "raw": [
+      "4",
+      "4",
+      "4☼: Walk through a wall.\n\n5☼: Move a monster or ally 1 space.\n\nMay discard a card to draw another card.\n\nCan only use 1 dice for combat and escaping.\n\n\nHas -1 to every roll in combat. Always goes second in combat.",
+      "",
+      "4",
+      "4",
+      "BLUE",
+      "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n4◆: 6☼: Use any ally card on any hero.\n\n5◆: 7☼: Use an action anywhere.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
+      "",
+      "6",
+      "",
+      "Enchantress",
+      ""
+    ],
+    "color": "BLUE",
+    "pair": "blue",
+    "cardFace": "back",
+    "art": "players/blue1.jpg",
+    "stats": {
+      "actionDie": 4,
+      "movementDie": 4,
+      "life": 6,
+      "bonusDice": [
+        4,
+        4
+      ],
+      "specialDie": null
+    }
+  },
+  {
+    "id": "thief",
+    "name": "Thief",
+    "abilities": "1☼ and 2֍: Use an action 2 spaces away.\n\n5☼: Use an ally hero's card.\n\nRolls with the D10 can be used to move diagonally a space.\n\n Has -4 to all combat and escape rolls.\n\n\nMay initiate combat through a wall.",
+    "objectiveAbilities": "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 6☼: Can not be targeted or seen until next turn.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
+    "raw": [
+      "8",
+      "",
+      "1☼ and 2֍: Use an action 2 spaces away.\n\n5☼: Use an ally hero's card.\n\nRolls with the D10 can be used to move diagonally a space.\n\n Has -4 to all combat and escape rolls.\n\n\nMay initiate combat through a wall.",
+      "1",
+      "4",
+      "10",
+      "GREEN",
+      "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 6☼: Can not be targeted or seen until next turn.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
+      "4",
+      "10",
+      "",
+      "Thief",
+      "GREEN"
+    ],
+    "color": "GREEN",
+    "pair": "green",
+    "cardFace": "front",
+    "art": "players/green1.jpg",
+    "stats": {
+      "actionDie": 4,
+      "movementDie": 10,
+      "life": 10,
+      "bonusDice": [
+        8
+      ],
+      "specialDie": 4
+    }
+  },
+  {
+    "id": "ranger",
+    "name": "Ranger",
+    "abilities": "2☼: -2 to a minion 4 spaces away.\n\n3☼ and 4֍: Move an Objective 1 space.\n\nRolls with the D10 can be used to move diagonally a space.\n\nCan initiate combat 3 spaces away.\n\nHas +1 in combat, if more than 1 space away.",
+    "objectiveAbilities": "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 4☼: Reroll any ֍ dice.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
+    "raw": [
+      "4",
+      "",
+      "2☼: -2 to a minion 4 spaces away.\n\n3☼ and 4֍: Move an Objective 1 space.\n\nRolls with the D10 can be used to move diagonally a space.\n\nCan initiate combat 3 spaces away.\n\nHas +1 in combat, if more than 1 space away.",
+      "",
+      "4",
+      "10",
+      "GREEN",
+      "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 4☼: Reroll any ֍ dice.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
+      "8",
+      "10",
+      "",
+      "Ranger",
+      ""
+    ],
+    "color": "GREEN",
+    "pair": "green",
+    "cardFace": "back",
+    "art": "players/green2.jpg",
+    "stats": {
+      "actionDie": 4,
+      "movementDie": 10,
+      "life": 10,
+      "bonusDice": [
+        4
+      ],
+      "specialDie": 8
+    }
+  },
+  {
+    "id": "druid",
+    "name": "Druid",
+    "abilities": "3☼: Transform. Persists until cast again. Can be used multiple times per turn.\n\n4☼: Transform an ally for this turn.\n\nTURTLE: +3☼ and -4֍\nCHEETAH: +4֍ and -3☼\nBEAR: +2 in combat roll. take -1 from minions.\nDEER: Restore +2 life to any hero for 1☼, Takes +4 from attacks while in this form.\n\nHas -3 to all combat and escape rolls. Always goes second in combat.",
+    "objectiveAbilities": "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n4◆: Rolls with the D10 can be used to move diagonally a space.\n\n5◆: 3☼: Draw an extra card.\n\n7◆: Gain ☼ Bonus.",
+    "raw": [
+      "6",
+      "",
+      "3☼: Transform. Persists until cast again. Can be used multiple times per turn.\n\n4☼: Transform an ally for this turn.\n\nTURTLE: +3☼ and -4֍\nCHEETAH: +4֍ and -3☼\nBEAR: +2 in combat roll. take -1 from minions.\nDEER: Restore +2 life to any hero for 1☼, Takes +4 from attacks while in this form.\n\nHas -3 to all combat and escape rolls. Always goes second in combat.",
+      "1",
+      "4",
+      "10",
+      "PURPLE",
+      "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n4◆: Rolls with the D10 can be used to move diagonally a space.\n\n5◆: 3☼: Draw an extra card.\n\n7◆: Gain ☼ Bonus.",
+      "",
+      "8",
+      "",
+      "Druid",
+      "PURPLE"
+    ],
+    "color": "PURPLE",
+    "pair": "purple",
+    "cardFace": "front",
+    "art": "players/purple2.jpg",
+    "stats": {
+      "actionDie": 4,
+      "movementDie": 10,
+      "life": 8,
+      "bonusDice": [
+        6
+      ],
+      "specialDie": null
+    }
+  },
+  {
+    "id": "cleric",
+    "name": "Cleric",
+    "abilities": "12☼: Revive any hero to half health. End both heroes turns.\n\n4☼: Restore +3 life to any living hero.\n\nBoth Dice count towards actions OR Movements. Excludes Bonus Dice. Can only use 1 dice for combat and escaping.\n\n\nHas -4 to all combat and escape rolls. Always goes second in combat.",
+    "objectiveAbilities": "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 3☼: Give +2☼ to an ally hero's roll. Lose 2 life.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
+    "raw": [
+      "6",
+      "8",
+      "12☼: Revive any hero to half health. End both heroes turns.\n\n4☼: Restore +3 life to any living hero.\n\nBoth Dice count towards actions OR Movements. Excludes Bonus Dice. Can only use 1 dice for combat and escaping.\n\n\nHas -4 to all combat and escape rolls. Always goes second in combat.",
+      "",
+      "4",
+      "6",
+      "PURPLE",
+      "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 3☼: Give +2☼ to an ally hero's roll. Lose 2 life.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
+      "6",
+      "8",
+      "",
+      "Cleric",
+      ""
+    ],
+    "color": "PURPLE",
+    "pair": "purple",
+    "cardFace": "back",
+    "art": "players/purple1.jpg",
+    "stats": {
+      "actionDie": 4,
+      "movementDie": 6,
+      "life": 8,
+      "bonusDice": [
+        6,
+        8
+      ],
+      "specialDie": 6
+    }
+  }
+]

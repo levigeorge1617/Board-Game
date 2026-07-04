@@ -3,6 +3,7 @@ class AppController {
         this.board = new BoardState(90, 26);
         this.canvas = document.getElementById('boardCanvas');
         this.renderer = new Renderer(this.canvas, this.board);
+        this.designer = new Designer(this);
         this.ui = new UIManager(this);
 
         this.appMode = 'play'; 

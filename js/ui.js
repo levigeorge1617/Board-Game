@@ -8,6 +8,7 @@ class UIManager {
     initEventListeners() {
         document.getElementById('btn-mode-play').addEventListener('click', () => this.switchSystemMode('play'));
         document.getElementById('btn-mode-design').addEventListener('click', () => this.switchSystemMode('design'));
+        document.getElementById('btn-mode-designer').addEventListener('click', () => this.switchSystemMode('designer'));
 
         document.querySelectorAll('.palette-item').forEach(item => {
             item.addEventListener('dragstart', (e) => {
@@ -52,14 +53,23 @@ class UIManager {
     switchSystemMode(mode) {
         this.app.appMode = mode;
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+
+        const isDesigner = (mode === 'designer');
         document.getElementById('design-tools-section').style.display = (mode === 'design') ? 'block' : 'none';
-        
+        document.getElementById('board-tools').style.display = isDesigner ? 'none' : 'block';
+        document.getElementById('designer-sidebar').style.display = isDesigner ? 'block' : 'none';
+        document.getElementById('designer-view').style.display = isDesigner ? 'flex' : 'none';
+        document.getElementById('boardCanvas').style.display = isDesigner ? 'none' : 'block';
+
         if (mode === 'play') {
             document.getElementById('btn-mode-play').classList.add('active');
             this.setActiveTool('pan');
-        } else {
+        } else if (mode === 'design') {
             document.getElementById('btn-mode-design').classList.add('active');
             this.setActiveTool('wall-edge');
+        } else {
+            document.getElementById('btn-mode-designer').classList.add('active');
+            if (this.app.designer) this.app.designer.activate();
         }
         this.app.hideHPPopover();
         this.app.renderer.draw();
