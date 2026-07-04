@@ -49,6 +49,16 @@ const DZ_FIELDS = {
 const DZ_COLOR_HEX = { RED: '#ff3333', YELLOW: '#ffd21f', GREEN: '#33cc44', BLUE: '#3366ff', PURPLE: '#9933ff' };
 const DZ_DICE = [4, 6, 8, 10, 12, 20];   // die sizes with matching art in dice/dN.png
 
+// Game symbol icons. The data keeps the source glyphs (☼ ֍ ◆ ◇) as semantic
+// markers; the app swaps them for these SVGs wherever text is shown.
+// ☼ action = sunburst · ֍ movement = footprint · ◆/◇ objective = gem.
+const GAME_ICONS = {
+    action: '<svg class="gi gi-action" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.6" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5 5l2.1 2.1M16.9 16.9 19 19M5 19l2.1-2.1M16.9 7.1 19 5"/></g></svg>',
+    move: '<svg class="gi gi-move" viewBox="0 0 24 24"><ellipse cx="10" cy="15" rx="5" ry="7" fill="currentColor"/><circle cx="17.4" cy="6.6" r="2.1" fill="currentColor"/><circle cx="19.4" cy="10.6" r="1.7" fill="currentColor"/><circle cx="18.9" cy="14.4" r="1.4" fill="currentColor"/></svg>',
+    obj: '<svg class="gi gi-obj" viewBox="0 0 24 24"><path fill="currentColor" d="M5 3h14l3 5.5L12 21 2 8.5z"/><path fill="#000" fill-opacity=".2" d="M2 8.5h20L12 21z"/><path stroke="#000" stroke-opacity=".28" stroke-width="1" fill="none" d="M2 8.5h20M9 3l3 12.5M15 3l-3 12.5"/></svg>',
+    objOutline: '<svg class="gi gi-obj" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M5 3h14l3 5.5L12 21 2 8.5z"/><path stroke="currentColor" stroke-width="1.1" stroke-opacity=".7" d="M2 8.5h20"/></svg>',
+};
+
 class Designer {
     constructor(app) {
         this.app = app;
@@ -101,6 +111,12 @@ class Designer {
     }
 
     wire() {
+        const legend = document.getElementById('dz-legend');
+        if (legend) legend.innerHTML =
+            `<div>${GAME_ICONS.action} Action — actions or movement (type ☼)</div>` +
+            `<div>${GAME_ICONS.move} Movement — move only (type ֍)</div>` +
+            `<div>${GAME_ICONS.obj} Objective — collect to win (type ◆/◇)</div>`;
+
         document.querySelectorAll('.dz-tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.dz-tab').forEach(t => t.classList.remove('active'));
@@ -188,7 +204,7 @@ class Designer {
         const row = document.createElement('div');
         row.className = 'dz-field';
         const label = document.createElement('label');
-        label.textContent = field.label;
+        label.innerHTML = this.icon(field.label);
         row.appendChild(label);
 
         let input;
@@ -281,19 +297,19 @@ class Designer {
                 `<div class="dz-card-title">${this.esc(item.name || '')}` +
                     `<span>${this.esc(item.color || item.element || '')}</span></div>` +
                 `<div class="dz-dice">${stats}</div>` +
-                (item.abilities ? `<div class="dz-block"><h4>Abilities</h4><p>${this.nl(item.abilities)}</p></div>` : '') +
-                (item.objectiveAbilities ? `<div class="dz-block"><h4>Objective ◆/◇</h4><p>${this.nl(item.objectiveAbilities)}</p></div>` : '') +
+                (item.abilities ? `<div class="dz-block"><h4>Abilities</h4><p>${this.fmt(item.abilities)}</p></div>` : '') +
+                (item.objectiveAbilities ? `<div class="dz-block"><h4>Objective ${this.icon('◆/◇')}</h4><p>${this.fmt(item.objectiveAbilities)}</p></div>` : '') +
             `</div>`;
     }
 
     cardPreview(item) {
         const dark = item.deck === 'Black';
         return `<div class="dz-card dz-playcard ${dark ? 'dz-black' : 'dz-white'}">` +
-            `<div class="dz-pc-head"><span class="dz-pc-cost">${this.esc(item.cost || '0')}</span>` +
+            `<div class="dz-pc-head"><span class="dz-pc-cost">${this.icon(item.cost || '0')}</span>` +
             `<span class="dz-pc-deck">${this.esc(item.deck)} · ${this.esc(item.timing || '')}</span></div>` +
             `<div class="dz-card-art">${this.artTag(item.art)}</div>` +
             `<div class="dz-card-title">${this.esc(item.name || '')}<span>×${item.copies || 1}</span></div>` +
-            `<div class="dz-block"><p>${this.nl(item.text || '')}</p></div>` +
+            `<div class="dz-block"><p>${this.fmt(item.text || '')}</p></div>` +
         `</div>`;
     }
 
@@ -303,7 +319,7 @@ class Designer {
             ? `<img src="dice/d${n}.png" alt="d${n}">`
             : `<span class="dz-die-num">${empty ? '—' : 'd' + n}</span>`;
         return `<div class="dz-die${empty ? ' dz-die-empty' : ''}">` +
-            `<span class="dz-die-lbl">${this.esc(label)}</span>${icon}` +
+            `<span class="dz-die-lbl">${this.icon(label)}</span>${icon}` +
             (empty ? '' : `<b>d${n}</b>`) + `</div>`;
     }
 
@@ -362,5 +378,12 @@ class Designer {
     // ---- helpers ----------------------------------------------------------
     slug(s) { return (s || '').toLowerCase().replace(/[^a-z0-9]+/g, ''); }
     esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+    // swap the game glyphs for SVG icons (run after escaping so the SVG survives)
+    symbolize(html) {
+        return html.replace(/☼/g, GAME_ICONS.action).replace(/֍/g, GAME_ICONS.move)
+                   .replace(/◆/g, GAME_ICONS.obj).replace(/◇/g, GAME_ICONS.objOutline);
+    }
+    icon(s) { return this.symbolize(this.esc(s)); }                 // short inline text
+    fmt(s) { return this.symbolize(this.esc(s).replace(/\n/g, '<br>')); }  // multiline body
     nl(s) { return this.esc(s).replace(/\n/g, '<br>'); }
 }

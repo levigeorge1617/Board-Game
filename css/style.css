@@ -108,3 +108,14 @@ textarea.dz-input { resize: vertical; line-height: 1.5; }
 .dz-pc-deck { color: #8a95a0; text-transform: uppercase; font-size: 10px; }
 
 #designer-sidebar code { background: #1a1a1a; padding: 1px 4px; border-radius: 3px; color: #e0a800; }
+
+/* Game symbol icons (inline, inherit font size) */
+.gi { width: 1.05em; height: 1.05em; display: inline-block; vertical-align: -0.16em; }
+.gi-action { color: #f2b032; }
+.gi-move   { color: #46c6a6; }
+.gi-obj    { color: #37c0dd; }
+.dz-pc-cost .gi { vertical-align: -0.18em; }
+
+.dz-legend { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 2px; }
+.dz-legend div { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #9aa7b5; }
+.dz-legend .gi { width: 16px; height: 16px; }
