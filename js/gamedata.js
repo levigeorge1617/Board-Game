@@ -27,13 +27,12 @@ window.GAME_DATA = {
       "cardFace": "front",
       "art": "players/red2.jpg",
       "stats": {
-        "actionDie": 4,
-        "movementDie": 6,
-        "life": 12,
-        "bonusDice": [
-          4
-        ],
-        "specialDie": null
+        "a1": 4,
+        "a2": null,
+        "m1": 12,
+        "m2": null,
+        "ba": 4,
+        "bm": 6
       }
     },
     {
@@ -61,13 +60,12 @@ window.GAME_DATA = {
       "cardFace": "back",
       "art": "players/red1.jpg",
       "stats": {
-        "actionDie": 4,
-        "movementDie": 6,
-        "life": 12,
-        "bonusDice": [
-          4
-        ],
-        "specialDie": null
+        "a1": 4,
+        "a2": null,
+        "m1": 12,
+        "m2": null,
+        "ba": 4,
+        "bm": 6
       }
     },
     {
@@ -95,13 +93,12 @@ window.GAME_DATA = {
       "cardFace": "front",
       "art": "players/yellow1.jpg",
       "stats": {
-        "actionDie": 6,
-        "movementDie": 12,
-        "life": 20,
-        "bonusDice": [
-          4
-        ],
-        "specialDie": null
+        "a1": 4,
+        "a2": null,
+        "m1": 20,
+        "m2": null,
+        "ba": 6,
+        "bm": 12
       }
     },
     {
@@ -129,13 +126,12 @@ window.GAME_DATA = {
       "cardFace": "back",
       "art": "players/yellow2.jpg",
       "stats": {
-        "actionDie": 6,
-        "movementDie": 12,
-        "life": 20,
-        "bonusDice": [
-          4
-        ],
-        "specialDie": null
+        "a1": 4,
+        "a2": null,
+        "m1": 20,
+        "m2": null,
+        "ba": 6,
+        "bm": 12
       }
     },
     {
@@ -163,13 +159,12 @@ window.GAME_DATA = {
       "cardFace": "front",
       "art": "players/blue2.jpg",
       "stats": {
-        "actionDie": 4,
-        "movementDie": 4,
-        "life": 4,
-        "bonusDice": [
-          6
-        ],
-        "specialDie": 4
+        "a1": 6,
+        "a2": null,
+        "m1": 4,
+        "m2": 4,
+        "ba": 4,
+        "bm": 4
       }
     },
     {
@@ -197,14 +192,12 @@ window.GAME_DATA = {
       "cardFace": "back",
       "art": "players/blue1.jpg",
       "stats": {
-        "actionDie": 4,
-        "movementDie": 4,
-        "life": 6,
-        "bonusDice": [
-          4,
-          4
-        ],
-        "specialDie": null
+        "a1": 4,
+        "a2": 4,
+        "m1": 6,
+        "m2": null,
+        "ba": 4,
+        "bm": 4
       }
     },
     {
@@ -232,13 +225,12 @@ window.GAME_DATA = {
       "cardFace": "front",
       "art": "players/green1.jpg",
       "stats": {
-        "actionDie": 4,
-        "movementDie": 10,
-        "life": 10,
-        "bonusDice": [
-          8
-        ],
-        "specialDie": 4
+        "a1": 8,
+        "a2": null,
+        "m1": 10,
+        "m2": 4,
+        "ba": 4,
+        "bm": 10
       }
     },
     {
@@ -266,13 +258,12 @@ window.GAME_DATA = {
       "cardFace": "back",
       "art": "players/green2.jpg",
       "stats": {
-        "actionDie": 4,
-        "movementDie": 10,
-        "life": 10,
-        "bonusDice": [
-          4
-        ],
-        "specialDie": 8
+        "a1": 4,
+        "a2": null,
+        "m1": 10,
+        "m2": 8,
+        "ba": 4,
+        "bm": 10
       }
     },
     {
@@ -300,13 +291,12 @@ window.GAME_DATA = {
       "cardFace": "front",
       "art": "players/purple2.jpg",
       "stats": {
-        "actionDie": 4,
-        "movementDie": 10,
-        "life": 8,
-        "bonusDice": [
-          6
-        ],
-        "specialDie": null
+        "a1": 6,
+        "a2": null,
+        "m1": 8,
+        "m2": null,
+        "ba": 4,
+        "bm": 10
       }
     },
     {
@@ -334,14 +324,12 @@ window.GAME_DATA = {
       "cardFace": "back",
       "art": "players/purple1.jpg",
       "stats": {
-        "actionDie": 4,
-        "movementDie": 6,
-        "life": 8,
-        "bonusDice": [
-          6,
-          8
-        ],
-        "specialDie": 6
+        "a1": 6,
+        "a2": 8,
+        "m1": 8,
+        "m2": 6,
+        "ba": 4,
+        "bm": 6
       }
     }
   ],
@@ -370,9 +358,7 @@ window.GAME_DATA = {
       "art": "players/bad5.jpg",
       "stats": {
         "monsterDie": 6,
-        "actionDie": null,
-        "movementDie": null,
-        "specialDie": null
+        "movementDie": null
       }
     },
     {
@@ -399,9 +385,7 @@ window.GAME_DATA = {
       "art": "players/bad1.jpg",
       "stats": {
         "monsterDie": 6,
-        "actionDie": null,
-        "movementDie": null,
-        "specialDie": null
+        "movementDie": null
       }
     },
     {
@@ -428,9 +412,7 @@ window.GAME_DATA = {
       "art": "players/bad2.jpg",
       "stats": {
         "monsterDie": 6,
-        "actionDie": null,
-        "movementDie": null,
-        "specialDie": null
+        "movementDie": null
       }
     },
     {
@@ -457,9 +439,7 @@ window.GAME_DATA = {
       "art": "players/bad4.jpg",
       "stats": {
         "monsterDie": 6,
-        "actionDie": 4,
-        "movementDie": 4,
-        "specialDie": 20
+        "movementDie": 20
       }
     },
     {
@@ -485,10 +465,8 @@ window.GAME_DATA = {
       "element": "Flesh",
       "art": "players/bad3.jpg",
       "stats": {
-        "monsterDie": null,
-        "actionDie": null,
-        "movementDie": null,
-        "specialDie": null
+        "monsterDie": 6,
+        "movementDie": null
       }
     }
   ],

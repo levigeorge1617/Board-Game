@@ -4,6 +4,8 @@
  * Edits live in localStorage; Export downloads JSON to commit back to data/.
  */
 const DZ_STORE_KEY = 'board_designer_data';
+const DZ_VERSION_KEY = 'board_designer_version';
+const DZ_VERSION = 2;   // bump when the data schema changes to drop stale local copies
 
 // Declarative field schema drives the editor form for each entity type.
 const DZ_FIELDS = {
@@ -14,12 +16,12 @@ const DZ_FIELDS = {
           hint: 'Two heroes share one reversible card (same color).' },
         { key: 'pair', label: 'Reversible pair', type: 'text', hint: 'Heroes with the same value are two sides of one card.' },
         { key: 'art', label: 'Art', type: 'art' },
-        { key: 'stats.actionDie', label: 'Action die  ☼ (D_)', type: 'number' },
-        { key: 'stats.movementDie', label: 'Movement die  ֍ (D_)', type: 'number' },
-        { key: 'stats.life', label: 'Max life', type: 'number' },
-        { key: 'stats.bonusDice', label: 'Bonus dice (comma list)', type: 'numlist' },
-        { key: 'stats.specialDie', label: 'Special die (unconfirmed)', type: 'number',
-          hint: 'Original CSV column of uncertain meaning — confirm or clear.' },
+        { key: 'stats.a1', label: 'Action die — a1  ☼', type: 'die' },
+        { key: 'stats.a2', label: 'Action die 2 — a2  (optional)', type: 'die' },
+        { key: 'stats.m1', label: 'Movement die — M1  ֍', type: 'die' },
+        { key: 'stats.m2', label: 'Movement die 2 — M2  (optional)', type: 'die' },
+        { key: 'stats.ba', label: 'Bonus action die — BA', type: 'die' },
+        { key: 'stats.bm', label: 'Bonus movement die — BM', type: 'die' },
         { key: 'abilities', label: 'Abilities', type: 'textarea' },
         { key: 'objectiveAbilities', label: 'Objective-die abilities  ◆/◇', type: 'textarea' },
     ],
@@ -27,10 +29,8 @@ const DZ_FIELDS = {
         { key: 'name', label: 'Name', type: 'text' },
         { key: 'element', label: 'Element', type: 'text' },
         { key: 'art', label: 'Art', type: 'art' },
-        { key: 'stats.monsterDie', label: 'Monster die (D_)', type: 'number' },
-        { key: 'stats.actionDie', label: 'Action die  ☼ (D_)', type: 'number' },
-        { key: 'stats.movementDie', label: 'Movement die  ֍ (D_)', type: 'number' },
-        { key: 'stats.specialDie', label: 'Special die (e.g. D20)', type: 'number' },
+        { key: 'stats.monsterDie', label: 'Monster die  (rolled for ◆ actions)', type: 'die' },
+        { key: 'stats.movementDie', label: 'Movement die  (e.g. The Fog’s D20)', type: 'die' },
         { key: 'abilities', label: 'Abilities', type: 'textarea' },
         { key: 'objectiveAbilities', label: 'Objective-die abilities  ◆/◇', type: 'textarea' },
     ],
@@ -47,6 +47,17 @@ const DZ_FIELDS = {
 };
 
 const DZ_COLOR_HEX = { RED: '#ff3333', YELLOW: '#ffd21f', GREEN: '#33cc44', BLUE: '#3366ff', PURPLE: '#9933ff' };
+const DZ_DICE = [4, 6, 8, 10, 12, 20];   // die sizes with matching art in dice/dN.png
+
+// Game symbol icons. The data keeps the source glyphs (☼ ֍ ◆ ◇) as semantic
+// markers; the app swaps them for these SVGs wherever text is shown.
+// ☼ action = sunburst · ֍ movement = footprint · ◆/◇ objective = gem.
+const GAME_ICONS = {
+    action: '<svg class="gi gi-action" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.6" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5 5l2.1 2.1M16.9 16.9 19 19M5 19l2.1-2.1M16.9 7.1 19 5"/></g></svg>',
+    move: '<svg class="gi gi-move" viewBox="0 0 24 24"><path fill="currentColor" d="M7 2.5h4.2v9.2c0 1.3.6 2 2 2.6l4.8 2.1c1.8.8 2.8 1.8 3 3.6.1.9-.5 1.5-1.4 1.5H5.2c-1 0-1.7-.7-1.7-1.7v-2.2c0-1.3.6-2.2 1.7-2.8.9-.5 1.1-1 1.1-2z"/></svg>',
+    obj: '<svg class="gi gi-obj" viewBox="0 0 24 24"><path fill="currentColor" d="M5 3h14l3 5.5L12 21 2 8.5z"/><path fill="#000" fill-opacity=".2" d="M2 8.5h20L12 21z"/><path stroke="#000" stroke-opacity=".28" stroke-width="1" fill="none" d="M2 8.5h20M9 3l3 12.5M15 3l-3 12.5"/></svg>',
+    objOutline: '<svg class="gi gi-obj" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M5 3h14l3 5.5L12 21 2 8.5z"/><path stroke="currentColor" stroke-width="1.1" stroke-opacity=".7" d="M2 8.5h20"/></svg>',
+};
 
 class Designer {
     constructor(app) {
@@ -65,17 +76,21 @@ class Designer {
     }
     loadData() {
         try {
+            const ver = Number(localStorage.getItem(DZ_VERSION_KEY) || 0);
             const raw = localStorage.getItem(DZ_STORE_KEY);
-            if (raw) {
+            if (raw && ver === DZ_VERSION) {
                 const d = JSON.parse(raw);
                 if (d && d.heroes && d.monsters && d.cards) return d;
             }
+            if (raw && ver !== DZ_VERSION) localStorage.removeItem(DZ_STORE_KEY);  // stale schema
         } catch (e) { /* fall through to defaults */ }
         return this.defaults();
     }
     save() {
-        try { localStorage.setItem(DZ_STORE_KEY, JSON.stringify(this.data)); }
-        catch (e) { console.warn('Designer save failed', e); }
+        try {
+            localStorage.setItem(DZ_STORE_KEY, JSON.stringify(this.data));
+            localStorage.setItem(DZ_VERSION_KEY, String(DZ_VERSION));
+        } catch (e) { console.warn('Designer save failed', e); }
     }
     list() { return this.data[this.type] || []; }
     current() { return this.list()[this.selected]; }
@@ -96,6 +111,12 @@ class Designer {
     }
 
     wire() {
+        const legend = document.getElementById('dz-legend');
+        if (legend) legend.innerHTML =
+            `<div>${GAME_ICONS.action} Action — actions or movement (type ☼)</div>` +
+            `<div>${GAME_ICONS.move} Movement — move only (type ֍)</div>` +
+            `<div>${GAME_ICONS.obj} Objective — collect to win (type ◆/◇)</div>`;
+
         document.querySelectorAll('.dz-tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.dz-tab').forEach(t => t.classList.remove('active'));
@@ -183,7 +204,7 @@ class Designer {
         const row = document.createElement('div');
         row.className = 'dz-field';
         const label = document.createElement('label');
-        label.textContent = field.label;
+        label.innerHTML = this.icon(field.label);
         row.appendChild(label);
 
         let input;
@@ -199,6 +220,14 @@ class Designer {
                 const o = document.createElement('option');
                 o.value = opt; o.textContent = opt;
                 if (opt === val) o.selected = true;
+                input.appendChild(o);
+            });
+        } else if (field.type === 'die') {
+            input = document.createElement('select');
+            [['', '—']].concat(DZ_DICE.map(d => [String(d), 'd' + d])).forEach(([v, lbl]) => {
+                const o = document.createElement('option');
+                o.value = v; o.textContent = lbl;
+                if (String(val == null ? '' : val) === v) o.selected = true;
                 input.appendChild(o);
             });
         } else if (field.type === 'art') {
@@ -237,7 +266,7 @@ class Designer {
 
     commitField(field, item, raw) {
         let value = raw;
-        if (field.type === 'number') value = raw === '' ? null : Number(raw);
+        if (field.type === 'number' || field.type === 'die') value = raw === '' ? null : Number(raw);
         else if (field.type === 'numlist') value = raw.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n) && n);
         this.setVal(item, field.key, value);
         this.save();
@@ -258,32 +287,40 @@ class Designer {
         const accent = this.type === 'heroes' ? (DZ_COLOR_HEX[item.color] || '#888') : '#b5462b';
         const s = item.stats || {};
         const dice = this.type === 'heroes'
-            ? [['Action ☼', s.actionDie], ['Move ֍', s.movementDie], ['Life', s.life],
-               ['Bonus', (s.bonusDice || []).join(' / ') || '—']]
-            : [['Monster', s.monsterDie], ['Action ☼', s.actionDie], ['Move ֍', s.movementDie], ['Special', s.specialDie]];
-        const stats = dice.map(([k, v]) =>
-            `<div class="dz-stat"><span>${k}</span><b>${v == null || v === '' ? '—' : v}</b></div>`).join('');
+            ? [['a1 ☼', s.a1], ['a2 ☼', s.a2], ['M1 ֍', s.m1], ['M2 ֍', s.m2], ['BA', s.ba], ['BM', s.bm]]
+            : [['Die ◆', s.monsterDie], ['Move', s.movementDie]];
+        const stats = dice.map(([k, v]) => this.dieChip(k, v)).join('');
 
         wrap.innerHTML =
             `<div class="dz-card" style="--accent:${accent}">` +
                 `<div class="dz-card-art">${this.artTag(item.art)}</div>` +
                 `<div class="dz-card-title">${this.esc(item.name || '')}` +
                     `<span>${this.esc(item.color || item.element || '')}</span></div>` +
-                `<div class="dz-stats">${stats}</div>` +
-                (item.abilities ? `<div class="dz-block"><h4>Abilities</h4><p>${this.nl(item.abilities)}</p></div>` : '') +
-                (item.objectiveAbilities ? `<div class="dz-block"><h4>Objective ◆/◇</h4><p>${this.nl(item.objectiveAbilities)}</p></div>` : '') +
+                `<div class="dz-dice">${stats}</div>` +
+                (item.abilities ? `<div class="dz-block"><h4>Abilities</h4><p>${this.fmt(item.abilities)}</p></div>` : '') +
+                (item.objectiveAbilities ? `<div class="dz-block"><h4>Objective ${this.icon('◆/◇')}</h4><p>${this.fmt(item.objectiveAbilities)}</p></div>` : '') +
             `</div>`;
     }
 
     cardPreview(item) {
         const dark = item.deck === 'Black';
         return `<div class="dz-card dz-playcard ${dark ? 'dz-black' : 'dz-white'}">` +
-            `<div class="dz-pc-head"><span class="dz-pc-cost">${this.esc(item.cost || '0')}</span>` +
+            `<div class="dz-pc-head"><span class="dz-pc-cost">${this.icon(item.cost || '0')}</span>` +
             `<span class="dz-pc-deck">${this.esc(item.deck)} · ${this.esc(item.timing || '')}</span></div>` +
             `<div class="dz-card-art">${this.artTag(item.art)}</div>` +
             `<div class="dz-card-title">${this.esc(item.name || '')}<span>×${item.copies || 1}</span></div>` +
-            `<div class="dz-block"><p>${this.nl(item.text || '')}</p></div>` +
+            `<div class="dz-block"><p>${this.fmt(item.text || '')}</p></div>` +
         `</div>`;
+    }
+
+    dieChip(label, n) {
+        const empty = (n == null || n === '');
+        const icon = (!empty && DZ_DICE.includes(Number(n)))
+            ? `<img src="dice/d${n}.png" alt="d${n}">`
+            : `<span class="dz-die-num">${empty ? '—' : 'd' + n}</span>`;
+        return `<div class="dz-die${empty ? ' dz-die-empty' : ''}">` +
+            `<span class="dz-die-lbl">${this.icon(label)}</span>${icon}` +
+            (empty ? '' : `<b>d${n}</b>`) + `</div>`;
     }
 
     artTag(src) {
@@ -293,7 +330,7 @@ class Designer {
 
     // ---- add / delete -----------------------------------------------------
     addEntity() {
-        const blank = { heroes: { name: 'New Hero', color: 'RED', cardFace: 'front', art: '', stats: { bonusDice: [] }, abilities: '', objectiveAbilities: '' },
+        const blank = { heroes: { name: 'New Hero', color: 'RED', cardFace: 'front', art: '', stats: {}, abilities: '', objectiveAbilities: '' },
                         monsters: { name: 'New Monster', element: '', art: '', stats: {}, abilities: '', objectiveAbilities: '' },
                         cards: { name: 'New Card', deck: 'White', side: 'hero', timing: 'draw', cost: '0', copies: 1, art: '', text: '' } }[this.type];
         blank.id = this.slug(blank.name) + '-' + Date.now();
@@ -341,5 +378,12 @@ class Designer {
     // ---- helpers ----------------------------------------------------------
     slug(s) { return (s || '').toLowerCase().replace(/[^a-z0-9]+/g, ''); }
     esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+    // swap the game glyphs for SVG icons (run after escaping so the SVG survives)
+    symbolize(html) {
+        return html.replace(/☼/g, GAME_ICONS.action).replace(/֍/g, GAME_ICONS.move)
+                   .replace(/◆/g, GAME_ICONS.obj).replace(/◇/g, GAME_ICONS.objOutline);
+    }
+    icon(s) { return this.symbolize(this.esc(s)); }                 // short inline text
+    fmt(s) { return this.symbolize(this.esc(s).replace(/\n/g, '<br>')); }  // multiline body
     nl(s) { return this.esc(s).replace(/\n/g, '<br>'); }
 }

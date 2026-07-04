@@ -23,9 +23,7 @@
     "art": "players/bad5.jpg",
     "stats": {
       "monsterDie": 6,
-      "actionDie": null,
-      "movementDie": null,
-      "specialDie": null
+      "movementDie": null
     }
   },
   {
@@ -52,9 +50,7 @@
     "art": "players/bad1.jpg",
     "stats": {
       "monsterDie": 6,
-      "actionDie": null,
-      "movementDie": null,
-      "specialDie": null
+      "movementDie": null
     }
   },
   {
@@ -81,9 +77,7 @@
     "art": "players/bad2.jpg",
     "stats": {
       "monsterDie": 6,
-      "actionDie": null,
-      "movementDie": null,
-      "specialDie": null
+      "movementDie": null
     }
   },
   {
@@ -110,9 +104,7 @@
     "art": "players/bad4.jpg",
     "stats": {
       "monsterDie": 6,
-      "actionDie": 4,
-      "movementDie": 4,
-      "specialDie": 20
+      "movementDie": 20
     }
   },
   {
@@ -138,10 +130,8 @@
     "element": "Flesh",
     "art": "players/bad3.jpg",
     "stats": {
-      "monsterDie": null,
-      "actionDie": null,
-      "movementDie": null,
-      "specialDie": null
+      "monsterDie": 6,
+      "movementDie": null
     }
   }
 ]

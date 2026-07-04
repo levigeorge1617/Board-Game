@@ -46,8 +46,6 @@ with open(os.path.join(ROOT, "cards_heros.csv")) as f:
         if not name:
             continue
         color = clean(row[6])
-        bonus = [num(row[0]), num(row[1])]
-        bonus = [b for b in bonus if b]
         entry = {
             "id": slug(name),
             "name": name,
@@ -55,15 +53,17 @@ with open(os.path.join(ROOT, "cards_heros.csv")) as f:
             "objectiveAbilities": clean(row[7]),
             "raw": [clean(c) for c in row],
         }
+        # Dice columns (0-indexed): a1=0, a2=1, BA=4, BM=5, M2=8, M1=9.
+        # M1 (col 9) is the primary/universal movement die; M2 (col 8) the optional
+        # second one. a2 (col 1) is the optional second action die. There is no
+        # separate "life" or "special" column — those earlier guesses were wrong.
         if color == "MONSTER":
             entry.update({
                 "element": clean(row[10]),
                 "art": MONSTER_ART.get(name, ""),
                 "stats": {
-                    "monsterDie": num(row[1]),
-                    "actionDie": num(row[4]),
-                    "movementDie": num(row[5]),
-                    "specialDie": num(row[8]),  # e.g. The Fog's D20
+                    "monsterDie": num(row[1]) or num(row[0]),   # black die rolled for actions (◆)
+                    "movementDie": num(row[8]) or num(row[9]),  # e.g. The Fog's D20
                 },
             })
             monsters.append(entry)
@@ -75,11 +75,12 @@ with open(os.path.join(ROOT, "cards_heros.csv")) as f:
                 "cardFace": "front" if front else "back",
                 "art": HERO_ART.get(name, ""),
                 "stats": {
-                    "actionDie": num(row[4]),
-                    "movementDie": num(row[5]),
-                    "life": num(row[9]),
-                    "bonusDice": bonus,
-                    "specialDie": num(row[8]),  # ambiguous 4th column — confirm in designer
+                    "a1": num(row[0]),   # action die 1 (primary)
+                    "a2": num(row[1]),   # action die 2 (optional)
+                    "m1": num(row[9]),   # movement die 1 (primary)
+                    "m2": num(row[8]),   # movement die 2 (optional)
+                    "ba": num(row[4]),   # bonus action die
+                    "bm": num(row[5]),   # bonus movement die
                 },
             })
             heroes.append(entry)
