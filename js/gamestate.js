@@ -1,159 +1,120 @@
 /*
- * GameState — the shared, synchronized play state (decks, seats/hands, turn,
- * dice/grid rolls). Persists to localStorage and syncs across tabs via
- * BroadcastChannel.
+ * GameState (client) — holds the play state and routes every change through the
+ * shared reducer (js/gamelogic.js). Two modes:
  *
- * SYNC ARCHITECTURE (transport seam)
- * ----------------------------------
- * All mutations go through _commit(), which bumps `rev`, persists, notifies
- * local listeners, and hands the snapshot to a pluggable transport. The default
- * `LocalTransport` (BroadcastChannel + localStorage) gives same-machine,
- * multi-tab sync — enough to prove hidden hands and a live board.
+ *   OFFLINE (default): actions are applied locally and mirrored to other tabs on
+ *   this machine via BroadcastChannel. `mySeatId` is local, so each tab reveals
+ *   only its own hand — hidden hands across tabs.
  *
- * For true CROSS-DEVICE realtime with private hands, swap in a NetworkTransport
- * (WebSocket to a small authoritative server, or Supabase/PartyKit/Firebase):
- *   - implement { join(room, onRemote), send(snapshot) } with the same shape,
- *   - the server holds the master state and, crucially, redacts other players'
- *     `hand` arrays before sending to each client (see redactFor()).
- * `mySeatId` is intentionally LOCAL (never synced) — it's "who am I at this
- * screen", which is what makes a hand private to one device.
+ *   ONLINE: call connect(host, room). Actions are sent to the PartyKit server,
+ *   which is the authority: it applies them, then pushes each connection a
+ *   snapshot with the OTHER seats' hands stripped out (see GameLogic.redactFor).
+ *   That is what makes hands private across separate devices.
  */
-
 const GS_STORE_KEY = 'board_game_state';
 const GS_SEAT_KEY = 'board_game_my_seat';
 const GS_CHANNEL = 'board_game_sync';
 
-class LocalTransport {
-    constructor() { this.bc = ('BroadcastChannel' in window) ? new BroadcastChannel(GS_CHANNEL) : null; }
-    join(onRemote) { if (this.bc) this.bc.onmessage = (e) => onRemote(e.data); }
-    send(snapshot) { if (this.bc) this.bc.postMessage(snapshot); }
-}
-
 class GameState {
-    constructor(transport) {
+    constructor() {
         this.listeners = new Set();
-        this.transport = transport || new LocalTransport();
-        this.mySeatId = localStorage.getItem(GS_SEAT_KEY) || null;   // local-only
-        this.state = this._load() || this._empty();
-        this.transport.join((snap) => this._onRemote(snap));
+        this.mySeatId = localStorage.getItem(GS_SEAT_KEY) || null;   // local-only identity
+        this.state = this._load() || GameLogic.empty();
+        this.online = false;
+        this.conn = null;
+        this.wanted = false;      // whether we want to stay connected (for reconnect)
+        this.status = 'offline';  // offline | connecting | online | error
+        this.bc = ('BroadcastChannel' in window) ? new BroadcastChannel(GS_CHANNEL) : null;
+        if (this.bc) this.bc.onmessage = (e) => this._onLocalPeer(e.data);
     }
 
-    // ---- lifecycle --------------------------------------------------------
-    _empty() { return { rev: 0, room: 'table-1', started: false, decks: null, seats: [], activeSeatId: null, lastDice: null, lastGrid: null }; }
-    _load() {
-        try { const r = localStorage.getItem(GS_STORE_KEY); return r ? JSON.parse(r) : null; }
-        catch (e) { return null; }
-    }
-    _commit(persistOnly = false) {
-        this.state.rev = (this.state.rev || 0) + 1;
-        try { localStorage.setItem(GS_STORE_KEY, JSON.stringify(this.state)); } catch (e) {}
-        if (!persistOnly) this.transport.send(this.state);
-        this._emit();
-    }
-    _onRemote(snap) {
-        if (snap && typeof snap.rev === 'number' && snap.rev > (this.state.rev || 0)) {
-            this.state = snap;
-            try { localStorage.setItem(GS_STORE_KEY, JSON.stringify(snap)); } catch (e) {}
-            this._emit();
-        }
-    }
+    // ---- persistence / listeners -----------------------------------------
+    _load() { try { const r = localStorage.getItem(GS_STORE_KEY); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
+    _persist() { try { localStorage.setItem(GS_STORE_KEY, JSON.stringify(this.state)); } catch (e) {} }
     subscribe(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
     _emit() { this.listeners.forEach(fn => { try { fn(this.state); } catch (e) { console.error(e); } }); }
 
     setMySeat(seatId) {
         this.mySeatId = seatId;
         if (seatId) localStorage.setItem(GS_SEAT_KEY, seatId); else localStorage.removeItem(GS_SEAT_KEY);
+        if (this.online && this.conn && this.conn.readyState === 1) this.conn.send(JSON.stringify({ t: 'seat', seatId }));
         this._emit();
     }
 
-    // Server-side redaction helper (documented for the network transport):
-    // returns a copy where every hand except `seatId` is replaced by its count.
-    static redactFor(state, seatId) {
-        const s = JSON.parse(JSON.stringify(state));
-        s.seats.forEach(seat => { if (seat.id !== seatId) seat.hand = seat.hand.map(() => null); });
-        return s;
+    // ---- the one path every mutation goes through ------------------------
+    dispatch(action) {
+        if (this.online) {
+            if (this.conn && this.conn.readyState === 1) this.conn.send(JSON.stringify({ t: 'action', action }));
+            return;   // server is authoritative; it will push back a snapshot
+        }
+        this.state = GameLogic.apply(this.state, action, window.GAME_DATA);
+        this._persist();
+        this._emit();
+        if (this.bc) this.bc.postMessage({ t: 'state', state: this.state });
     }
 
-    // ---- setup ------------------------------------------------------------
-    newGame() {
-        const data = window.GAME_DATA || { heroes: [], monsters: [], cards: [] };
-        // build decks as shuffled instances { iid, cid }
-        const build = (deckName) => {
-            const pile = [];
-            data.cards.filter(c => c.deck === deckName).forEach(c => {
-                for (let i = 0; i < (c.copies || 1); i++) pile.push({ iid: `${c.id}-${i}-${Math.random().toString(36).slice(2, 7)}`, cid: c.id });
-            });
-            return this._shuffle(pile);
+    _onLocalPeer(msg) {
+        if (msg && msg.t === 'state' && msg.state && msg.state.rev > (this.state.rev || 0)) {
+            this.state = msg.state; this._persist(); this._emit();
+        }
+    }
+
+    _adoptServer(snap) {          // authoritative, already redacted for my seat
+        this.state = snap; this._persist(); this._emit();
+    }
+
+    // ---- online connection (PartyKit) ------------------------------------
+    connect(host, room) {
+        this.wanted = true;
+        this._host = host.replace(/^wss?:\/\//, '').replace(/\/$/, '');
+        this._room = room || 'table-1';
+        this._open();
+    }
+    _open() {
+        const isLocal = /^(localhost|127\.|0\.0\.0\.0|\[::1\])/.test(this._host);
+        const proto = isLocal ? 'ws' : 'wss';
+        const url = `${proto}://${this._host}/parties/main/${encodeURIComponent(this._room)}`;
+        this.status = 'connecting'; this._emit();
+        let ws;
+        try { ws = new WebSocket(url); } catch (e) { this.status = 'error'; this._emit(); return; }
+        this.conn = ws;
+        ws.onopen = () => {
+            this.online = true; this.status = 'online';
+            ws.send(JSON.stringify({ t: 'hello', seatId: this.mySeatId }));
+            this._emit();
         };
-        this.state.decks = { White: { draw: build('White'), discard: [] }, Black: { draw: build('Black'), discard: [] } };
-
-        // one seat per hero color (front character) + one monster seat
-        const seats = [];
-        const byColor = {};
-        data.heroes.forEach(h => { if (!byColor[h.color] || h.cardFace === 'front') byColor[h.color] = h; });
-        ['RED', 'YELLOW', 'GREEN', 'BLUE', 'PURPLE'].forEach(col => {
-            const h = byColor[col]; if (!h) return;
-            seats.push({ id: 'seat-' + col.toLowerCase(), label: h.name, kind: 'hero', deck: 'White', color: col, characterId: h.id, hand: [] });
-        });
-        const mon = data.monsters[0];
-        seats.push({ id: 'seat-monster', label: mon ? mon.name : 'Monster', kind: 'monster', deck: 'Black', color: 'MONSTER', characterId: mon ? mon.id : null, hand: [] });
-
-        this.state.seats = seats;
-        this.state.activeSeatId = seats[0].id;
-        this.state.started = true;
-        this.state.lastDice = null; this.state.lastGrid = null;
-        this._commit();
+        ws.onmessage = (e) => {
+            let m; try { m = JSON.parse(e.data); } catch (_) { return; }
+            if (m.t === 'snapshot' && m.state) this._adoptServer(m.state);
+        };
+        ws.onclose = () => {
+            this.online = false; this.conn = null;
+            this.status = this.wanted ? 'connecting' : 'offline';
+            this._emit();
+            if (this.wanted) setTimeout(() => { if (this.wanted) this._open(); }, 2000);
+        };
+        ws.onerror = () => { this.status = 'error'; this._emit(); };
     }
-    resetGame() { this.state = this._empty(); this._commit(); }
+    disconnect() {
+        this.wanted = false; this.online = false; this.status = 'offline';
+        if (this.conn) { try { this.conn.close(); } catch (e) {} this.conn = null; }
+        this.state = this._load() || GameLogic.empty();
+        this._emit();
+    }
 
-    _shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; } return a; }
-
-    // ---- helpers ----------------------------------------------------------
+    // ---- read helpers (used by the HUD) ----------------------------------
     seat(id) { return this.state.seats.find(s => s.id === id); }
-    character(seat) {
-        const d = window.GAME_DATA; if (!seat || !d) return null;
-        return (seat.kind === 'monster' ? d.monsters : d.heroes).find(c => c.id === seat.characterId) || null;
-    }
+    character(seat) { const d = window.GAME_DATA; return d && seat ? (seat.kind === 'monster' ? d.monsters : d.heroes).find(c => c.id === seat.characterId) || null : null; }
     card(cid) { return (window.GAME_DATA.cards || []).find(c => c.id === cid); }
 
-    // ---- actions ----------------------------------------------------------
-    draw(seatId, deckName) {
-        const seat = this.seat(seatId); const deck = this.state.decks[deckName || (seat && seat.deck)];
-        if (!seat || !deck) return;
-        if (!deck.draw.length) { deck.draw = this._shuffle(deck.discard); deck.discard = []; }
-        if (!deck.draw.length) return;
-        seat.hand.push(deck.draw.pop());
-        this._commit();
-    }
-    discard(seatId, iid) {
-        const seat = this.seat(seatId); if (!seat) return;
-        const idx = seat.hand.findIndex(c => c.iid === iid); if (idx < 0) return;
-        const [inst] = seat.hand.splice(idx, 1);
-        const card = this.card(inst.cid);
-        const deck = this.state.decks[card ? card.deck : seat.deck] || this.state.decks[seat.deck];
-        if (deck) deck.discard.push(inst);
-        this._commit();
-    }
-    setActive(seatId) { this.state.activeSeatId = seatId; this._commit(); }
-    nextTurn() {
-        const seats = this.state.seats; if (!seats.length) return;
-        const i = seats.findIndex(s => s.id === this.state.activeSeatId);
-        this.state.activeSeatId = seats[(i + 1) % seats.length].id;
-        this._commit();
-    }
-    setSeatCharacter(seatId, characterId) { const s = this.seat(seatId); if (s) { s.characterId = characterId; const c = this.character(s); if (c) s.label = c.name; this._commit(); } }
-
-    rollDice(seatId, dieList) {
-        // dieList: [{key, die}] — roll each, record result
-        const rolls = dieList.filter(d => d.die).map(d => ({ key: d.key, die: d.die, value: 1 + Math.floor(Math.random() * d.die) }));
-        const total = rolls.reduce((n, r) => n + r.value, 0);
-        this.state.lastDice = { seatId, rolls, total, ts: Date.now() };
-        this._commit();
-    }
-    rollGrid(cols, rows) {
-        const col = 1 + Math.floor(Math.random() * Math.max(1, cols));
-        const rowIdx = Math.floor(Math.random() * Math.max(1, rows));
-        this.state.lastGrid = { col, row: String.fromCharCode(65 + rowIdx), ts: Date.now() };
-        this._commit();
-    }
+    // ---- action wrappers (thin; all funnel through dispatch) -------------
+    newGame() { this.dispatch({ type: 'NEW_GAME' }); }
+    resetGame() { this.dispatch({ type: 'RESET' }); }
+    draw(seatId, deck) { this.dispatch({ type: 'DRAW', seatId, deck }); }
+    discard(seatId, iid) { this.dispatch({ type: 'DISCARD', seatId, iid }); }
+    setActive(seatId) { this.dispatch({ type: 'SET_ACTIVE', seatId }); }
+    nextTurn() { this.dispatch({ type: 'NEXT_TURN' }); }
+    setSeatCharacter(seatId, characterId) { this.dispatch({ type: 'SET_CHARACTER', seatId, characterId }); }
+    rollDice(seatId, dieList) { this.dispatch({ type: 'ROLL_DICE', seatId, dieList }); }
+    rollGrid(cols, rows) { this.dispatch({ type: 'ROLL_GRID', cols, rows }); }
 }

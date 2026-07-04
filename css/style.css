@@ -149,6 +149,8 @@ textarea.dz-input { resize: vertical; line-height: 1.5; }
 .ph-bar-ctl { display: flex; gap: 8px; align-items: center; }
 .ph-me { font-size: 11px; color: #9aa7b5; display: flex; gap: 4px; align-items: center; }
 .ph-me select, .ph-cc-choose { background: #2a2e31; color: #fff; border: 1px solid #454b50; border-radius: 5px; padding: 4px 6px; font-size: 12px; }
+.ph-on-live { background: #16506e; border-color: #1f6c93; }
+.ph-on-wait { background: #5a4a1a; border-color: #7a6420; cursor: wait; }
 
 /* deck piles (right) */
 #ph-decks { position: absolute; right: 12px; top: 70px; }

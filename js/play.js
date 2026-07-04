@@ -47,11 +47,20 @@ class PlayController {
     }
 
     renderWelcome() {
+        const online = this.gs.status === 'online';
         document.getElementById('ph-roster').innerHTML =
-            `<div class="ph-welcome"><b>Game table</b><p>Deal the decks and seat the 5 heroes + monster.</p>` +
+            `<div class="ph-bar"><div class="ph-seats"></div><div class="ph-bar-ctl">${this.onlineControl()}</div></div>` +
+            `<div class="ph-welcome"><b>Game table</b>` +
+            `<p>${online ? 'Connected — anyone in this room can deal.' : 'Play solo/hotseat here, or go online for cross-device play.'}<br>Deal the decks and seat the 5 heroes + monster.</p>` +
             `<button id="ph-new" class="ph-btn ph-btn-go">Deal &amp; start</button></div>`;
         ['ph-roll', 'ph-decks', 'ph-hand'].forEach(id => document.getElementById(id).innerHTML = '');
         document.getElementById('ph-new').onclick = () => this.gs.newGame();
+        this.wireOnline();
+    }
+
+    wireOnline() {
+        const onl = document.getElementById('ph-online');
+        if (onl) onl.onclick = () => (this.gs.status === 'offline' || this.gs.status === 'error') ? this.promptConnect() : this.gs.disconnect();
     }
 
     // ---- roster / seats ---------------------------------------------------
@@ -74,6 +83,7 @@ class PlayController {
                         `<option value="">— pick seat —</option>` +
                         s.seats.map(seat => `<option value="${seat.id}"${seat.id === this.gs.mySeatId ? ' selected' : ''}>${esc(seat.label)}</option>`).join('') +
                     `</select></label>` +
+                    this.onlineControl() +
                     `<button id="ph-next" class="ph-btn">End turn ▸</button>` +
                     `<button id="ph-reset" class="ph-btn ph-btn-warn">Reset</button>` +
                 `</div>` +
@@ -83,6 +93,21 @@ class PlayController {
         document.getElementById('ph-myseat').onchange = (e) => this.gs.setMySeat(e.target.value || null);
         document.getElementById('ph-next').onclick = () => this.gs.nextTurn();
         document.getElementById('ph-reset').onclick = () => { if (confirm('Reset the whole table?')) this.gs.resetGame(); };
+        this.wireOnline();
+    }
+
+    onlineControl() {
+        const st = this.gs.status;
+        const map = { offline: ['🌐 Go online', ''], connecting: ['⏳ Connecting…', 'ph-on-wait'], online: [`🌐 ${esc(this.gs._room || 'online')} ✕`, 'ph-on-live'], error: ['⚠ Retry connect', 'ph-btn-warn'] };
+        const [label, cls] = map[st] || map.offline;
+        return `<button id="ph-online" class="ph-btn ${cls}" title="Cross-device play">${label}</button>`;
+    }
+    promptConnect() {
+        const host = prompt('Server host:\n • local dev: 127.0.0.1:1999\n • deployed: yourproject.username.partykit.dev', this.gs._host || '127.0.0.1:1999');
+        if (!host) return;
+        const room = prompt('Room code (everyone at the table enters the same code):', this.gs._room || 'table-1');
+        if (!room) return;
+        this.gs.connect(host, room);
     }
 
     // ---- deck piles -------------------------------------------------------
