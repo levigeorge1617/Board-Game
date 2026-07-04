@@ -54,7 +54,7 @@ const DZ_DICE = [4, 6, 8, 10, 12, 20];   // die sizes with matching art in dice/
 // ☼ action = sunburst · ֍ movement = footprint · ◆/◇ objective = gem.
 const GAME_ICONS = {
     action: '<svg class="gi gi-action" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.6" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5 5l2.1 2.1M16.9 16.9 19 19M5 19l2.1-2.1M16.9 7.1 19 5"/></g></svg>',
-    move: '<svg class="gi gi-move" viewBox="0 0 24 24"><ellipse cx="10" cy="15" rx="5" ry="7" fill="currentColor"/><circle cx="17.4" cy="6.6" r="2.1" fill="currentColor"/><circle cx="19.4" cy="10.6" r="1.7" fill="currentColor"/><circle cx="18.9" cy="14.4" r="1.4" fill="currentColor"/></svg>',
+    move: '<svg class="gi gi-move" viewBox="0 0 24 24"><path fill="currentColor" d="M7 2.5h4.2v9.2c0 1.3.6 2 2 2.6l4.8 2.1c1.8.8 2.8 1.8 3 3.6.1.9-.5 1.5-1.4 1.5H5.2c-1 0-1.7-.7-1.7-1.7v-2.2c0-1.3.6-2.2 1.7-2.8.9-.5 1.1-1 1.1-2z"/></svg>',
     obj: '<svg class="gi gi-obj" viewBox="0 0 24 24"><path fill="currentColor" d="M5 3h14l3 5.5L12 21 2 8.5z"/><path fill="#000" fill-opacity=".2" d="M2 8.5h20L12 21z"/><path stroke="#000" stroke-opacity=".28" stroke-width="1" fill="none" d="M2 8.5h20M9 3l3 12.5M15 3l-3 12.5"/></svg>',
     objOutline: '<svg class="gi gi-obj" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M5 3h14l3 5.5L12 21 2 8.5z"/><path stroke="currentColor" stroke-width="1.1" stroke-opacity=".7" d="M2 8.5h20"/></svg>',
 };
