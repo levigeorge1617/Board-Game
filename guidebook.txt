@@ -1,0 +1,281 @@
+Setup:
+Choose a player to be the monster. 
+
+All other players work as a team of heroes to defeat the monster player. 
+
+Each hero player must choose their unique hero color.  
+
+Only 1 of each color is allowed.  
+
+All 5 colors must be used. 
+
+The game can be played with just 2 players: 1 monster player and 1 hero player controlling 5 heroes. 
+
+The monster player will roll the monster dice to choose what monster they play as. 
+
+The monster player may setup all the buildings on the board, don't block any doors. 
+
+The heroes may choose to move any 2 buildings of their choosing, Don't block any doors. 
+
+The heroes place their starting platform anywhere on the board, including inside a building. 
+
+The monster player rolls all the objective dice and place them with their rolled value anywhere on the board. 
+
+The game begins with the hero's first turn. 
+
+
+
+dice / board / buildings:
+There are several kinds of Dice used in this game. 
+
+ 
+
+Hero Dice: 
+
+Each hero has a corresponding set of dice that match their hero color. There is Action, Movement, and Bonus Dice. See below for more details. 
+
+ 
+
+Monster Dice: 
+
+The monster has a set of black / grey dice that are used for various things. See below for more details. 
+
+ 
+
+ 
+
+Action Dice ☼: 
+
+These dice are used to perform actions OR move. 
+
+Actions include reviving a dead hero, collecting an objective, attacking, or entering/leaving a building. Casting an ability takes actions. 
+
+ 
+
+Movement Dice ֍: 
+
+These dice can only be used to move spaces, they don't count towards actions. Some heroes can use movement rolls to do things. 
+
+ 
+
+Bonus Dice  ☼/֍: 
+
+These dice CAN ONLY be used for the bonus they apply to, (IE: bonus movement֍ dice can only be used for movement֍). 
+
+They can't be used for combat or setting a Gravestone. 
+
+ 
+
+Objective Dice◆/◇: 
+
+During the setup of the game, the monster player rolls the objective dice and places them at their choosing on the board.  
+
+x◆: this icon means it can be done every turn, once the objective count requirement has been reached. 
+
+X◇: this icon means it can be done only once, and triggers once the objective county requirement has been reached. 
+
+ 
+
+Minion Dice: 
+
+These dice indicate the health of a minion. 
+
+ 
+
+Board: 
+
+The board consists of a number / letter grid. A1 is considered the first space, A2 is the second space. 
+
+ 
+
+Buildings are placed on the board by the player controlling the monster. 
+
+Buildings are not allowed to be placed with any exit/door being blocked by the edge of the board or another building. 
+
+ winning and objectives dice:
+ How to win the game: 
+
+Monster: Kill all Heroes. 
+
+Heroes: Collect all Objective dice. 
+
+ 
+
+Collecting Objectives: 
+
+To collect an objective, the hero must be standing next to the objective and have line of sight of it(unless an ability says otherwise). 
+
+Use action☼ dice rolls to reduce the objective to zero. When it reaches zero, collect the objective for the team and remove it from the board. 
+
+ 
+ 
+ 
+ rules / events / actions:
+ Objects: 
+
+Anything that occupies a space on the board is considered an object. This includes, but is not limited to, things like objective dice, hero pieces, gravestones, minions, barriers, doors, pets, monster pieces. 
+
+ 
+
+Monster Movement: 
+
+The player controlling the Monster picks a letter and the number is chosen randomly with the number dice. Move the Monster piece to the location picked/rolled.  
+
+If the rolled dice lands on a number or letter that is not being used in the current board configuration (ie: Y or Z isn't used) then reroll the dice for a valid result. 
+
+If the location that the monster is supposed to move to is occupied by another object, do the following: 
+
+If it is a hero or pet object, they die and create their grave there, the monster may choose any adjacent space next to the grave. 
+
+If it is any other object, move to any adjacent space that is available 
+
+resolve line of sight for the monster. See Line of Sight below... 
+
+If the monster enters a building that a hero is in, regardless of line of sight, allow the hero to escape. 
+
+ 
+
+Line of Sight: 
+
+This is how many spaces from the monster in straight lines(excluding diagonals) the monster can "see" heroes. the space the monster occupies is zero. 
+
+This is also how far heroes can "see". Objects and building walls block line of sight. 
+
+Buildings, other heroes or pets, doors, gravestones, obstacles, and objectives block line of sight. 
+
+ 
+
+ 
+
+Heroes Dying: 
+
+When a hero dies, they roll their action dice☼(not their bonus dice). That is how many actions☼ must be spent by an ally to revive them. 
+
+Replace their hero piece with the action dice☼, making sure to have the correct number from the roll. This is now considered the hero's gravestone. 
+
+ 
+
+Reviving a hero: 
+
+To perform a revive, an ally hero must be standing next to the dead hero's action dice☼(gravestone) and have line of sight of it. 
+
+That hero can use their action dice☼ rolls to reduce the action dice of the dead hero. 
+
+When the dead hero's action dice☼ reaches zero, they are revived and the dice is replaced with the hero piece. Their health is set to 4 
+
+The revived hero may take their turn this round, but can only use their movement dice֍. They may not perform any actions☼ or play cards. 
+
+ 
+
+Minions:  
+
+Minions are placed on board randomly. To summon a minion the monster rolls the minions action dice☼, this is its health.   
+
+The monster uses an action dice☼ to move the minions. This can be divided between multiple minions. On the hero's turn, minions line of sight is one space away in all directions(excluding diagonals). On the monster's turn, minions can be moved to engage a hero for combat.  
+
+Minions should be moved BEFORE the monster's movement. 
+
+ 
+
+Combat: 
+
+When a hero, monster, or minion enters attack range, combat begins. 
+
+Whoever engages first, attacks first(unless the hero card says otherwise). 
+
+The first attacker rolls an action dice☼(bonus dice are never used in combat), deal that much damage to the opponent. 
+
+If the opponent lives, they roll their action dice☼ and deal that much damage(plus modifiers) to the original attacker. Repeat until someone dies or escapes. 
+
+ 
+
+ 
+
+Escaping: 
+
+Certain monsters or cards allow heroes to escape from an event or combat. 
+
+If they succeed, they can move to the nearest space that is out of combat/line of sight. If there is more than one space, the hero can choose. 
+
+If they fail, they take -5 to their total life and then move out of combat/line of sight. 
+
+If they are escaping while inside a building, on success or failure, they must move outside the building from any door and take –2 to their total life. 
+
+If they are still in line of sight or in range at the door, they can move 1 space again until out of range or sight. 
+
+ 
+ 
+ cards:
+ There are two decks of cards, the hero cards (white) and the monster cards(black). Place them in their own stack as two draw piles. 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Drawing Cards:  
+
+At the start of the hero's turn, all heroes draw a card from the hero draw pile. 
+
+At the start of the monster's turn, it draws a card from the monster draw pile. 
+
+ 
+
+Hero's Cards can be used at any time during the hero's turn. 
+
+Monster's Cards can be used during the monster's turn before moving. 
+
+ 
+
+Hand size: 
+
+Each player is limited to 10 cards. 
+
+If you draw a card and go over 10 in your hand, choose a card to discard to remain at 10 in hand. 
+
+ 
+
+Draw Piles: 
+
+New cards are drawn here. If a draw pile becomes empty, shuffle the discard pile back into the draw pile. 
+
+Hero's draw from the White draw pile 
+
+Monster draws from the Black draw pile. 
+
+ 
+
+Discard Piles: 
+
+Any used card should go to respective discard pile unless otherwise stated. 
+
+ 
+
+Corrupted Potion: 
+
+If this card is drawn in the hero's draw pile; discard it, and the monster draws a card from the monster draw pile. 
+
+ 
+
+Playing a card: 
+
+Pay the Action☼ or Movement֍ cost in the bottom left corner. 0 means it costs nothing. Resolve the effects of the card, and then place it in the appropriate discard pile. 
