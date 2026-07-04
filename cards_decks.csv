@@ -1,0 +1,24 @@
+"268","draw","1","0","0","Surprise Attack","0","Black","1","0","","10","Choose the number and randomizethe letter for your next movement.This can only be played instantly at the beginning of your turn.Can't be used on the turn it is drawn.","0"
+"269","draw","1","0","0","Summon X Minions","0","Black","1","0","","10","Randomly summon X Minions","X☼"
+"284","draw","1","0","0","Summon 1 Minion","0","Black","1","0","","15","Randomly summon 1 Minion","0"
+"77","draw","1","0","0","Lock and Key","0","Black","1","0","","3","Choose an entrance to a building and place a lock on it. Randomly place a key on the map.▲Heroes must collect the key and use it on the locked door to open it. The hero who collects the key must use an action to unlock the door.If a hero dies with a collected key, they drop the              Key beside them. Reroll the cost.","0"
+"260","draw","1","0","0","Empowered","0","Black","1","0","","5","The monster's next turn movement can kill heroes diagonallyAll other monster rules still apply","0"
+"95","draw","1","0","0","Drowning Paralysis","0","Black","1","0","","5","Choose a hero. They lose a turn.","0"
+"104","draw","1","0","0","Deathly Fear","0","Black","1","0","","8","Choose X heroes.They all have -2 to their actions and -4 to movements their next turn","X☼"
+"113","Draw","1","0","0","Curse of Shadows","0","Black","1","0","","10","Target a heroThey have -X+1 to their next action and movement rolls","X☼"
+"132","draw","1","0","0","Crush Forward","0","Black","1","0","","8","Move a monster or minion X spaces.Movement can be divided between multiple minions and the monster.If the monster is able to attack a hero by moving this way, allow the hero to escape by rolling a 3 action or higher","X☼"
+"142","draw","1","0","0","Creeping Death","0","Black","1","0","","10","Move any minion X spaces.Movement can be divided between multiple minions.","X☼"
+"151","hand","1","0","0","SpellBook +2","0","White","0","0","","10","Increase your next action roll by +2 for one turn only.","0"
+"162","draw","1","1","0","SpellBook +1","0","White","0","0","","10","Increase your next action roll by +1 for one turn only","0"
+"286","hand","1","0","0","Revive","0","White","0","0","","8","Revive a hero who died.Set the hero's health to their max -5The revived hero can not use their action dice this turn, but can use movement dice.","3☼"
+"170","draw","1","1","0","Rally The Party","0","White","0","0","","8","Move X heroes to your hero. They choose which space to be placed, they can't be placed through walls.You can only move heroes who have already taken their turn.","X☼"
+"175","draw","1","1","0","HideOut","0","White","0","0","","6","Move to the nearest door and enter it.If the distance to the nearest door is a tie, you can choose which to go to.","3☼"
+"192","draw","1","1","0","empty","0","White","0","0","","25","You find nothing.","0"
+"196","draw","1","1","0","Distraction","0","White","0","0","","10","Make a monster or minion move 1 space in any directionThey can not move through walls or other objects.You can not move them in a space that would initiate an attack or combat.","1☼"
+"285","draw","1","1","0","Counter Spell","0","White","0","0","","10","Once you use this card, you can negate the effects of any one card used by the monster on their turn.","3☼"
+"205","draw","1","1","0","Corrupted Potion","0","White","0","0","","11","The monster draws a card instead.","0"
+"219","draw","1","1","0","Brew a Potion","0","White","0","0","","10","Restore X+2 health to you or a nearby hero.","X☼"
+"223","draw","1","1","0","Boots6","0","White","0","0","","10","Increase the next movement roll by +6 for one turn only.","1☼"
+"232","draw","1","1","0","Boots4","0","White","0","0","","10","Increase the next movement roll by +4 for one turn only.","0"
+"246","draw","1","1","0","Boots2","0","White","0","0","","10","Increase the next movement roll by +2 for one turn only.","0"
+"255","draw","1","1","0","Aggressive Sprint","0","White","0","0","","10","Increase your next movement and your next action roll by +2 for one turn only.","0"

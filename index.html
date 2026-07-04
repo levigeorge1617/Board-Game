@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Board Game Editor - V3 Ultimate</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app-container">
+        <aside id="sidebar">
+            <div class="mode-toggle-container">
+                <button id="btn-mode-play" class="mode-btn active">⚔️ Play Mode</button>
+                <button id="btn-mode-design" class="mode-btn">🛠️ Design Mode</button>
+            </div>
+
+            <hr>
+            <h2>Token Palette</h2>
+            <div class="palette-shelf">
+                <div class="palette-item" draggable="true" data-type="hero" data-color="#ff3333" data-label=""><span class="token-preview" style="background:#ff3333;"></span> Red Hero</div>
+                <div class="palette-item" draggable="true" data-type="hero" data-color="#33cc33" data-label=""><span class="token-preview" style="background:#33cc33;"></span> Green Hero</div>
+                <div class="palette-item" draggable="true" data-type="hero" data-color="#3366ff" data-label=""><span class="token-preview" style="background:#3366ff;"></span> Blue Hero</div>
+                <div class="palette-item" draggable="true" data-type="hero" data-color="#ffff33" data-label=""><span class="token-preview" style="background:#ffff33;"></span> Yellow Hero</div>
+                <div class="palette-item" draggable="true" data-type="hero" data-color="#9933ff" data-label=""><span class="token-preview" style="background:#9933ff;"></span> Purple Hero</div>
+                <div class="palette-item" draggable="true" data-type="boss" data-color="#000000" data-label=""><span class="token-preview" style="background:#000000; border-color:#ff3333;"></span> Black Boss</div>
+                <div class="palette-item" draggable="true" data-type="enemy" data-color="#800000" data-label=""><span class="token-preview" style="background:#800000;"></span> Maroon Enemy</div>
+                <div class="palette-item" draggable="true" data-type="barrier" data-color="#8B4513" data-label=""><span class="token-preview" style="background:#8B4513;"></span> Brown Barrier</div>
+                
+                <div class="palette-item" draggable="true" data-type="lock" data-color="#444444" data-label=""><span class="token-preview" style="background:#444444; border: 2px dashed #ffcc00;">🔒</span> Lock & Key</div>
+                <div class="palette-item" draggable="true" data-type="objective" data-color="#00ffff" data-label=""><span class="token-preview" style="background:#00ffff; color:#000;">🏆</span> Objectives</div>
+            </div>
+
+            <div id="design-tools-section" style="display: none;">
+                <hr>
+                <h2>Building Tools</h2>
+                <div class="control-group">
+                    <button id="tool-wall-edge">Draw Edge Wall</button>
+                    <button id="tool-door-edge">Place Edge Door</button>
+                    <button id="tool-select-box" style="background: #e0a800; color: #000;">Select Region Tool</button>
+                </div>
+
+                <hr>
+                <h2>Tileset & Floor Tools</h2>
+                <div class="control-group">
+                    <button id="tool-bucket-fill">🪣 Bucket Fill Tool</button>
+                    <h3 style="margin: 6px 0 2px 2px; font-size:11px; color:#aaa;">Outdoors:</h3>
+                    <button id="tool-floor-grass" class="terrain-btn">Grass</button>
+                    <button id="tool-floor-mud" class="terrain-btn">Mud</button>
+                    <button id="tool-floor-path" class="terrain-btn">Path</button>
+                    
+                    <h3 style="margin: 6px 0 2px 2px; font-size:11px; color:#aaa;">Indoors:</h3>
+                    <button id="tool-floor-tile" class="terrain-btn">Floor Tile</button>
+                    <button id="tool-floor-wood" class="terrain-btn">Polished Wood</button>
+                    <button id="tool-floor-stone" class="terrain-btn">Stone/Cement</button>
+                </div>
+                
+                <hr>
+                <h2>Template Library</h2>
+                <div class="control-group">
+                    <div class="transform-controls">
+                        <button id="btn-rot-left">Rotate ↺</button>
+                        <button id="btn-flip">Flip ↔</button>
+                    </div>
+                    <div id="local-templates-shelf" style="margin-top:10px; max-height:150px; overflow-y:auto; gap:4px; display:flex; flex-direction:column;"></div>
+                </div>
+
+                <hr>
+                <div class="control-group">
+                    <label style="font-size: 11px;">Grid size:</label>
+                    <input type="number" id="grid-cols" value="90" min="1"> x 
+                    <input type="number" id="grid-rows" value="26" min="1" max="26">
+                    <button id="btn-resize" style="width:auto; display:inline-block; padding: 2px 8px; margin-left:4px;">Resize</button>
+                </div>
+            </div>
+
+            <hr>
+            <div class="control-group">
+                <button id="btn-undo">Undo</button>
+                <button id="btn-redo">Redo</button>
+                <button id="btn-save">Save JSON</button>
+                <button id="btn-load">Load JSON</button>
+                <input type="file" id="file-input" style="display:none;" accept=".json">
+            </div>
+        </aside>
+        
+        <main id="canvas-container">
+            <canvas id="boardCanvas"></canvas>
+            
+            <div id="hp-popover" class="popover-menu" style="display: none;">
+                <h3>Manage Piece Value</h3>
+                <div class="popover-row">
+                    <label>Value Counter:</label>
+                    <input type="number" id="popover-hp-input" value="10" min="0">
+                </div>
+                <div class="popover-actions">
+                    <button id="btn-popover-roll" style="background:#e0a800; color:#000;">🎲 Roll 2-6</button>
+                    <button id="btn-popover-save" style="background:#28a745;">Save</button>
+                    <button id="btn-popover-delete" style="background:#dc3545;">Remove</button>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="js/board.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
