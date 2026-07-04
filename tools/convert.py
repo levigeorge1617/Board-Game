@@ -1,0 +1,142 @@
+#!/usr/bin/env python3
+"""Convert the headerless design CSVs into schema'd JSON for the designer tool."""
+import csv, json, os, re
+
+ROOT = "/home/user/Board-Game"
+
+def clean(s):
+    # vertical tabs (0x0b) were used as in-cell line breaks; normalize to \n
+    if s is None:
+        return ""
+    return s.replace("\x0b", "\n").strip()
+
+def num(s):
+    s = (s or "").strip()
+    return int(s) if s.isdigit() else None
+
+def slug(name):
+    return re.sub(r"[^a-z0-9]+", "", name.lower())
+
+# ---- Hero / monster art + pairing map -------------------------------------
+HERO_ART = {
+    "Paladin": "players/red2.jpg",   "Barbarian": "players/red1.jpg",
+    "Hunter":  "players/yellow1.jpg", "Scout":    "players/yellow2.jpg",
+    "Wizard":  "players/blue2.jpg",   "Enchantress":"players/blue1.jpg",
+    "Thief":   "players/green1.jpg",  "Ranger":   "players/green2.jpg",
+    "Druid":   "players/purple2.jpg", "Cleric":   "players/purple1.jpg",
+}
+# reversible-card pairing (each color = one physical double-sided card)
+PAIR = {"RED":"red","YELLOW":"yellow","BLUE":"blue","GREEN":"green","PURPLE":"purple"}
+
+MONSTER_ART = {   # linked by element; fungal/flesh pair (Wyht/Oblex) is a best guess
+    "Maraurn'Zol": "players/bad5.jpg",  # Fire  (confident)
+    "Ghathag":     "players/bad2.jpg",  # Claw  (confident)
+    "The Fog":     "players/bad4.jpg",  # Smoke (confident)
+    "Wyht, the Trickster": "players/bad1.jpg",  # Mind  (best guess)
+    "Oblex":       "players/bad3.jpg",  # Flesh (best guess)
+}
+
+# ---- Convert heroes.csv ----------------------------------------------------
+heroes, monsters = [], []
+with open(os.path.join(ROOT, "cards_heros.csv")) as f:
+    for row in csv.reader(f):
+        if not row or len(row) < 12:
+            continue
+        name = clean(row[11])
+        if not name:
+            continue
+        color = clean(row[6])
+        bonus = [num(row[0]), num(row[1])]
+        bonus = [b for b in bonus if b]
+        entry = {
+            "id": slug(name),
+            "name": name,
+            "abilities": clean(row[2]),
+            "objectiveAbilities": clean(row[7]),
+            "raw": [clean(c) for c in row],
+        }
+        if color == "MONSTER":
+            entry.update({
+                "element": clean(row[10]),
+                "art": MONSTER_ART.get(name, ""),
+                "stats": {
+                    "monsterDie": num(row[1]),
+                    "actionDie": num(row[4]),
+                    "movementDie": num(row[5]),
+                    "specialDie": num(row[8]),  # e.g. The Fog's D20
+                },
+            })
+            monsters.append(entry)
+        else:
+            front = clean(row[3]) == "1"
+            entry.update({
+                "color": color,
+                "pair": PAIR.get(color, color.lower()),
+                "cardFace": "front" if front else "back",
+                "art": HERO_ART.get(name, ""),
+                "stats": {
+                    "actionDie": num(row[4]),
+                    "movementDie": num(row[5]),
+                    "life": num(row[9]),
+                    "bonusDice": bonus,
+                    "specialDie": num(row[8]),  # ambiguous 4th column — confirm in designer
+                },
+            })
+            heroes.append(entry)
+
+# ---- Card art best-effort filename map ------------------------------------
+CARD_ART = {
+    "Surprise Attack":"cards/surprise.png","Summon X Minions":"cards/summonX.png",
+    "Summon 1 Minion":"cards/summon.png","Lock and Key":"cards/doors.png",
+    "Empowered":"cards/diaginal.png","Drowning Paralysis":"cards/drown.png",
+    "Deathly Fear":"cards/necro.png","Curse of Shadows":"cards/curse.png",
+    "Crush Forward":"cards/move.png","Creeping Death":"cards/minmove.png",
+    "SpellBook +2":"cards/spell2.png","SpellBook +1":"cards/spell1.png",
+    "Revive":"cards/revive.png","Rally The Party":"cards/gather.png",
+    "HideOut":"cards/house.png","empty":"cards/empty.png",
+    "Distraction":"cards/distract.png","Counter Spell":"cards/aid.png",
+    "Corrupted Potion":"cards/corrupt.png","Brew a Potion":"cards/potion.png",
+    "Boots6":"cards/bootR.png","Boots4":"cards/bootB.png","Boots2":"cards/bootG.png",
+    "Aggressive Sprint":"cards/sprint.png",
+}
+
+cards = []
+with open(os.path.join(ROOT, "cards_decks.csv")) as f:
+    for row in csv.reader(f):
+        if not row or len(row) < 14:
+            continue
+        name = clean(row[5])
+        if not name:
+            continue
+        deck = clean(row[7])
+        cards.append({
+            "id": num(row[0]),
+            "name": name,
+            "deck": deck,                       # Black (monster) / White (hero)
+            "side": "monster" if deck == "Black" else "hero",
+            "timing": clean(row[1]).lower(),    # draw / hand
+            "copies": num(row[11]) or 1,
+            "cost": clean(row[13]) or "0",
+            "text": clean(row[12]),
+            "art": CARD_ART.get(name, ""),
+            "raw": [clean(c) for c in row],
+        })
+
+os.makedirs(os.path.join(ROOT, "data"), exist_ok=True)
+def dump(fn, obj):
+    with open(os.path.join(ROOT, "data", fn), "w") as f:
+        json.dump(obj, f, ensure_ascii=False, indent=2)
+    print(f"wrote data/{fn}: {len(obj)} entries")
+
+dump("heroes.json", heroes)
+dump("monsters.json", monsters)
+dump("cards.json", cards)
+
+# embedded copy so index.html works from file:// with no server
+with open(os.path.join(ROOT, "js", "gamedata.js"), "w") as f:
+    f.write("// AUTO-GENERATED from data/*.json by tools/convert.py — do not hand-edit.\n")
+    f.write("// Embedded fallback so the app loads when opened directly (file://).\n")
+    f.write("window.GAME_DATA = ")
+    json.dump({"heroes":heroes,"monsters":monsters,"cards":cards}, f, ensure_ascii=False, indent=2)
+    f.write(";\n")
+print("wrote js/gamedata.js")
