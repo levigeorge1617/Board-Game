@@ -61,6 +61,8 @@ class UIManager {
         document.getElementById('designer-view').style.display = isDesigner ? 'flex' : 'none';
         document.getElementById('boardCanvas').style.display = isDesigner ? 'none' : 'block';
 
+        if (this.app.play) { if (mode === 'play') this.app.play.activate(); else this.app.play.deactivate(); }
+
         if (mode === 'play') {
             document.getElementById('btn-mode-play').classList.add('active');
             this.setActiveTool('pan');

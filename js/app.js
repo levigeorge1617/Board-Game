@@ -4,6 +4,7 @@ class AppController {
         this.canvas = document.getElementById('boardCanvas');
         this.renderer = new Renderer(this.canvas, this.board);
         this.designer = new Designer(this);
+        this.play = new PlayController(this);
         this.ui = new UIManager(this);
 
         this.appMode = 'play'; 
@@ -28,6 +29,8 @@ class AppController {
         this.initHTML5DropEvents();
         window.addEventListener('resize', () => this.renderer.resizeCanvas());
         this.renderer.resizeCanvas();
+
+        if (this.appMode === 'play') this.play.activate();
     }
 
     setLibraryDragItem(itemData) { this.activeLibraryItem = itemData; }
