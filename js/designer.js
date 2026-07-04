@@ -4,6 +4,8 @@
  * Edits live in localStorage; Export downloads JSON to commit back to data/.
  */
 const DZ_STORE_KEY = 'board_designer_data';
+const DZ_VERSION_KEY = 'board_designer_version';
+const DZ_VERSION = 2;   // bump when the data schema changes to drop stale local copies
 
 // Declarative field schema drives the editor form for each entity type.
 const DZ_FIELDS = {
@@ -14,12 +16,12 @@ const DZ_FIELDS = {
           hint: 'Two heroes share one reversible card (same color).' },
         { key: 'pair', label: 'Reversible pair', type: 'text', hint: 'Heroes with the same value are two sides of one card.' },
         { key: 'art', label: 'Art', type: 'art' },
-        { key: 'stats.actionDie', label: 'Action die  ☼ (D_)', type: 'number' },
-        { key: 'stats.movementDie', label: 'Movement die  ֍ (D_)', type: 'number' },
-        { key: 'stats.life', label: 'Max life', type: 'number' },
-        { key: 'stats.bonusDice', label: 'Bonus dice (comma list)', type: 'numlist' },
-        { key: 'stats.specialDie', label: 'Special die (unconfirmed)', type: 'number',
-          hint: 'Original CSV column of uncertain meaning — confirm or clear.' },
+        { key: 'stats.a1', label: 'Action die — a1  ☼', type: 'die' },
+        { key: 'stats.a2', label: 'Action die 2 — a2  (optional)', type: 'die' },
+        { key: 'stats.m1', label: 'Movement die — M1  ֍', type: 'die' },
+        { key: 'stats.m2', label: 'Movement die 2 — M2  (optional)', type: 'die' },
+        { key: 'stats.ba', label: 'Bonus action die — BA', type: 'die' },
+        { key: 'stats.bm', label: 'Bonus movement die — BM', type: 'die' },
         { key: 'abilities', label: 'Abilities', type: 'textarea' },
         { key: 'objectiveAbilities', label: 'Objective-die abilities  ◆/◇', type: 'textarea' },
     ],
@@ -27,10 +29,8 @@ const DZ_FIELDS = {
         { key: 'name', label: 'Name', type: 'text' },
         { key: 'element', label: 'Element', type: 'text' },
         { key: 'art', label: 'Art', type: 'art' },
-        { key: 'stats.monsterDie', label: 'Monster die (D_)', type: 'number' },
-        { key: 'stats.actionDie', label: 'Action die  ☼ (D_)', type: 'number' },
-        { key: 'stats.movementDie', label: 'Movement die  ֍ (D_)', type: 'number' },
-        { key: 'stats.specialDie', label: 'Special die (e.g. D20)', type: 'number' },
+        { key: 'stats.monsterDie', label: 'Monster die  (rolled for ◆ actions)', type: 'die' },
+        { key: 'stats.movementDie', label: 'Movement die  (e.g. The Fog’s D20)', type: 'die' },
         { key: 'abilities', label: 'Abilities', type: 'textarea' },
         { key: 'objectiveAbilities', label: 'Objective-die abilities  ◆/◇', type: 'textarea' },
     ],
@@ -47,6 +47,7 @@ const DZ_FIELDS = {
 };
 
 const DZ_COLOR_HEX = { RED: '#ff3333', YELLOW: '#ffd21f', GREEN: '#33cc44', BLUE: '#3366ff', PURPLE: '#9933ff' };
+const DZ_DICE = [4, 6, 8, 10, 12, 20];   // die sizes with matching art in dice/dN.png
 
 class Designer {
     constructor(app) {
@@ -65,17 +66,21 @@ class Designer {
     }
     loadData() {
         try {
+            const ver = Number(localStorage.getItem(DZ_VERSION_KEY) || 0);
             const raw = localStorage.getItem(DZ_STORE_KEY);
-            if (raw) {
+            if (raw && ver === DZ_VERSION) {
                 const d = JSON.parse(raw);
                 if (d && d.heroes && d.monsters && d.cards) return d;
             }
+            if (raw && ver !== DZ_VERSION) localStorage.removeItem(DZ_STORE_KEY);  // stale schema
         } catch (e) { /* fall through to defaults */ }
         return this.defaults();
     }
     save() {
-        try { localStorage.setItem(DZ_STORE_KEY, JSON.stringify(this.data)); }
-        catch (e) { console.warn('Designer save failed', e); }
+        try {
+            localStorage.setItem(DZ_STORE_KEY, JSON.stringify(this.data));
+            localStorage.setItem(DZ_VERSION_KEY, String(DZ_VERSION));
+        } catch (e) { console.warn('Designer save failed', e); }
     }
     list() { return this.data[this.type] || []; }
     current() { return this.list()[this.selected]; }
@@ -201,6 +206,14 @@ class Designer {
                 if (opt === val) o.selected = true;
                 input.appendChild(o);
             });
+        } else if (field.type === 'die') {
+            input = document.createElement('select');
+            [['', '—']].concat(DZ_DICE.map(d => [String(d), 'd' + d])).forEach(([v, lbl]) => {
+                const o = document.createElement('option');
+                o.value = v; o.textContent = lbl;
+                if (String(val == null ? '' : val) === v) o.selected = true;
+                input.appendChild(o);
+            });
         } else if (field.type === 'art') {
             input = document.createElement('input');
             input.type = 'text';
@@ -237,7 +250,7 @@ class Designer {
 
     commitField(field, item, raw) {
         let value = raw;
-        if (field.type === 'number') value = raw === '' ? null : Number(raw);
+        if (field.type === 'number' || field.type === 'die') value = raw === '' ? null : Number(raw);
         else if (field.type === 'numlist') value = raw.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n) && n);
         this.setVal(item, field.key, value);
         this.save();
@@ -258,18 +271,16 @@ class Designer {
         const accent = this.type === 'heroes' ? (DZ_COLOR_HEX[item.color] || '#888') : '#b5462b';
         const s = item.stats || {};
         const dice = this.type === 'heroes'
-            ? [['Action ☼', s.actionDie], ['Move ֍', s.movementDie], ['Life', s.life],
-               ['Bonus', (s.bonusDice || []).join(' / ') || '—']]
-            : [['Monster', s.monsterDie], ['Action ☼', s.actionDie], ['Move ֍', s.movementDie], ['Special', s.specialDie]];
-        const stats = dice.map(([k, v]) =>
-            `<div class="dz-stat"><span>${k}</span><b>${v == null || v === '' ? '—' : v}</b></div>`).join('');
+            ? [['a1 ☼', s.a1], ['a2 ☼', s.a2], ['M1 ֍', s.m1], ['M2 ֍', s.m2], ['BA', s.ba], ['BM', s.bm]]
+            : [['Die ◆', s.monsterDie], ['Move', s.movementDie]];
+        const stats = dice.map(([k, v]) => this.dieChip(k, v)).join('');
 
         wrap.innerHTML =
             `<div class="dz-card" style="--accent:${accent}">` +
                 `<div class="dz-card-art">${this.artTag(item.art)}</div>` +
                 `<div class="dz-card-title">${this.esc(item.name || '')}` +
                     `<span>${this.esc(item.color || item.element || '')}</span></div>` +
-                `<div class="dz-stats">${stats}</div>` +
+                `<div class="dz-dice">${stats}</div>` +
                 (item.abilities ? `<div class="dz-block"><h4>Abilities</h4><p>${this.nl(item.abilities)}</p></div>` : '') +
                 (item.objectiveAbilities ? `<div class="dz-block"><h4>Objective ◆/◇</h4><p>${this.nl(item.objectiveAbilities)}</p></div>` : '') +
             `</div>`;
@@ -286,6 +297,16 @@ class Designer {
         `</div>`;
     }
 
+    dieChip(label, n) {
+        const empty = (n == null || n === '');
+        const icon = (!empty && DZ_DICE.includes(Number(n)))
+            ? `<img src="dice/d${n}.png" alt="d${n}">`
+            : `<span class="dz-die-num">${empty ? '—' : 'd' + n}</span>`;
+        return `<div class="dz-die${empty ? ' dz-die-empty' : ''}">` +
+            `<span class="dz-die-lbl">${this.esc(label)}</span>${icon}` +
+            (empty ? '' : `<b>d${n}</b>`) + `</div>`;
+    }
+
     artTag(src) {
         if (!src) return '<div class="dz-noart">no art</div>';
         return `<img src="${this.esc(src)}" alt="" onerror="this.parentNode.innerHTML='<div class=&quot;dz-noart&quot;>missing: ${this.esc(src)}</div>'">`;
@@ -293,7 +314,7 @@ class Designer {
 
     // ---- add / delete -----------------------------------------------------
     addEntity() {
-        const blank = { heroes: { name: 'New Hero', color: 'RED', cardFace: 'front', art: '', stats: { bonusDice: [] }, abilities: '', objectiveAbilities: '' },
+        const blank = { heroes: { name: 'New Hero', color: 'RED', cardFace: 'front', art: '', stats: {}, abilities: '', objectiveAbilities: '' },
                         monsters: { name: 'New Monster', element: '', art: '', stats: {}, abilities: '', objectiveAbilities: '' },
                         cards: { name: 'New Card', deck: 'White', side: 'hero', timing: 'draw', cost: '0', copies: 1, art: '', text: '' } }[this.type];
         blank.id = this.slug(blank.name) + '-' + Date.now();

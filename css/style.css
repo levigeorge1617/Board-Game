@@ -89,10 +89,13 @@ textarea.dz-input { resize: vertical; line-height: 1.5; }
 .dz-noart { color: #556; font-size: 11px; padding: 20px; text-align: center; }
 .dz-card-title { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 12px 6px; font-size: 16px; font-weight: bold; color: #fff; }
 .dz-card-title span { font-size: 10px; color: #8a95a0; text-transform: uppercase; letter-spacing: 0.5px; }
-.dz-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: #3a3f43; margin: 6px 0; }
-.dz-stat { background: #26292c; padding: 6px 10px; display: flex; justify-content: space-between; font-size: 12px; }
-.dz-stat span { color: #8a95a0; }
-.dz-stat b { color: #fff; }
+.dz-dice { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 10px 12px; }
+.dz-die { display: flex; flex-direction: column; align-items: center; gap: 2px; background: #21252a; border: 1px solid #333a40; border-radius: 7px; padding: 6px 4px; }
+.dz-die.dz-die-empty { opacity: 0.4; }
+.dz-die-lbl { font-size: 9px; color: #8a95a0; text-transform: uppercase; letter-spacing: 0.5px; }
+.dz-die img { width: 34px; height: 34px; object-fit: contain; background: #f2f2f2; border-radius: 7px; padding: 2px; }
+.dz-die-num { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #cdd3d8; }
+.dz-die b { font-size: 10px; color: #cdd3d8; }
 .dz-block { padding: 8px 12px 12px; }
 .dz-block h4 { font-size: 10px; color: #00ccff; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
 .dz-block p { font-size: 12px; line-height: 1.5; color: #cdd3d8; white-space: pre-wrap; }
