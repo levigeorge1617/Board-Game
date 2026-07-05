@@ -92,6 +92,7 @@
                 const card = cardOf(data, inst.cid);
                 const deck = s.decks[(card && card.deck) || seat.deck] || s.decks[seat.deck];
                 if (deck) deck.discard.push(inst);
+                s.lastPlayed = { seatId: seat.id, cid: inst.cid, ts: Date.now() };
                 logEvent(s, seat.id, `played ${card ? card.name : 'a card'}`);
                 break;
             }

@@ -185,6 +185,15 @@ textarea.dz-input { resize: vertical; line-height: 1.5; }
 .ph-ally-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 8px; font-size: 11px; color: #9aa7b5; }
 .ph-ally-row select { background: #2a2e31; color: #fff; border: 1px solid #454b50; border-radius: 4px; padding: 3px; font-size: 11px; }
 
+/* shared "last played card" banner (dismissed per-player) */
+#ph-played { position: absolute; top: 118px; left: 50%; transform: translateX(-50%); z-index: 14; width: 214px; }
+.ph-played-card { background: #26292c; border: 1px solid #3a3f43; border-top: 4px solid var(--c, #555); border-radius: 10px; overflow: hidden; box-shadow: 0 12px 34px #000a; animation: ph-played-in .18s ease; }
+.ph-played-head { display: flex; justify-content: space-between; align-items: center; padding: 5px 8px; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; background: #1b1e21; }
+.ph-played-head span { font-weight: bold; }
+.ph-played-x { background: transparent; border: none; color: #9aa7b5; cursor: pointer; font-size: 14px; line-height: 1; }
+.ph-played-x:hover { color: #fff; }
+@keyframes ph-played-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
 /* deck piles (right) */
 #ph-decks { position: absolute; right: 12px; top: 70px; }
 .ph-decks-inner { display: flex; flex-direction: column; gap: 16px; }

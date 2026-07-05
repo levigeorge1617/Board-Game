@@ -74,6 +74,7 @@ class PlayController {
             '<div id="ph-roll"></div>' +
             '<div id="ph-decks"></div>' +
             '<div id="ph-log"></div>' +
+            '<div id="ph-played"></div>' +
             '<div id="ph-hand"></div>' +
             '<div id="ph-pop" class="ph-pop" style="display:none;"></div>';
         hud.addEventListener('click', (e) => { if (e.target.id === 'ph-pop') this.closePopover(); });
@@ -86,7 +87,25 @@ class PlayController {
         this.renderHand();
         this.renderRoll();
         this.renderLog();
+        this.renderPlayed();
         if (this.openSeatId) this.renderPopover();
+    }
+
+    // ---- shared "last played card" (each player dismisses their own view) --
+    renderPlayed() {
+        const wrap = document.getElementById('ph-played');
+        const lp = this.gs.state.lastPlayed;
+        if (!lp || this.dismissedPlayedTs === lp.ts) { wrap.innerHTML = ''; return; }
+        const c = this.gs.card(lp.cid); if (!c) { wrap.innerHTML = ''; return; }
+        const seat = this.gs.seat(lp.seatId);
+        const col = seat ? (PH_COLOR[seat.color] || '#888') : '#888';
+        wrap.innerHTML =
+            `<div class="ph-played-card" style="--c:${col}">` +
+                `<div class="ph-played-head"><span style="color:${col}">${esc(seat ? seat.label : '')} played</span>` +
+                    `<button class="ph-played-x" title="Dismiss for me">✕</button></div>` +
+                this.cardFace(c) +
+            `</div>`;
+        wrap.querySelector('.ph-played-x').onclick = () => { this.dismissedPlayedTs = lp.ts; this.renderPlayed(); };
     }
 
     renderWelcome() {
