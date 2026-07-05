@@ -58,6 +58,7 @@ class UIManager {
         document.getElementById('design-tools-section').style.display = (mode === 'design') ? 'block' : 'none';
         document.getElementById('board-tools').style.display = isDesigner ? 'none' : 'block';
         document.getElementById('designer-sidebar').style.display = isDesigner ? 'block' : 'none';
+        document.getElementById('play-sidebar').style.display = (mode === 'play') ? 'block' : 'none';
         document.getElementById('designer-view').style.display = isDesigner ? 'flex' : 'none';
         document.getElementById('boardCanvas').style.display = isDesigner ? 'none' : 'block';
 

@@ -53,6 +53,7 @@ class PlayController {
     activate() {
         if (!this.built) { this.build(); this.built = true; }
         document.getElementById('play-hud').style.display = 'block';
+        const side = document.getElementById('play-sidebar'); if (side) side.style.display = 'block';
         this.maybeAutoConnect();
         this.render();
     }
@@ -65,14 +66,16 @@ class PlayController {
         const host = params.get('host') || window.GAME_SERVER;
         if (room && host && this.gs.status === 'offline') this.gs.connect(host, room);
     }
-    deactivate() { const h = document.getElementById('play-hud'); if (h) h.style.display = 'none'; }
+    deactivate() {
+        const h = document.getElementById('play-hud'); if (h) h.style.display = 'none';
+        const side = document.getElementById('play-sidebar'); if (side) side.style.display = 'none';
+    }
 
     build() {
         const hud = document.getElementById('play-hud');
         hud.innerHTML =
             '<div id="ph-roster"></div>' +
             '<div id="ph-roll"></div>' +
-            '<div id="ph-decks"></div>' +
             '<div id="ph-log"></div>' +
             '<div id="ph-played"></div>' +
             '<div id="ph-hand"></div>' +
@@ -81,14 +84,70 @@ class PlayController {
     }
 
     render() {
-        if (!this.gs.state.started) { this.renderWelcome(); document.getElementById('ph-log').innerHTML = ''; return; }
+        const side = document.getElementById('play-sidebar');
+        if (!this.gs.state.started) { this.renderWelcome(); document.getElementById('ph-log').innerHTML = ''; if (side) side.innerHTML = ''; return; }
         this.renderRoster();
-        this.renderDecks();
+        this.renderSidebar();
         this.renderHand();
         this.renderRoll();
         this.renderLog();
         this.renderPlayed();
         if (this.openSeatId) this.renderPopover();
+    }
+
+    // ---- left play sidebar: your dice + the decks --------------------------
+    renderSidebar() {
+        const wrap = document.getElementById('play-sidebar'); if (!wrap) return;
+        const seat = this.gs.seat(this.gs.mySeatId);
+        let html = '<hr><h2>Your Rolls</h2>';
+        if (!seat) {
+            html += '<p class="ph-side-hint">Pick your seat (top bar) to roll here.</p>';
+        } else {
+            const ch = this.gs.character(seat);
+            html += `<div class="ph-side-seat" style="--c:${PH_COLOR[seat.color] || '#888'}">${esc(seat.label)}</div>`;
+            html += this.diceBar(seat, ch, true);
+            if (seat.kind === 'monster') html += `<button id="ph-side-grid" class="ph-btn ph-btn-go" style="width:100%;margin-top:6px;">Roll grid ▸ #/A</button>`;
+        }
+        html += '<hr><h2>Decks</h2><div id="ph-decks"></div>';
+        wrap.innerHTML = html;
+        if (seat) {
+            this.wireDice(wrap, seat);
+            const g = document.getElementById('ph-side-grid');
+            if (g) g.onclick = () => this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows);
+        }
+        this.renderDecks();
+    }
+
+    // ---- dice bar (shared by sidebar + character sheet) -------------------
+    // Action (a1/a2) left · Bonus (BA left, BM right) middle · Movement (m1/m2) right.
+    // Bonus dice are locked until enough objectives: BM at 4, BA at 7.
+    diceBar(seat, ch, vertical) {
+        const dice = this.characterDice(seat, ch);
+        const score = (this.gs.state.score && this.gs.state.score.collected) || 0;
+        const find = k => dice.find(d => d.key === k);
+        const dbtn = (d, locked, unlockAt) => {
+            if (!d) return '<span class="ph-muted ph-die-none">—</span>';
+            return `<button class="ph-die-btn${locked ? ' locked' : ''}" ${locked ? 'disabled' : ''} data-die="${d.die}" data-key="${d.key}"` +
+                ` title="${locked ? 'Unlocks at ' + unlockAt + ' objectives' : 'Roll ' + d.key + ' (d' + d.die + ')'}">` +
+                this.dieFace(d.die) + `<span class="ph-die-k">${icon(d.label)}${locked ? ' 🔒' : ''}</span></button>`;
+        };
+        const setA = dice.filter(d => d.grp === 'a').map(d => dbtn(d)).join('') || '<span class="ph-muted ph-die-none">—</span>';
+        const setM = dice.filter(d => d.grp === 'm').map(d => dbtn(d)).join('') || '<span class="ph-muted ph-die-none">—</span>';
+        const ba = find('ba'), bm = find('bm');
+        const setB = (ba || bm) ? (dbtn(ba, score < 7, 7) + dbtn(bm, score < 4, 4)) : '<span class="ph-muted ph-die-none">—</span>';
+        const head = (grp, label) => `<button class="ph-dhead" data-grp="${grp}">${icon(label)}</button>`;
+        return `<div class="ph-dicebar${vertical ? ' vert' : ''}">` +
+            `<div class="ph-dcol">${head('a', 'Action ☼')}<div class="ph-dset">${setA}</div></div>` +
+            `<div class="ph-dcol ph-dcol-bonus"><div class="ph-dhead-s">Bonus</div><div class="ph-dset">${setB}</div></div>` +
+            `<div class="ph-dcol">${head('m', 'Move ֍')}<div class="ph-dset">${setM}</div></div>` +
+        `</div>`;
+    }
+    wireDice(container, seat) {
+        const dice = this.characterDice(seat, this.gs.character(seat));
+        container.querySelectorAll('.ph-die-btn:not(.locked)').forEach(b =>
+            b.onclick = () => this.gs.rollDice(seat.id, [{ key: b.dataset.key, die: Number(b.dataset.die) }]));
+        container.querySelectorAll('.ph-dhead[data-grp]').forEach(b =>
+            b.onclick = () => { const list = dice.filter(d => d.grp === b.dataset.grp); if (list.length) this.gs.rollDice(seat.id, list.map(d => ({ key: d.key, die: d.die }))); });
     }
 
     // ---- shared "last played card" (each player dismisses their own view) --
@@ -115,7 +174,7 @@ class PlayController {
             `<div class="ph-welcome"><b>Game table</b>` +
             `<p>${online ? 'Connected — anyone in this room can deal.' : 'Play solo/hotseat here, or go online for cross-device play.'}<br>Deal the decks and seat the 5 heroes + monster.</p>` +
             `<button id="ph-new" class="ph-btn ph-btn-go">Deal &amp; start</button></div>`;
-        ['ph-roll', 'ph-decks', 'ph-hand'].forEach(id => document.getElementById(id).innerHTML = '');
+        ['ph-roll', 'ph-hand', 'ph-played'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
         document.getElementById('ph-new').onclick = () => this.gs.newGame();
         this.wireOnline();
     }
@@ -298,44 +357,33 @@ class PlayController {
         const ch = this.gs.character(seat);
         const pop = document.getElementById('ph-pop');
         const col = PH_COLOR[seat.color] || '#888';
-        const dice = this.characterDice(seat, ch);
-
-        const diceChips = dice.map(d =>
-            `<button class="ph-die-btn" data-die="${d.die}" data-key="${d.key}" title="Roll ${d.key} (d${d.die})">` +
-                this.dieFace(d.die) + `<span class="ph-die-k">${icon(d.label)}</span></button>`).join('') || '<span class="ph-muted">no dice set</span>';
-
-        const groups = [];
-        const acts = dice.filter(d => d.grp === 'a'); const moves = dice.filter(d => d.grp === 'm');
-        if (acts.length) groups.push(`<button class="ph-btn ph-roll-grp" data-grp="a">Roll action ${icon('☼')}</button>`);
-        if (moves.length) groups.push(`<button class="ph-btn ph-roll-grp" data-grp="m">Roll movement ${icon('֍')}</button>`);
-
-        const gridBtn = seat.kind === 'monster'
-            ? `<button id="ph-roll-grid" class="ph-btn ph-btn-go">Roll grid ▸ #/A</button>` : '';
-
         const chooser = window.GAME_DATA ? this.characterChooser(seat) : '';
+        const gridBtn = seat.kind === 'monster'
+            ? `<button id="ph-roll-grid" class="ph-btn ph-btn-go" style="width:100%;margin-bottom:8px;">Roll grid ▸ #/A</button>` : '';
 
         pop.innerHTML =
-            `<div class="ph-charcard" style="--c:${col};${ch && ch.art ? `background-image:url('${esc(ch.art)}')` : ''}">` +
+            `<div class="ph-sheet" style="--c:${col}">` +
                 `<button class="ph-cc-close" title="Close">✕</button>` +
-                `<div class="ph-cc-shade"></div>` +
-                `<div class="ph-cc-body">` +
-                    `<div class="ph-cc-head"><h3>${esc(ch ? ch.name : seat.label)}</h3>` +
+                `<div class="ph-sheet-top">` +
+                    `<div class="ph-sheet-head"><h3>${esc(ch ? ch.name : seat.label)}</h3>` +
                         `<span>${esc(ch ? (ch.color || ch.element || '') : '')}</span>${chooser}</div>` +
-                    `<div class="ph-cc-dice">${diceChips}</div>` +
-                    `<div class="ph-cc-rollbar">${groups.join('')}${gridBtn}</div>` +
-                    this.pieceBlock(seat) +
-                    this.formsBlock(seat, ch) +
-                    (ch && ch.abilities ? `<div class="ph-cc-block"><h4>Abilities</h4><p>${fmt(ch.abilities)}</p></div>` : '') +
-                    (ch && ch.objectiveAbilities ? `<div class="ph-cc-block"><h4>Objective ${icon('◆/◇')}</h4><p>${fmt(ch.objectiveAbilities)}</p></div>` : '') +
+                    this.diceBar(seat, ch, false) +
+                `</div>` +
+                `<div class="ph-sheet-body">` +
+                    `<div class="ph-sheet-art"${ch && ch.art ? ` style="background-image:url('${esc(ch.art)}')"` : ''}></div>` +
+                    `<div class="ph-sheet-info">` +
+                        gridBtn +
+                        this.pieceBlock(seat) +
+                        this.formsBlock(seat, ch) +
+                        (ch && ch.abilities ? `<div class="ph-cc-block"><h4>Abilities</h4><p>${fmt(ch.abilities)}</p></div>` : '') +
+                        (ch && ch.objectiveAbilities ? `<div class="ph-cc-block"><h4>Objective ${icon('◆/◇')}</h4><p>${fmt(ch.objectiveAbilities)}</p></div>` : '') +
+                    `</div>` +
                 `</div>` +
             `</div>`;
         pop.style.display = 'flex';
 
         pop.querySelector('.ph-cc-close').onclick = () => this.closePopover();
-        pop.querySelectorAll('.ph-die-btn').forEach(b =>
-            b.onclick = () => this.gs.rollDice(seat.id, [{ key: b.dataset.key, die: Number(b.dataset.die) }]));
-        pop.querySelectorAll('.ph-roll-grp').forEach(b =>
-            b.onclick = () => this.gs.rollDice(seat.id, dice.filter(d => d.grp === b.dataset.grp).map(d => ({ key: d.key, die: d.die }))));
+        this.wireDice(pop, seat);
         const gb = pop.querySelector('#ph-roll-grid');
         if (gb) gb.onclick = () => this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows);
         const sel = pop.querySelector('.ph-cc-choose');
