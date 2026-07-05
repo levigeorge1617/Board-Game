@@ -43,17 +43,41 @@ npm install          # installs partykit (dev dependency)
 > Find your computer's LAN IP with `ipconfig` (Windows) or `ipconfig getifaddr en0`
 > (Mac). `localhost` only works on the same machine.
 
-## Play over the internet (deploy the server)
+## Play over the internet
+
+You need the game server reachable at a public `wss://` address. Two easy ways —
+both use the framework-free Node server in `server/ws-server.js`.
+
+### Option A — your PC + a free tunnel (instant, no signup)
+
+Good for "let's play tonight". Your PC stays on during the game.
 
 ```bash
-npx partykit login     # free; opens the browser (GitHub)
-npm run deploy         # deploys party/server.js
+npm install
+npm start                                   # server on http://localhost:1999
+npx cloudflared tunnel --url http://localhost:1999
 ```
 
-Deploy prints a URL like `board-game.<your-username>.partykit.dev`. On each
-device click **🌐 Go online** and enter that as the **Host** (no `https://`,
-no port) with a shared **Room** code. Host the static app anywhere
-(GitHub Pages, Netlify, Vercel, Cloudflare Pages) and share the link.
+Cloudflared prints a public URL like `https://calm-otter-1234.trycloudflare.com`.
+Players click **🌐 Go online** and enter that as the **Host** (no `https://`),
+with a shared **Room** code.
+
+### Option B — always-on host (Render)
+
+So friends can play without your PC on.
+
+1. Push this repo to GitHub (done).
+2. On https://render.com → **New → Web Service** → connect the repo.
+3. Settings: **Build** `npm install`, **Start** `npm start` (it reads `PORT`).
+4. Deploy → you get `https://your-app.onrender.com`. Players use
+   `your-app.onrender.com` as the **Host**.
+
+Any Node host works the same way (Railway, Fly.io, Glitch, a VPS): run
+`npm start`, expose the port over HTTPS/WSS.
+
+> PartyKit's own hosted platform (`npm run deploy`) is an alternative, but its
+> shared `partykit.dev` domain is currently at capacity, so the Node server above
+> is the reliable path.
 
 ## Notes / next steps
 

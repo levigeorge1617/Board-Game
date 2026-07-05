@@ -4,9 +4,13 @@
   "private": true,
   "description": "Isometric 2-6 player hero-vs-monster board game: designer, board, and multiplayer play server.",
   "scripts": {
+    "start": "node server/ws-server.js",
     "serve": "python3 -m http.server 8099",
     "party": "partykit dev",
     "deploy": "partykit deploy"
+  },
+  "dependencies": {
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "partykit": "latest"
