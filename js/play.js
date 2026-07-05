@@ -22,7 +22,17 @@ class PlayController {
     activate() {
         if (!this.built) { this.build(); this.built = true; }
         document.getElementById('play-hud').style.display = 'block';
+        this.maybeAutoConnect();
         this.render();
+    }
+
+    // Auto-join from a shared ?room=CODE link (host from ?host= or config).
+    maybeAutoConnect() {
+        if (this._autoTried) return; this._autoTried = true;
+        const params = new URLSearchParams(location.search);
+        const room = params.get('room');
+        const host = params.get('host') || window.GAME_SERVER;
+        if (room && host && this.gs.status === 'offline') this.gs.connect(host, room);
     }
     deactivate() { const h = document.getElementById('play-hud'); if (h) h.style.display = 'none'; }
 
@@ -61,6 +71,8 @@ class PlayController {
     wireOnline() {
         const onl = document.getElementById('ph-online');
         if (onl) onl.onclick = () => (this.gs.status === 'offline' || this.gs.status === 'error') ? this.promptConnect() : this.gs.disconnect();
+        const inv = document.getElementById('ph-invite');
+        if (inv) inv.onclick = () => this.copyInvite();
     }
 
     // ---- roster / seats ---------------------------------------------------
@@ -98,16 +110,29 @@ class PlayController {
 
     onlineControl() {
         const st = this.gs.status;
-        const map = { offline: ['🌐 Go online', ''], connecting: ['⏳ Connecting…', 'ph-on-wait'], online: [`🌐 ${esc(this.gs._room || 'online')} ✕`, 'ph-on-live'], error: ['⚠ Retry connect', 'ph-btn-warn'] };
+        if (st === 'online') {
+            return `<button id="ph-invite" class="ph-btn" title="Copy invite link">🔗 Invite</button>` +
+                `<button id="ph-online" class="ph-btn ph-on-live" title="Disconnect">🌐 ${esc(this.gs._room || 'online')} ✕</button>`;
+        }
+        const map = { offline: ['🌐 Go online', ''], connecting: ['⏳ Connecting…', 'ph-on-wait'], error: ['⚠ Retry connect', 'ph-btn-warn'] };
         const [label, cls] = map[st] || map.offline;
         return `<button id="ph-online" class="ph-btn ${cls}" title="Cross-device play">${label}</button>`;
     }
     promptConnect() {
-        const host = prompt('Server host:\n • local dev: 127.0.0.1:1999\n • deployed: yourproject.username.partykit.dev', this.gs._host || '127.0.0.1:1999');
-        if (!host) return;
-        const room = prompt('Room code (everyone at the table enters the same code):', this.gs._room || 'table-1');
+        let host = window.GAME_SERVER;
+        if (!host) {   // no server baked in — ask for one (local dev / self-host)
+            host = prompt('Server host (e.g. 127.0.0.1:1999 for local dev):', this.gs._host || '127.0.0.1:1999');
+            if (!host) return;
+        }
+        const room = prompt('Room code — everyone at the table enters the same code:', this.gs._room || window.GAME_DEFAULT_ROOM || 'table-1');
         if (!room) return;
         this.gs.connect(host, room);
+    }
+    copyInvite() {
+        const url = `${location.origin}${location.pathname}?room=${encodeURIComponent(this.gs._room || '')}`;
+        const done = () => alert('Invite link copied — share it:\n\n' + url);
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, () => prompt('Copy this invite link:', url));
+        else prompt('Copy this invite link:', url);
     }
 
     // ---- deck piles -------------------------------------------------------
