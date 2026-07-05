@@ -42,17 +42,19 @@ class PlayController {
             '<div id="ph-roster"></div>' +
             '<div id="ph-roll"></div>' +
             '<div id="ph-decks"></div>' +
+            '<div id="ph-log"></div>' +
             '<div id="ph-hand"></div>' +
             '<div id="ph-pop" class="ph-pop" style="display:none;"></div>';
         hud.addEventListener('click', (e) => { if (e.target.id === 'ph-pop') this.closePopover(); });
     }
 
     render() {
-        if (!this.gs.state.started) { this.renderWelcome(); return; }
+        if (!this.gs.state.started) { this.renderWelcome(); document.getElementById('ph-log').innerHTML = ''; return; }
         this.renderRoster();
         this.renderDecks();
         this.renderHand();
         this.renderRoll();
+        this.renderLog();
         if (this.openSeatId) this.renderPopover();
     }
 
@@ -78,8 +80,9 @@ class PlayController {
     // ---- roster / seats ---------------------------------------------------
     renderRoster() {
         const s = this.gs.state;
+        const heroesTurn = s.phase !== 'monster';
         const chips = s.seats.map(seat => {
-            const active = seat.id === s.activeSeatId ? ' active' : '';
+            const active = ((seat.kind === 'monster') ? !heroesTurn : heroesTurn) ? ' active' : '';
             const mine = seat.id === this.gs.mySeatId ? ' mine' : '';
             const col = PH_COLOR[seat.color] || '#888';
             return `<button class="ph-chip${active}${mine}" data-seat="${seat.id}" style="--c:${col}">` +
@@ -87,23 +90,33 @@ class PlayController {
                 `<span class="ph-chip-name">${esc(seat.label)}</span>` +
                 `<span class="ph-chip-count">${seat.hand.length}🂠</span></button>`;
         }).join('');
+        const sc = s.score || { collected: 0, goal: 0 };
+        const scoreChip =
+            `<div class="ph-score" title="Objectives collected">` +
+                `<button class="ph-score-btn" id="ph-score-dn">−</button>` +
+                `<span class="ph-score-val">${GAME_ICONS.obj} <b>${sc.collected}</b>${sc.goal ? ' / ' + sc.goal : ''}</span>` +
+                `<button class="ph-score-btn" id="ph-score-up">+</button>` +
+            `</div>`;
         document.getElementById('ph-roster').innerHTML =
             `<div class="ph-bar">` +
                 `<div class="ph-seats">${chips}</div>` +
                 `<div class="ph-bar-ctl">` +
+                    scoreChip +
                     `<label class="ph-me">You: <select id="ph-myseat">` +
                         `<option value="">— pick seat —</option>` +
                         s.seats.map(seat => `<option value="${seat.id}"${seat.id === this.gs.mySeatId ? ' selected' : ''}>${esc(seat.label)}</option>`).join('') +
                     `</select></label>` +
                     this.onlineControl() +
-                    `<button id="ph-next" class="ph-btn">End turn ▸</button>` +
+                    `<button id="ph-next" class="ph-btn ${heroesTurn ? 'ph-turn-hero' : 'ph-turn-mon'}">${heroesTurn ? "Heroes' turn" : "Monster's turn"} ▸ end</button>` +
                     `<button id="ph-reset" class="ph-btn ph-btn-warn">Reset</button>` +
                 `</div>` +
             `</div>`;
         document.querySelectorAll('#ph-roster .ph-chip').forEach(b =>
             b.onclick = () => this.openPopover(b.dataset.seat));
         document.getElementById('ph-myseat').onchange = (e) => this.gs.setMySeat(e.target.value || null);
-        document.getElementById('ph-next').onclick = () => this.gs.nextTurn();
+        document.getElementById('ph-next').onclick = () => this.gs.togglePhase();
+        document.getElementById('ph-score-up').onclick = () => this.gs.score(1, this.gs.mySeatId);
+        document.getElementById('ph-score-dn').onclick = () => this.gs.score(-1, this.gs.mySeatId);
         document.getElementById('ph-reset').onclick = () => { if (confirm('Reset the whole table?')) this.gs.resetGame(); };
         this.wireOnline();
     }
@@ -191,16 +204,39 @@ class PlayController {
         let html = '';
         if (lastDice) {
             const seat = this.gs.seat(lastDice.seatId);
+            const col = seat ? (PH_COLOR[seat.color] || '#888') : '#888';
             const chips = lastDice.rolls.map(r => this.dieResult(r.die, r.value, r.key)).join('');
-            html += `<div class="ph-roll-card"><div class="ph-roll-who">${esc(seat ? seat.label : '')} rolled</div>` +
+            html += `<div class="ph-roll-card" style="--c:${col}"><div class="ph-roll-who" style="color:${col}">${esc(seat ? seat.label : '')} rolled</div>` +
                 `<div class="ph-roll-dice">${chips}</div>` +
                 (lastDice.rolls.length > 1 ? `<div class="ph-roll-total">total ${lastDice.total}</div>` : '') + `</div>`;
         }
         if (lastGrid) {
-            html += `<div class="ph-roll-card ph-grid-card"><div class="ph-roll-who">Monster target</div>` +
+            html += `<div class="ph-roll-card ph-grid-card" style="--c:${PH_COLOR.MONSTER}"><div class="ph-roll-who" style="color:${PH_COLOR.MONSTER}">Monster target</div>` +
                 `<div class="ph-grid-res"><b>${lastGrid.col}</b><b>${esc(lastGrid.row)}</b></div></div>`;
         }
         document.getElementById('ph-roll').innerHTML = html;
+    }
+
+    // ---- event log --------------------------------------------------------
+    renderLog() {
+        const wrap = document.getElementById('ph-log');
+        if (this.logCollapsed) {
+            wrap.innerHTML = `<button id="ph-log-toggle" class="ph-log-tab">📜 Log</button>`;
+            document.getElementById('ph-log-toggle').onclick = () => { this.logCollapsed = false; this.renderLog(); };
+            return;
+        }
+        const entries = (this.gs.state.log || []).slice(-40);
+        const rows = entries.map(e => {
+            const seat = this.gs.seat(e.seatId);
+            const col = seat ? (PH_COLOR[seat.color] || '#8a95a0') : '#8a95a0';
+            const who = seat ? `<b style="color:${col}">${esc(seat.label)}</b> ` : '';
+            return `<div class="ph-log-row">${who}${esc(e.text)}</div>`;
+        }).join('') || '<div class="ph-log-row ph-muted">No events yet.</div>';
+        wrap.innerHTML =
+            `<div class="ph-log-head"><span>📜 Event log</span><button id="ph-log-toggle" class="ph-log-min">–</button></div>` +
+            `<div class="ph-log-body" id="ph-log-body">${rows}</div>`;
+        document.getElementById('ph-log-toggle').onclick = () => { this.logCollapsed = true; this.renderLog(); };
+        const body = document.getElementById('ph-log-body'); if (body) body.scrollTop = body.scrollHeight;
     }
 
     // ---- character popover (art + shaded blocks + rollers) ----------------
@@ -249,7 +285,7 @@ class PlayController {
         pop.querySelectorAll('.ph-roll-grp').forEach(b =>
             b.onclick = () => this.gs.rollDice(seat.id, dice.filter(d => d.grp === b.dataset.grp).map(d => ({ key: d.key, die: d.die }))));
         const gb = pop.querySelector('#ph-roll-grid');
-        if (gb) gb.onclick = () => this.gs.rollGrid(this.app.board.cols, this.app.board.rows);
+        if (gb) gb.onclick = () => this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows);
         const sel = pop.querySelector('.ph-cc-choose');
         if (sel) sel.onchange = (e) => this.gs.setSeatCharacter(seat.id, e.target.value);
     }
@@ -280,6 +316,7 @@ class PlayController {
     // ---- discard viewer ---------------------------------------------------
     showDiscard(name) {
         const d = this.gs.state.decks[name]; if (!d || !d.discard.length) return;
+        if (this.gs.mySeatId) this.gs.log(`looked at the ${name} discard`, this.gs.mySeatId);
         const cards = d.discard.slice().reverse().map(inst => {
             const c = this.gs.card(inst.cid); return c ? `<div class="ph-card">${this.cardFace(c)}</div>` : '';
         }).join('');

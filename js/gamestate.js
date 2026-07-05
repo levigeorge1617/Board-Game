@@ -112,9 +112,11 @@ class GameState {
     resetGame() { this.dispatch({ type: 'RESET' }); }
     draw(seatId, deck) { this.dispatch({ type: 'DRAW', seatId, deck }); }
     discard(seatId, iid) { this.dispatch({ type: 'DISCARD', seatId, iid }); }
-    setActive(seatId) { this.dispatch({ type: 'SET_ACTIVE', seatId }); }
-    nextTurn() { this.dispatch({ type: 'NEXT_TURN' }); }
+    togglePhase() { this.dispatch({ type: 'SET_PHASE', phase: this.state.phase === 'heroes' ? 'monster' : 'heroes' }); }
     setSeatCharacter(seatId, characterId) { this.dispatch({ type: 'SET_CHARACTER', seatId, characterId }); }
+    score(delta, seatId) { this.dispatch({ type: 'SCORE', delta, seatId }); }
+    setGoal(goal) { this.dispatch({ type: 'SET_GOAL', goal }); }
+    log(text, seatId) { this.dispatch({ type: 'LOG', text, seatId }); }
     rollDice(seatId, dieList) { this.dispatch({ type: 'ROLL_DICE', seatId, dieList }); }
-    rollGrid(cols, rows) { this.dispatch({ type: 'ROLL_GRID', cols, rows }); }
+    rollGrid(seatId, cols, rows) { this.dispatch({ type: 'ROLL_GRID', seatId, cols, rows }); }
 }

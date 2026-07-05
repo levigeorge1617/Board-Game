@@ -151,6 +151,26 @@ textarea.dz-input { resize: vertical; line-height: 1.5; }
 .ph-me select, .ph-cc-choose { background: #2a2e31; color: #fff; border: 1px solid #454b50; border-radius: 5px; padding: 4px 6px; font-size: 12px; }
 .ph-on-live { background: #16506e; border-color: #1f6c93; }
 .ph-on-wait { background: #5a4a1a; border-color: #7a6420; cursor: wait; }
+.ph-turn-hero { background: #16506e; border-color: #1f6c93; }
+.ph-turn-mon { background: #7a2c2c; border-color: #9a3b3b; }
+
+/* objective score chip */
+.ph-score { display: flex; align-items: center; gap: 5px; background: #10333c; border: 1px solid #1f6c93; border-radius: 6px; padding: 2px 5px; }
+.ph-score-btn { background: #1c1f22; color: #fff; border: 1px solid #454b50; border-radius: 4px; width: 20px; height: 20px; cursor: pointer; font-weight: bold; line-height: 1; }
+.ph-score-btn:hover { background: #2a2f33; }
+.ph-score-val { display: flex; align-items: center; gap: 3px; font-size: 13px; color: #dfe4e8; }
+.ph-score-val .gi { width: 15px; height: 15px; }
+
+/* dice-roll color accent (per roller) */
+.ph-roll-card { border-top: 3px solid var(--c, #363b40); }
+
+/* event log (left) */
+#ph-log { position: absolute; left: 12px; top: 104px; width: 252px; z-index: 6; }
+.ph-log-head { display: flex; justify-content: space-between; align-items: center; background: #12151af2; border: 1px solid #2a2f33; border-bottom: none; border-radius: 8px 8px 0 0; padding: 5px 10px; font-size: 10px; color: #9aa7b5; text-transform: uppercase; letter-spacing: .5px; }
+.ph-log-min { background: transparent; border: none; color: #9aa7b5; cursor: pointer; font-size: 17px; line-height: 1; padding: 0 4px; }
+.ph-log-body { background: #0d0f11ea; border: 1px solid #2a2f33; border-top: none; border-radius: 0 0 8px 8px; max-height: 38vh; overflow-y: auto; padding: 5px 10px; }
+.ph-log-row { font-size: 11px; color: #cdd3d8; line-height: 1.55; padding: 1px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.ph-log-tab { background: #12151af2; border: 1px solid #2a2f33; border-radius: 6px; padding: 5px 10px; color: #9aa7b5; cursor: pointer; font-size: 11px; }
 
 /* deck piles (right) */
 #ph-decks { position: absolute; right: 12px; top: 70px; }
