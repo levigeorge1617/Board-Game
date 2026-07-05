@@ -264,7 +264,11 @@ class AppController {
                         });
                         currentX++; // Spread across row automatically on dropped canvas site
                     }
-                } 
+                }
+                // Minion → a real synced combat piece (not a static board token)
+                else if (this.activeLibraryItem.type === 'minion') {
+                    if (this.play && this.play.gs) this.play.gs.addMinion({ x: cellX, y: cellY });
+                }
                 // Standard structural entity counters logic handler
                 else {
                     this.board.tokens.push({

@@ -11,6 +11,7 @@ import { DiceBox } from './DiceBox.js';
 import { DiceFactory } from './DiceFactory.js';
 import { DiceColors, COLORSETS } from './DiceColors.js';
 import { DiceFunctions } from './DiceFunctions.js';
+import { DicePreset } from './DicePreset.js';
 import { Teal } from './Teal.js';
 
 // --- minimal globals the engine expects (it was written for a full app) ---
@@ -25,6 +26,18 @@ const favStub = {
 window.DiceFavorites = favStub;
 const factory = new DiceFactory();
 window.DiceFactory = factory;                 // DiceNotation uses window.DiceFactory directly
+
+// Custom combat die: a d6 with 3 skull, 2 shield, 1 blank face (values 1-3 skull,
+// 4-5 shield, 6 blank so results can be forced to specific faces).
+try {
+    const combat = new DicePreset('dcombat', 'd6');
+    combat.name = 'Combat';
+    combat.setLabels(['☠', '☠', '☠', '⛨', '⛨', '']);
+    combat.setValues(1, 6);
+    combat.display = 'labels';
+    combat.system = 'boardgame';
+    factory.register(combat);
+} catch (e) { console.warn('combat die register failed', e); }
 window.DiceRoller = { DiceFactory: factory, DiceFavorites: favStub, Teal: window.Teal };
 const colors = new DiceColors();
 window.DiceColors = colors;
@@ -92,5 +105,22 @@ window.DiceTray = {
             b.rolling = true;
             b.rollDice(nv, () => { b.rolling = false; if (onDone) onDone(); });
         } catch (e) { console.warn('DiceTray roll failed', e); if (onDone) onDone(); }
+    },
+    // faces: array of combat-die values (1-3 skull, 4-5 shield, 6 blank)
+    rollCombat(faces, colorKey, onDone) {
+        let b; try { b = ensureBox(); } catch (e) {}
+        if (!b || !faces || !faces.length) { if (onDone) onDone(); return; }
+        try { b.clearDice(); } catch (e) {}
+        try { factory.applyColorSet(colordataFor(colorKey || 'monster')); } catch (e) {}
+        const w = b.display.currentWidth, h = b.display.currentHeight;
+        const vector = { x: (Math.random() * 2 - 0.5) * w, y: -(Math.random() * 2 - 0.5) * h };
+        const dist = Math.sqrt(vector.x * vector.x + vector.y * vector.y);
+        const boost = (Math.random() + 3) * dist;
+        try {
+            const nv = b.getNotationVectors(faces.length + 'dcombat', vector, boost, dist);
+            nv.result = faces.slice();
+            b.rolling = true;
+            b.rollDice(nv, () => { b.rolling = false; if (onDone) onDone(); });
+        } catch (e) { console.warn('DiceTray rollCombat failed', e); if (onDone) onDone(); }
     },
 };

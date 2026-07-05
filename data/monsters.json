@@ -24,6 +24,11 @@
     "stats": {
       "monsterDie": 6,
       "movementDie": null
+    },
+    "combat": {
+      "attack": 5,
+      "defense": 0,
+      "reach": 1
     }
   },
   {
@@ -51,6 +56,11 @@
     "stats": {
       "monsterDie": 6,
       "movementDie": null
+    },
+    "combat": {
+      "attack": 2,
+      "defense": 0,
+      "reach": 1
     }
   },
   {
@@ -78,6 +88,11 @@
     "stats": {
       "monsterDie": 6,
       "movementDie": null
+    },
+    "combat": {
+      "attack": 4,
+      "defense": 2,
+      "reach": 1
     }
   },
   {
@@ -105,6 +120,11 @@
     "stats": {
       "monsterDie": 6,
       "movementDie": 20
+    },
+    "combat": {
+      "attack": 4,
+      "defense": 0,
+      "reach": 2
     }
   },
   {
@@ -132,6 +152,11 @@
     "stats": {
       "monsterDie": 6,
       "movementDie": null
+    },
+    "combat": {
+      "attack": 2,
+      "defense": 0,
+      "reach": 1
     }
   }
 ]

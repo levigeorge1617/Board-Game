@@ -229,6 +229,22 @@ class Renderer {
             ctx.fillText(seat.label, cx, cy + r + 2);
             ctx.restore();
         });
+
+        // minions (monster-side combat pieces)
+        (gs.state.minions || []).forEach(m => {
+            if (m.x == null || m.y == null) return;
+            let px = m.x, py = m.y;
+            if (drag && drag.seatId === m.id) { px = drag.x; py = drag.y; }
+            const cx = px * size + size / 2, cy = py * size + size / 2, r = size * 0.34;
+            ctx.save();
+            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.fillStyle = m.color || '#9b2d2d'; ctx.fill();
+            ctx.lineWidth = 2.5; ctx.strokeStyle = '#3a0d0d'; ctx.stroke();
+            ctx.fillStyle = '#f2e6e6'; ctx.font = `${size * 0.34}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('☠', cx, cy - size * 0.02);
+            this.badge(ctx, cx + r * 0.7, cy + r * 0.7, size, m.hp, '#111', '#9b2d2d', '#fff');
+            ctx.restore();
+        });
     }
 
     badge(ctx, x, y, size, text, textColor, bg, ring) {
