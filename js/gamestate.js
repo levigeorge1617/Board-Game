@@ -119,4 +119,9 @@ class GameState {
     log(text, seatId) { this.dispatch({ type: 'LOG', text, seatId }); }
     rollDice(seatId, dieList) { this.dispatch({ type: 'ROLL_DICE', seatId, dieList }); }
     rollGrid(seatId, cols, rows) { this.dispatch({ type: 'ROLL_GRID', seatId, cols, rows }); }
+    movePiece(seatId, x, y) { this.dispatch({ type: 'MOVE_PIECE', seatId, x, y }); }
+    adjustHp(seatId, delta) { this.dispatch({ type: 'ADJUST_HP', seatId, delta }); }
+    kill(seatId) { this.dispatch({ type: 'KILL', seatId }); }
+    reviveTick(seatId, amount) { this.dispatch({ type: 'REVIVE_TICK', seatId, amount }); }
+    setForm(seatId, form, temp) { this.dispatch({ type: 'SET_FORM', seatId, form, temp }); }
 }

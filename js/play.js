@@ -16,7 +16,38 @@ class PlayController {
         this.openSeatId = null;      // character popover currently open (local)
         this.handHidden = false;
         this.built = false;
-        this.gs.subscribe(() => { if (this.app.appMode === 'play') this.render(); });
+        this.dragPiece = null;
+        this.gs.subscribe(() => { if (this.app.appMode === 'play') { this.render(); this.app.renderer.draw(); } });
+    }
+
+    // ---- board piece dragging (called from AppController canvas events) ---
+    pieceAt(x, y) {
+        if (!this.gs.state.started) return null;
+        const seats = this.gs.state.seats;
+        for (let i = seats.length - 1; i >= 0; i--) if (seats[i].x === x && seats[i].y === y) return seats[i].id;
+        return null;
+    }
+    onPieceDown(x, y) {
+        const id = this.pieceAt(x, y); if (!id) return false;
+        const seat = this.gs.seat(id);
+        this.dragPiece = { seatId: id, x, y, sx: seat.x, sy: seat.y };
+        return true;
+    }
+    onPieceMove(x, y) {
+        if (!this.dragPiece) return false;
+        const b = this.app.board;
+        this.dragPiece.x = Math.max(0, Math.min(b.cols - 1, x));
+        this.dragPiece.y = Math.max(0, Math.min(b.rows - 1, y));
+        this.app.renderer.draw();
+        return true;
+    }
+    onPieceUp() {
+        if (!this.dragPiece) return false;
+        const d = this.dragPiece; this.dragPiece = null;
+        if (d.x === d.sx && d.y === d.sy) this.openPopover(d.seatId);   // click = open sheet
+        else this.gs.movePiece(d.seatId, d.x, d.y);                     // drag = move
+        this.app.renderer.draw();
+        return true;
     }
 
     activate() {
@@ -273,6 +304,8 @@ class PlayController {
                         `<span>${esc(ch ? (ch.color || ch.element || '') : '')}</span>${chooser}</div>` +
                     `<div class="ph-cc-dice">${diceChips}</div>` +
                     `<div class="ph-cc-rollbar">${groups.join('')}${gridBtn}</div>` +
+                    this.pieceBlock(seat) +
+                    this.formsBlock(seat, ch) +
                     (ch && ch.abilities ? `<div class="ph-cc-block"><h4>Abilities</h4><p>${fmt(ch.abilities)}</p></div>` : '') +
                     (ch && ch.objectiveAbilities ? `<div class="ph-cc-block"><h4>Objective ${icon('◆/◇')}</h4><p>${fmt(ch.objectiveAbilities)}</p></div>` : '') +
                 `</div>` +
@@ -288,6 +321,56 @@ class PlayController {
         if (gb) gb.onclick = () => this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows);
         const sel = pop.querySelector('.ph-cc-choose');
         if (sel) sel.onchange = (e) => this.gs.setSeatCharacter(seat.id, e.target.value);
+
+        // piece controls
+        const on = (s, fn) => { const el = pop.querySelector(s); if (el) el.onclick = fn; };
+        on('.ph-hp-dn', () => this.gs.adjustHp(seat.id, -1));
+        on('.ph-hp-up', () => this.gs.adjustHp(seat.id, 1));
+        on('.ph-hp-dmg', () => this.gs.adjustHp(seat.id, -(parseInt(pop.querySelector('.ph-hp-amt').value, 10) || 0)));
+        on('.ph-kill', () => this.gs.kill(seat.id));
+        on('.ph-rev-tick', () => this.gs.reviveTick(seat.id, 1));
+        on('.ph-revive', () => this.gs.reviveTick(seat.id, 9999));
+        // druid forms
+        pop.querySelectorAll('.ph-form-btn').forEach(b => b.onclick = () => this.gs.setForm(seat.id, b.dataset.form || null, false));
+        on('.ph-ally-go', () => {
+            const who = pop.querySelector('.ph-ally-sel').value;
+            const form = pop.querySelector('.ph-ally-form').value;
+            if (who) this.gs.setForm(who, form, true);
+        });
+    }
+
+    pieceBlock(seat) {
+        if (seat.kind !== 'hero') return '';
+        const cell = (seat.x != null) ? `${seat.x + 1}-${String.fromCharCode(65 + seat.y)}` : 'off board';
+        let inner;
+        if (seat.dead) {
+            inner = `<div class="ph-hp-dead">☠ Gravestone — revive counter <b>${seat.grave ? seat.grave.count : 0}</b>` +
+                `<div class="ph-hp-row"><button class="ph-btn ph-rev-tick">Spend action −1</button>` +
+                `<button class="ph-btn ph-btn-go ph-revive">Revive now (life 4)</button></div></div>`;
+        } else {
+            inner = `<div class="ph-hp-row">` +
+                `<button class="ph-btn ph-hp-dn">−</button>` +
+                `<span class="ph-hp-val">❤ ${seat.hp}/${seat.maxHp}</span>` +
+                `<button class="ph-btn ph-hp-up">+</button>` +
+                `<input class="ph-hp-amt" type="number" value="5" min="1" style="width:44px">` +
+                `<button class="ph-btn ph-hp-dmg">damage</button>` +
+                `<button class="ph-btn ph-btn-warn ph-kill">Down ☠</button></div>`;
+        }
+        return `<div class="ph-cc-block"><h4>Piece · ${cell}</h4>${inner}` +
+            `<div class="ph-muted" style="font-size:10px;margin-top:4px;">Drag the piece on the board to move it.</div></div>`;
+    }
+
+    formsBlock(seat, ch) {
+        if (!ch || !/TURTLE|CHEETAH|BEAR|DEER/i.test(ch.abilities || '')) return '';
+        const forms = ['TURTLE', 'CHEETAH', 'BEAR', 'DEER'];
+        const btns = forms.map(f => `<button class="ph-form-btn${seat.form === f ? ' on' : ''}" data-form="${f}">${f}</button>`).join('') +
+            `<button class="ph-form-btn${!seat.form ? ' on' : ''}" data-form="">Normal</button>`;
+        const allies = this.gs.state.seats.filter(s => s.kind === 'hero' && s.id !== seat.id);
+        const allyRow = allies.length ? `<div class="ph-ally-row">Transform ally: ` +
+            `<select class="ph-ally-sel">${allies.map(a => `<option value="${a.id}">${esc(a.label)}</option>`).join('')}</select>` +
+            `<select class="ph-ally-form">${forms.map(f => `<option>${f}</option>`).join('')}</select>` +
+            `<button class="ph-btn ph-ally-go">Apply (this turn)</button></div>` : '';
+        return `<div class="ph-cc-block"><h4>Druid forms</h4><div class="ph-forms">${btns}</div>${allyRow}</div>`;
     }
 
     characterChooser(seat) {

@@ -21,6 +21,14 @@
         if (s.log.length > MAX_LOG) s.log = s.log.slice(-MAX_LOG);
     }
     const nameOf = (s, seatId) => { const seat = (s.seats || []).find(x => x.id === seatId); return seat ? seat.label : ''; };
+    const cellName = (x, y) => `${(x | 0) + 1}-${String.fromCharCode(65 + (y | 0))}`;
+    function die(s, seat, data) {
+        seat.dead = true; seat.form = null; seat.formTemp = false;
+        const ch = (seat.kind === 'monster' ? data.monsters : data.heroes).find(c => c.id === seat.characterId);
+        const a1 = (ch && ch.stats && ch.stats.a1) || 4;   // guidebook: roll action die for the revive counter
+        seat.grave = { count: 1 + Math.floor(Math.random() * a1) };
+        logEvent(s, seat.id, `died — gravestone (revive ${seat.grave.count})`);
+    }
 
     function newGame(data) {
         const state = empty();
@@ -37,12 +45,18 @@
         const byColor = {};
         (data.heroes || []).forEach(h => { if (!byColor[h.color] || h.cardFace === 'front') byColor[h.color] = h; });
         const seats = [];
+        let i = 0;
         HERO_COLORS.forEach(col => {
             const h = byColor[col]; if (!h) return;
-            seats.push({ id: 'seat-' + col.toLowerCase(), label: h.name, kind: 'hero', deck: 'White', color: col, characterId: h.id, hand: [] });
+            const life = (h.stats && h.stats.life) || 10;
+            seats.push({
+                id: 'seat-' + col.toLowerCase(), label: h.name, kind: 'hero', deck: 'White', color: col, characterId: h.id, hand: [],
+                x: 2 + i, y: 6, hp: life, maxHp: life, dead: false, grave: null, form: null, formTemp: false,
+            });
+            i++;
         });
         const mon = (data.monsters || [])[0];
-        seats.push({ id: 'seat-monster', label: mon ? mon.name : 'Monster', kind: 'monster', deck: 'Black', color: 'MONSTER', characterId: mon ? mon.id : null, hand: [] });
+        seats.push({ id: 'seat-monster', label: mon ? mon.name : 'Monster', kind: 'monster', deck: 'Black', color: 'MONSTER', characterId: mon ? mon.id : null, hand: [], x: 4, y: 9 });
 
         state.seats = seats;
         state.phase = 'heroes';
@@ -82,7 +96,36 @@
             }
             case 'SET_PHASE': {
                 s.phase = a.phase === 'monster' ? 'monster' : 'heroes';
+                (s.seats || []).forEach(seat => { if (seat.formTemp) { seat.form = null; seat.formTemp = false; } });
                 logEvent(s, null, s.phase === 'heroes' ? "Heroes' turn" : "Monster's turn");
+                break;
+            }
+            case 'MOVE_PIECE': {
+                const seat = seatOf(s, a.seatId); if (!seat) break;
+                seat.x = a.x; seat.y = a.y;
+                logEvent(s, seat.id, `moved to ${cellName(a.x, a.y)}`);
+                break;
+            }
+            case 'ADJUST_HP': {
+                const seat = seatOf(s, a.seatId); if (!seat || seat.kind !== 'hero' || seat.dead) break;
+                const max = seat.maxHp || seat.hp || 10;
+                seat.hp = Math.max(0, Math.min(max, (seat.hp || 0) + (a.delta || 0)));
+                logEvent(s, seat.id, `${a.delta >= 0 ? 'gained ' + a.delta : 'took ' + (-a.delta) + ' damage,'} life ${seat.hp}/${max}`);
+                if (seat.hp <= 0) die(s, seat, data);
+                break;
+            }
+            case 'KILL': { const seat = seatOf(s, a.seatId); if (seat && seat.kind === 'hero' && !seat.dead) { seat.hp = 0; die(s, seat, data); } break; }
+            case 'REVIVE_TICK': {
+                const seat = seatOf(s, a.seatId); if (!seat || !seat.dead || !seat.grave) break;
+                seat.grave.count = Math.max(0, seat.grave.count - (a.amount || 1));
+                if (seat.grave.count <= 0) { seat.dead = false; seat.grave = null; seat.hp = Math.min(4, seat.maxHp || 4); logEvent(s, seat.id, 'was revived (life 4)'); }
+                else logEvent(s, seat.id, `revive progress (${seat.grave.count} to go)`);
+                break;
+            }
+            case 'SET_FORM': {
+                const seat = seatOf(s, a.seatId); if (!seat) break;
+                seat.form = a.form || null; seat.formTemp = !!a.temp;
+                logEvent(s, seat.id, a.form ? `transformed → ${a.form}${a.temp ? ' (this turn)' : ''}` : 'reverted to normal');
                 break;
             }
             case 'SET_CHARACTER': {

@@ -172,6 +172,19 @@ textarea.dz-input { resize: vertical; line-height: 1.5; }
 .ph-log-row { font-size: 11px; color: #cdd3d8; line-height: 1.55; padding: 1px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
 .ph-log-tab { background: #12151af2; border: 1px solid #2a2f33; border-radius: 6px; padding: 5px 10px; color: #9aa7b5; cursor: pointer; font-size: 11px; }
 
+/* piece controls in the character popover */
+.ph-hp-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.ph-hp-row .ph-btn { padding: 5px 10px; }
+.ph-hp-val { font-size: 15px; color: #fff; font-weight: bold; }
+.ph-hp-amt { background: #2a2e31; color: #fff; border: 1px solid #454b50; border-radius: 4px; padding: 4px; }
+.ph-hp-dead { font-size: 13px; color: #e0b0b0; }
+.ph-forms { display: flex; gap: 4px; flex-wrap: wrap; }
+.ph-form-btn { background: rgba(20,24,28,.72); border: 1px solid #3a4147; color: #cdd3d8; border-radius: 6px; padding: 5px 9px; cursor: pointer; font-size: 11px; font-weight: bold; }
+.ph-form-btn:hover { border-color: #e0a800; }
+.ph-form-btn.on { background: #2d6a4f; border-color: #2d6a4f; color: #fff; }
+.ph-ally-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 8px; font-size: 11px; color: #9aa7b5; }
+.ph-ally-row select { background: #2a2e31; color: #fff; border: 1px solid #454b50; border-radius: 4px; padding: 3px; font-size: 11px; }
+
 /* deck piles (right) */
 #ph-decks { position: absolute; right: 12px; top: 70px; }
 .ph-decks-inner { display: flex; flex-direction: column; gap: 16px; }
