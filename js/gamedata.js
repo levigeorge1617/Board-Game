@@ -32,7 +32,13 @@ window.GAME_DATA = {
         "m1": 12,
         "m2": null,
         "ba": 4,
-        "bm": 6
+        "bm": 6,
+        "life": 8
+      },
+      "combat": {
+        "attack": 2,
+        "defense": 3,
+        "reach": 1
       }
     },
     {
@@ -65,7 +71,13 @@ window.GAME_DATA = {
         "m1": 12,
         "m2": null,
         "ba": 4,
-        "bm": 6
+        "bm": 6,
+        "life": 8
+      },
+      "combat": {
+        "attack": 4,
+        "defense": 2,
+        "reach": 1
       }
     },
     {
@@ -98,7 +110,13 @@ window.GAME_DATA = {
         "m1": 20,
         "m2": null,
         "ba": 6,
-        "bm": 12
+        "bm": 12,
+        "life": 6
+      },
+      "combat": {
+        "attack": 3,
+        "defense": 1,
+        "reach": 2
       }
     },
     {
@@ -131,7 +149,13 @@ window.GAME_DATA = {
         "m1": 20,
         "m2": null,
         "ba": 6,
-        "bm": 12
+        "bm": 12,
+        "life": 5
+      },
+      "combat": {
+        "attack": 2,
+        "defense": 2,
+        "reach": 1
       }
     },
     {
@@ -164,7 +188,13 @@ window.GAME_DATA = {
         "m1": 4,
         "m2": 4,
         "ba": 4,
-        "bm": 4
+        "bm": 4,
+        "life": 4
+      },
+      "combat": {
+        "attack": 1,
+        "defense": 1,
+        "reach": 1
       }
     },
     {
@@ -197,7 +227,13 @@ window.GAME_DATA = {
         "m1": 6,
         "m2": null,
         "ba": 4,
-        "bm": 4
+        "bm": 4,
+        "life": 5
+      },
+      "combat": {
+        "attack": 1,
+        "defense": 1,
+        "reach": 1
       }
     },
     {
@@ -230,7 +266,13 @@ window.GAME_DATA = {
         "m1": 10,
         "m2": 4,
         "ba": 4,
-        "bm": 10
+        "bm": 10,
+        "life": 5
+      },
+      "combat": {
+        "attack": 4,
+        "defense": 1,
+        "reach": 1
       }
     },
     {
@@ -263,7 +305,13 @@ window.GAME_DATA = {
         "m1": 10,
         "m2": 8,
         "ba": 4,
-        "bm": 10
+        "bm": 10,
+        "life": 6
+      },
+      "combat": {
+        "attack": 3,
+        "defense": 2,
+        "reach": 3
       }
     },
     {
@@ -296,7 +344,13 @@ window.GAME_DATA = {
         "m1": 8,
         "m2": null,
         "ba": 4,
-        "bm": 10
+        "bm": 10,
+        "life": 6
+      },
+      "combat": {
+        "attack": 2,
+        "defense": 2,
+        "reach": 1
       }
     },
     {
@@ -329,7 +383,13 @@ window.GAME_DATA = {
         "m1": 8,
         "m2": 6,
         "ba": 4,
-        "bm": 6
+        "bm": 6,
+        "life": 6
+      },
+      "combat": {
+        "attack": 1,
+        "defense": 3,
+        "reach": 1
       }
     }
   ],
@@ -359,6 +419,11 @@ window.GAME_DATA = {
       "stats": {
         "monsterDie": 6,
         "movementDie": null
+      },
+      "combat": {
+        "attack": 5,
+        "defense": 0,
+        "reach": 1
       }
     },
     {
@@ -386,6 +451,11 @@ window.GAME_DATA = {
       "stats": {
         "monsterDie": 6,
         "movementDie": null
+      },
+      "combat": {
+        "attack": 2,
+        "defense": 0,
+        "reach": 1
       }
     },
     {
@@ -413,6 +483,11 @@ window.GAME_DATA = {
       "stats": {
         "monsterDie": 6,
         "movementDie": null
+      },
+      "combat": {
+        "attack": 4,
+        "defense": 2,
+        "reach": 1
       }
     },
     {
@@ -440,6 +515,11 @@ window.GAME_DATA = {
       "stats": {
         "monsterDie": 6,
         "movementDie": 20
+      },
+      "combat": {
+        "attack": 4,
+        "defense": 0,
+        "reach": 2
       }
     },
     {
@@ -467,6 +547,11 @@ window.GAME_DATA = {
       "stats": {
         "monsterDie": 6,
         "movementDie": null
+      },
+      "combat": {
+        "attack": 2,
+        "defense": 0,
+        "reach": 1
       }
     }
   ],

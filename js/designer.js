@@ -5,7 +5,7 @@
  */
 const DZ_STORE_KEY = 'board_designer_data';
 const DZ_VERSION_KEY = 'board_designer_version';
-const DZ_VERSION = 2;   // bump when the data schema changes to drop stale local copies
+const DZ_VERSION = 3;   // bump when the data schema changes to drop stale local copies
 
 // Declarative field schema drives the editor form for each entity type.
 const DZ_FIELDS = {
@@ -23,6 +23,9 @@ const DZ_FIELDS = {
         { key: 'stats.ba', label: 'Bonus action die — BA', type: 'die' },
         { key: 'stats.bm', label: 'Bonus movement die — BM', type: 'die' },
         { key: 'stats.life', label: 'Starting life ❤ (piece HP)', type: 'number', hint: 'Max HP of this hero’s board piece. Defaults to 10 if blank.' },
+        { key: 'combat.attack', label: 'Attack dice ⚔ (combat pool)', type: 'number' },
+        { key: 'combat.defense', label: 'Defense dice 🛡 (combat pool)', type: 'number' },
+        { key: 'combat.reach', label: 'Attack reach (spaces)', type: 'number' },
         { key: 'abilities', label: 'Abilities', type: 'textarea' },
         { key: 'objectiveAbilities', label: 'Objective-die abilities  ◆/◇', type: 'textarea' },
     ],
@@ -32,6 +35,9 @@ const DZ_FIELDS = {
         { key: 'art', label: 'Art', type: 'art' },
         { key: 'stats.monsterDie', label: 'Monster die  (rolled for ◆ actions)', type: 'die' },
         { key: 'stats.movementDie', label: 'Movement die  (e.g. The Fog’s D20)', type: 'die' },
+        { key: 'combat.attack', label: 'Attack dice ⚔ (combat pool)', type: 'number' },
+        { key: 'combat.defense', label: 'Defense dice 🛡 (combat pool)', type: 'number' },
+        { key: 'combat.reach', label: 'Attack reach (spaces)', type: 'number' },
         { key: 'abilities', label: 'Abilities', type: 'textarea' },
         { key: 'objectiveAbilities', label: 'Objective-die abilities  ◆/◇', type: 'textarea' },
     ],

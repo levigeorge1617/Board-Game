@@ -22,6 +22,28 @@
     }
     const nameOf = (s, seatId) => { const seat = (s.seats || []).find(x => x.id === seatId); return seat ? seat.label : ''; };
     const cellName = (x, y) => `${(x | 0) + 1}-${String.fromCharCode(65 + (y | 0))}`;
+    // combat die faces: 1-3 = skull ☠, 4-5 = shield 🛡, 6 = blank
+    const FORM_COMBAT = { BEAR: [1, 1], TURTLE: [0, 2], CHEETAH: [0, -1], DEER: [0, -1] };
+    function combatStats(seat, data) {
+        const ch = (seat.kind === 'monster' ? data.monsters : data.heroes).find(c => c.id === seat.characterId);
+        const c = (ch && ch.combat) || {};
+        let attack = c.attack || 0, defense = c.defense || 0;
+        if (seat.form && FORM_COMBAT[seat.form]) { attack += FORM_COMBAT[seat.form][0]; defense += FORM_COMBAT[seat.form][1]; }
+        return { attack: Math.max(0, attack), defense: Math.max(0, defense), reach: c.reach || 1, autoSkull: c.autoSkull || 0, autoShield: c.autoShield || 0 };
+    }
+    function pushAway(mon, from, n, cols, rows) {
+        if (mon.x == null || from.x == null) return 0;
+        let dx = Math.sign(mon.x - from.x), dy = Math.sign(mon.y - from.y);
+        if (dx === 0 && dy === 0) dx = 1;
+        let moved = 0;
+        for (let i = 0; i < n; i++) {
+            const nx = mon.x + dx, ny = mon.y + dy;
+            if (nx < 0 || ny < 0 || (cols && nx >= cols) || (rows && ny >= rows)) break;
+            mon.x = nx; mon.y = ny; moved++;
+        }
+        return moved;
+    }
+
     function die(s, seat, data) {
         seat.dead = true; seat.form = null; seat.formTemp = false;
         const ch = (seat.kind === 'monster' ? data.monsters : data.heroes).find(c => c.id === seat.characterId);
@@ -155,6 +177,30 @@
                 const row = String.fromCharCode(65 + Math.floor(Math.random() * Math.max(1, a.rows || 1)));
                 s.lastGrid = { col, row, ts: Date.now() };
                 logEvent(s, a.seatId || 'seat-monster', `rolled grid target ${col}-${row}`);
+                break;
+            }
+            case 'COMBAT': {
+                const atk = seatOf(s, a.attackerId), def = seatOf(s, a.defenderId);
+                if (!atk || !def || atk.id === def.id) break;
+                const ac = combatStats(atk, data), dc = combatStats(def, data);
+                const roll = () => 1 + Math.floor(Math.random() * 6);
+                const atkFaces = Array.from({ length: Math.max(0, ac.attack) + (a.bonusAttack || 0) }, roll);
+                const defFaces = Array.from({ length: Math.max(0, dc.defense) + (a.bonusDefense || 0) }, roll);
+                const hits = atkFaces.filter(v => v <= 3).length + ac.autoSkull;
+                const blocks = defFaces.filter(v => v >= 4 && v <= 5).length + dc.autoShield;
+                const wounds = Math.max(0, hits - blocks);
+                let repelled = 0;
+                if (def.kind === 'monster') {
+                    repelled = pushAway(def, atk, wounds, a.cols, a.rows);       // heroes can't kill the monster — they shove it back
+                } else if (wounds > 0) {
+                    def.hp = Math.max(0, (def.hp || 0) - wounds);
+                    if (def.hp <= 0 && def.kind === 'hero' && !def.dead) die(s, def, data);
+                }
+                s.lastCombat = { attackerId: atk.id, defenderId: def.id, atkFaces, defFaces, hits, blocks, wounds, repelled, ts: Date.now() };
+                const outcome = def.kind === 'monster'
+                    ? (repelled ? `pushed back ${repelled}` : 'held ground')
+                    : (wounds ? `${wounds} wound${wounds !== 1 ? 's' : ''}` : 'no damage');
+                logEvent(s, atk.id, `attacks ${def.label} — ${hits} skull / ${blocks} shield → ${outcome}`);
                 break;
             }
             case 'LOG': logEvent(s, a.seatId || null, a.text || ''); break;

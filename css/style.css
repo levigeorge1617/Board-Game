@@ -266,6 +266,13 @@ textarea.dz-input { resize: vertical; line-height: 1.5; }
 .ph-die-val { position: absolute; top: -7px; right: -7px; background: #e0a800; color: #000; font-weight: bold; font-size: 12px; border-radius: 50%; width: 21px; height: 21px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px #000; }
 .ph-die-tag { display: block; font-size: 9px; color: #9aa7b5; margin-top: 2px; }
 .ph-roll-total { font-size: 11px; color: #e0a800; margin-top: 5px; }
+.ci { width: 1.05em; height: 1.05em; display: inline-block; vertical-align: -0.16em; }
+.ci-skull { color: #e6e1d6; } .ci-shield { color: #6fb3d8; }
+.ph-combat-card .ph-combat-res { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 5px; font-size: 18px; font-weight: bold; color: #fff; }
+.ph-cr-skull, .ph-cr-shield { display: inline-flex; align-items: center; gap: 3px; }
+.ph-cr-vs { font-size: 11px; color: #8a95a0; font-weight: normal; }
+.ph-atk-row { display: flex; gap: 6px; align-items: center; margin-top: 2px; }
+.ph-atk-row select { flex: 1; background: #2a2e31; color: #fff; border: 1px solid #454b50; border-radius: 5px; padding: 5px 6px; font-size: 12px; }
 .ph-grid-card .ph-grid-res { display: flex; gap: 8px; margin-top: 4px; }
 .ph-grid-res b { font-size: 24px; color: #fff; background: #1c1f22; border: 1px solid #454b50; border-radius: 8px; padding: 2px 14px; }
 

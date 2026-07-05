@@ -8,6 +8,8 @@ const PH_BACKS = { White: 'css/CardBACK2.png', Black: 'css/CardBACK.png' };
 const PH_EMBLEM = { hero: 'css/good.png', monster: 'css/bad.png' };
 const PH_COLOR = { RED: '#ff3333', YELLOW: '#ffd21f', GREEN: '#33cc44', BLUE: '#3366ff', PURPLE: '#9933ff', MONSTER: '#b02a2a' };
 const PH_DICE = [4, 6, 8, 10, 12, 20];
+const ICON_SKULL = '<svg class="ci ci-skull" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a8 8 0 0 0-8 8v3.2c0 1 .5 1.9 1.4 2.4l1.1.6V19a1 1 0 0 0 1 1h1v-2h1v2h2v-2h1v2h1a1 1 0 0 0 1-1v-2.8l1.1-.6c.9-.5 1.4-1.4 1.4-2.4V10a8 8 0 0 0-8-8Zm-3 9a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2Zm6 0a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2Z"/></svg>';
+const ICON_SHIELD = '<svg class="ci ci-shield" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2 4 5v6c0 4.5 3.2 8.6 8 11 4.8-2.4 8-6.5 8-11V5l-8-3Z"/></svg>';
 
 class PlayController {
     constructor(app) {
@@ -132,6 +134,7 @@ class PlayController {
         this.renderLog();
         this.renderPlayed();
         this.maybeAnimateDice();
+        this.maybeAnimateCombat();
         if (this.openSeatId) this.renderPopover();
     }
 
@@ -377,7 +380,30 @@ class PlayController {
             html += `<div class="ph-roll-card ph-grid-card" style="--c:${PH_COLOR.MONSTER}"><div class="ph-roll-who" style="color:${PH_COLOR.MONSTER}">Monster target</div>` +
                 `<div class="ph-grid-res"><b>${lastGrid.col}</b><b>${esc(lastGrid.row)}</b></div></div>`;
         }
+        const lc = this.gs.state.lastCombat;
+        if (lc && (!lastDice || lc.ts >= (lastDice.ts || 0))) {
+            const atk = this.gs.seat(lc.attackerId), def = this.gs.seat(lc.defenderId);
+            const ac = atk ? (PH_COLOR[atk.color] || '#888') : '#888';
+            const outcome = lc.repelled ? `pushed back ${lc.repelled}` : (lc.wounds ? `${lc.wounds} wound${lc.wounds !== 1 ? 's' : ''}` : 'no damage');
+            html += `<div class="ph-roll-card ph-combat-card" style="--c:${ac}">` +
+                `<div class="ph-roll-who" style="color:${ac}">${esc(atk ? atk.label : '')} ⚔ ${esc(def ? def.label : '')}</div>` +
+                `<div class="ph-combat-res"><span class="ph-cr-skull">${ICON_SKULL}${lc.hits}</span>` +
+                `<span class="ph-cr-vs">vs</span><span class="ph-cr-shield">${ICON_SHIELD}${lc.blocks}</span></div>` +
+                `<div class="ph-roll-total">${outcome}</div></div>`;
+        }
         document.getElementById('ph-roll').innerHTML = html;
+    }
+
+    // Fire the 3D combat dice once per new resolved exchange.
+    maybeAnimateCombat() {
+        const lc = this.gs.state.lastCombat;
+        if (!lc || lc.ts === this._combatTs) return;
+        this._combatTs = lc.ts;
+        if (!window.DiceTray || !window.DiceTray.rollCombat) return;
+        const faces = (lc.atkFaces || []).concat(lc.defFaces || []);
+        if (!faces.length) return;
+        const atk = this.gs.seat(lc.attackerId);
+        window.DiceTray.rollCombat(faces, atk ? (atk.kind === 'monster' ? 'monster' : atk.color) : 'monster');
     }
 
     // ---- event log --------------------------------------------------------
@@ -428,6 +454,7 @@ class PlayController {
                     `<div class="ph-sheet-info">` +
                         gridBtn +
                         this.pieceBlock(seat) +
+                        this.combatBlock(seat) +
                         this.formsBlock(seat, ch) +
                         (ch && ch.abilities ? `<div class="ph-cc-block"><h4>Abilities</h4><p>${fmt(ch.abilities)}</p></div>` : '') +
                         (ch && ch.objectiveAbilities ? `<div class="ph-cc-block"><h4>Objective ${icon('◆/◇')}</h4><p>${fmt(ch.objectiveAbilities)}</p></div>` : '') +
@@ -458,7 +485,26 @@ class PlayController {
             const form = pop.querySelector('.ph-ally-form').value;
             if (who) this.gs.setForm(who, form, true);
         });
+        on('.ph-atk-go', () => {
+            const target = pop.querySelector('.ph-atk-target');
+            if (target && target.value) this.gs.attack(seat.id, target.value, this.app.board.cols, this.app.board.rows);
+        });
     }
+
+    // ⚔ attack: pick an enemy piece and resolve one exchange
+    combatBlock(seat) {
+        const ch = this.gs.character(seat);
+        const c = (ch && ch.combat) || {};
+        const enemies = this.gs.state.seats.filter(o => o.kind !== seat.kind && o.x != null && !o.dead);
+        const reachNote = c.reach > 1 ? ` · reach ${c.reach}` : '';
+        const opts = enemies.map(o => `<option value="${o.id}">${esc(o.label)} · ${this.dist(seat, o)} away</option>`).join('')
+            || '<option value="">no targets on board</option>';
+        return `<div class="ph-cc-block"><h4>Combat — ⚔ ${c.attack || 0} / 🛡 ${c.defense || 0}${reachNote}</h4>` +
+            `<div class="ph-atk-row"><select class="ph-atk-target">${opts}</select>` +
+            `<button class="ph-btn ph-btn-warn ph-atk-go"${enemies.length ? '' : ' disabled'}>Attack ⚔</button></div>` +
+            `<div class="ph-muted" style="font-size:10px;margin-top:4px;">Rolls your attack pool vs the target's defense; wounds apply automatically.</div></div>`;
+    }
+    dist(a, b) { return (a.x == null || b.x == null) ? '?' : Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)); }
 
     pieceBlock(seat) {
         if (seat.kind !== 'hero') return '';

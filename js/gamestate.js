@@ -125,4 +125,5 @@ class GameState {
     reviveTick(seatId, amount) { this.dispatch({ type: 'REVIVE_TICK', seatId, amount }); }
     setForm(seatId, form, temp) { this.dispatch({ type: 'SET_FORM', seatId, form, temp }); }
     setBoard(board) { this.dispatch({ type: 'SET_BOARD', board }); }
+    attack(attackerId, defenderId, cols, rows) { this.dispatch({ type: 'COMBAT', attackerId, defenderId, cols, rows }); }
 }

@@ -37,6 +37,28 @@ MONSTER_ART = {   # linked by element; fungal/flesh pair (Wyht/Oblex) is a best 
 }
 
 # ---- Convert heroes.csv ----------------------------------------------------
+# ---- Combat stat block (HP / Attack dice / Defense dice / reach) ----------
+# Starting numbers for the new attack/defense-pool combat (docs/combat-redesign.md).
+# Tunable; HP also seeds each hero piece.
+COMBAT = {
+    "Paladin":     {"hp": 8, "attack": 2, "defense": 3, "reach": 1},
+    "Barbarian":   {"hp": 8, "attack": 4, "defense": 2, "reach": 1},
+    "Hunter":      {"hp": 6, "attack": 3, "defense": 1, "reach": 2},
+    "Scout":       {"hp": 5, "attack": 2, "defense": 2, "reach": 1},
+    "Wizard":      {"hp": 4, "attack": 1, "defense": 1, "reach": 1},
+    "Enchantress": {"hp": 5, "attack": 1, "defense": 1, "reach": 1},
+    "Thief":       {"hp": 5, "attack": 4, "defense": 1, "reach": 1},
+    "Ranger":      {"hp": 6, "attack": 3, "defense": 2, "reach": 3},
+    "Druid":       {"hp": 6, "attack": 2, "defense": 2, "reach": 1},
+    "Cleric":      {"hp": 6, "attack": 1, "defense": 3, "reach": 1},
+    # monsters have no HP (can't be killed — heroes repel them); attack/defense used for their strikes
+    "Maraurn'Zol": {"attack": 5, "defense": 0, "reach": 1},
+    "The Fog":     {"attack": 4, "defense": 0, "reach": 2},
+    "Ghathag":     {"attack": 4, "defense": 2, "reach": 1},
+    "Oblex":       {"attack": 2, "defense": 0, "reach": 1},
+    "Wyht, the Trickster": {"attack": 2, "defense": 0, "reach": 1},
+}
+
 heroes, monsters = [], []
 with open(os.path.join(ROOT, "cards_heros.csv")) as f:
     for row in csv.reader(f):
@@ -65,6 +87,7 @@ with open(os.path.join(ROOT, "cards_heros.csv")) as f:
                     "monsterDie": num(row[1]) or num(row[0]),   # black die rolled for actions (◆)
                     "movementDie": num(row[8]) or num(row[9]),  # e.g. The Fog's D20
                 },
+                "combat": COMBAT.get(name, {"attack": 3, "defense": 0, "reach": 1}),
             })
             monsters.append(entry)
         else:
@@ -81,7 +104,9 @@ with open(os.path.join(ROOT, "cards_heros.csv")) as f:
                     "m2": num(row[8]),   # movement die 2 (optional)
                     "ba": num(row[4]),   # bonus action die
                     "bm": num(row[5]),   # bonus movement die
+                    "life": COMBAT.get(name, {}).get("hp", 6),   # HP for the combat pool + piece
                 },
+                "combat": {k: v for k, v in COMBAT.get(name, {"attack": 2, "defense": 2, "reach": 1}).items() if k != "hp"},
             })
             heroes.append(entry)
 
