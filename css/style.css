@@ -227,9 +227,11 @@ textarea.dz-input { resize: vertical; line-height: 1.5; }
     #sidebar { width: 220px; }
 }
 
-/* 3D dice tray (contained) */
+/* 3D dice tray (contained, resizable) */
 .ph-tray { position: absolute; right: 12px; top: 68px; width: 300px; height: 220px; z-index: 13; border-radius: 12px; overflow: hidden; background: radial-gradient(ellipse at center, #1c2733cc, #0c0e10ee); border: 1px solid #2a2f33; box-shadow: 0 10px 30px #0008; pointer-events: none; }
 .ph-tray canvas { width: 100% !important; height: 100% !important; }
+.ph-tray-resize { position: absolute; left: 0; bottom: 0; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: nesw-resize; pointer-events: auto; z-index: 5; color: #aeb8c2; font-size: 13px; background: #0d0f11d9; border-radius: 0 10px 0 10px; user-select: none; }
+.ph-tray-resize:hover { color: #fff; background: #16506e; }
 @media (max-width: 900px) { .ph-tray { width: 210px; height: 160px; } }
 
 /* shared "last played card" banner (dismissed per-player) */

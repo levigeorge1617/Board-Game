@@ -76,12 +76,50 @@ class PlayController {
         hud.innerHTML =
             '<div id="ph-roster"></div>' +
             '<div id="ph-roll"></div>' +
-            '<div id="ph-tray" class="ph-tray"></div>' +
+            '<div id="ph-tray" class="ph-tray"><div id="ph-tray-resize" class="ph-tray-resize" title="Drag to resize the dice tray">⤡</div></div>' +
             '<div id="ph-log"></div>' +
             '<div id="ph-played"></div>' +
             '<div id="ph-hand"></div>' +
             '<div id="ph-pop" class="ph-pop" style="display:none;"></div>';
         hud.addEventListener('click', (e) => { if (e.target.id === 'ph-pop') this.closePopover(); });
+        this.initTrayResize();
+    }
+
+    // Drag the bottom-left handle to resize the (top-right anchored) dice tray.
+    initTrayResize() {
+        const tray = document.getElementById('ph-tray');
+        const handle = document.getElementById('ph-tray-resize');
+        if (!tray || !handle) return;
+        try {
+            const s = JSON.parse(localStorage.getItem('ph_tray_size') || 'null');
+            if (s && s.w && s.h) { tray.style.width = s.w + 'px'; tray.style.height = s.h + 'px'; }
+        } catch (e) {}
+        let start = null;
+        const pt = e => (e.touches && e.touches[0]) || e;
+        const move = e => {
+            if (!start) return;
+            const p = pt(e);
+            const w = Math.max(160, Math.min(720, start.w + (start.x - p.clientX)));  // anchored right → grow left
+            const h = Math.max(120, Math.min(600, start.h + (p.clientY - start.y)));  // anchored top → grow down
+            tray.style.width = w + 'px'; tray.style.height = h + 'px';
+            if (e.cancelable) e.preventDefault();
+        };
+        const up = () => {
+            if (!start) return; start = null;
+            localStorage.setItem('ph_tray_size', JSON.stringify({ w: tray.offsetWidth, h: tray.offsetHeight }));
+            if (window.DiceTray) window.DiceTray.resize();
+            document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up);
+            document.removeEventListener('touchmove', move); document.removeEventListener('touchend', up);
+        };
+        const down = e => {
+            e.preventDefault(); e.stopPropagation();
+            const p = pt(e);
+            start = { x: p.clientX, y: p.clientY, w: tray.offsetWidth, h: tray.offsetHeight };
+            document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
+            document.addEventListener('touchmove', move, { passive: false }); document.addEventListener('touchend', up);
+        };
+        handle.addEventListener('mousedown', down);
+        handle.addEventListener('touchstart', down, { passive: false });
     }
 
     render() {
@@ -106,12 +144,9 @@ class PlayController {
         const specs = ld.rolls.filter(r => r.die).map(r => ({ type: 'd' + r.die, value: r.value }));
         if (!specs.length) return;
         const seat = this.gs.seat(ld.seatId);
-        const k = ld.rolls[0].key || '';
-        const cat = k === 'ba' || k === 'bm' ? 'bonus'
-            : k[0] === 'a' ? 'action'
-            : k[0] === 'm' ? 'movement'
-            : (seat && seat.kind === 'monster') ? 'monster' : 'action';
-        window.DiceTray.roll(specs, cat);
+        // colored by the hero (seat color); monster uses its own red
+        const colorKey = seat ? (seat.kind === 'monster' ? 'monster' : seat.color) : 'action';
+        window.DiceTray.roll(specs, colorKey);
     }
 
     // ---- left play sidebar: your dice + the decks --------------------------
