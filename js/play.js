@@ -76,6 +76,7 @@ class PlayController {
         hud.innerHTML =
             '<div id="ph-roster"></div>' +
             '<div id="ph-roll"></div>' +
+            '<div id="ph-tray" class="ph-tray"></div>' +
             '<div id="ph-log"></div>' +
             '<div id="ph-played"></div>' +
             '<div id="ph-hand"></div>' +
@@ -92,7 +93,25 @@ class PlayController {
         this.renderRoll();
         this.renderLog();
         this.renderPlayed();
+        this.maybeAnimateDice();
         if (this.openSeatId) this.renderPopover();
+    }
+
+    // Fire the 3D dice tray once per new (synced) roll, forced to the result.
+    maybeAnimateDice() {
+        const ld = this.gs.state.lastDice;
+        if (!ld || ld.ts === this._diceTs) return;
+        this._diceTs = ld.ts;
+        if (!window.DiceTray) return;
+        const specs = ld.rolls.filter(r => r.die).map(r => ({ type: 'd' + r.die, value: r.value }));
+        if (!specs.length) return;
+        const seat = this.gs.seat(ld.seatId);
+        const k = ld.rolls[0].key || '';
+        const cat = k === 'ba' || k === 'bm' ? 'bonus'
+            : k[0] === 'a' ? 'action'
+            : k[0] === 'm' ? 'movement'
+            : (seat && seat.kind === 'monster') ? 'monster' : 'action';
+        window.DiceTray.roll(specs, cat);
     }
 
     // ---- left play sidebar: your dice + the decks --------------------------
