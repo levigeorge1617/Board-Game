@@ -75,6 +75,18 @@ So friends can play without your PC on.
 Any Node host works the same way (Railway, Fly.io, Glitch, a VPS): run
 `npm start`, expose the port over HTTPS/WSS.
 
+### Point the app at your server
+
+Set your host once in `js/config.js`:
+
+```js
+window.GAME_SERVER = 'your-app.onrender.com';   // no https://, no port
+```
+
+Then players never type a host — **🌐 Go online** only asks for a room code, the
+**🔗 Invite** button copies a `?room=CODE` link, and opening that link
+auto-joins the table. Override per-visit with `?host=...` in the URL.
+
 > PartyKit's own hosted platform (`npm run deploy`) is an alternative, but its
 > shared `partykit.dev` domain is currently at capacity, so the Node server above
 > is the reliable path.
