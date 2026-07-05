@@ -126,4 +126,8 @@ class GameState {
     setForm(seatId, form, temp) { this.dispatch({ type: 'SET_FORM', seatId, form, temp }); }
     setBoard(board) { this.dispatch({ type: 'SET_BOARD', board }); }
     attack(attackerId, defenderId, cols, rows) { this.dispatch({ type: 'COMBAT', attackerId, defenderId, cols, rows }); }
+    addMinion(opts) { this.dispatch(Object.assign({ type: 'ADD_MINION' }, opts)); }
+    removeMinion(id) { this.dispatch({ type: 'REMOVE_MINION', id }); }
+    minion(id) { return (this.state.minions || []).find(m => m.id === id); }
+    combatant(id) { return this.seat(id) || this.minion(id); }
 }

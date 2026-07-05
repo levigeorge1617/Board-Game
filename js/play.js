@@ -25,14 +25,14 @@ class PlayController {
     // ---- board piece dragging (called from AppController canvas events) ---
     pieceAt(x, y) {
         if (!this.gs.state.started) return null;
-        const seats = this.gs.state.seats;
-        for (let i = seats.length - 1; i >= 0; i--) if (seats[i].x === x && seats[i].y === y) return seats[i].id;
+        const all = this.gs.state.seats.concat(this.gs.state.minions || []);
+        for (let i = all.length - 1; i >= 0; i--) if (all[i].x === x && all[i].y === y) return all[i].id;
         return null;
     }
     onPieceDown(x, y) {
         const id = this.pieceAt(x, y); if (!id) return false;
-        const seat = this.gs.seat(id);
-        this.dragPiece = { seatId: id, x, y, sx: seat.x, sy: seat.y };
+        const ent = this.gs.combatant(id); if (!ent) return false;
+        this.dragPiece = { seatId: id, x, y, sx: ent.x, sy: ent.y };
         return true;
     }
     onPieceMove(x, y) {
@@ -433,6 +433,7 @@ class PlayController {
     closePopover() { this.openSeatId = null; document.getElementById('ph-pop').style.display = 'none'; }
 
     renderPopover() {
+        if (this.gs.minion(this.openSeatId)) return this.renderMinionSheet(this.gs.minion(this.openSeatId));
         const seat = this.gs.seat(this.openSeatId); if (!seat) return this.closePopover();
         const ch = this.gs.character(seat);
         const pop = document.getElementById('ph-pop');
@@ -491,20 +492,56 @@ class PlayController {
         });
     }
 
+    // enemies = the opposing side (heroes vs monster+minions), placed & alive
+    enemiesOf(ent) {
+        const heroSide = ent.kind === 'hero';
+        const list = heroSide
+            ? this.gs.state.seats.filter(o => o.kind === 'monster').concat(this.gs.state.minions || [])
+            : this.gs.state.seats.filter(o => o.kind === 'hero');
+        return list.filter(o => o.x != null && !o.dead);
+    }
+    attackRow(ent) {
+        const enemies = this.enemiesOf(ent);
+        const opts = enemies.map(o => `<option value="${o.id}">${esc(o.label)} · ${this.dist(ent, o)} away</option>`).join('')
+            || '<option value="">no targets on board</option>';
+        return `<div class="ph-atk-row"><select class="ph-atk-target">${opts}</select>` +
+            `<button class="ph-btn ph-btn-warn ph-atk-go"${enemies.length ? '' : ' disabled'}>Attack ⚔</button></div>`;
+    }
     // ⚔ attack: pick an enemy piece and resolve one exchange
     combatBlock(seat) {
         const ch = this.gs.character(seat);
         const c = (ch && ch.combat) || {};
-        const enemies = this.gs.state.seats.filter(o => o.kind !== seat.kind && o.x != null && !o.dead);
         const reachNote = c.reach > 1 ? ` · reach ${c.reach}` : '';
-        const opts = enemies.map(o => `<option value="${o.id}">${esc(o.label)} · ${this.dist(seat, o)} away</option>`).join('')
-            || '<option value="">no targets on board</option>';
         return `<div class="ph-cc-block"><h4>Combat — ⚔ ${c.attack || 0} / 🛡 ${c.defense || 0}${reachNote}</h4>` +
-            `<div class="ph-atk-row"><select class="ph-atk-target">${opts}</select>` +
-            `<button class="ph-btn ph-btn-warn ph-atk-go"${enemies.length ? '' : ' disabled'}>Attack ⚔</button></div>` +
+            this.attackRow(seat) +
             `<div class="ph-muted" style="font-size:10px;margin-top:4px;">Rolls your attack pool vs the target's defense; wounds apply automatically.</div></div>`;
     }
     dist(a, b) { return (a.x == null || b.x == null) ? '?' : Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)); }
+
+    renderMinionSheet(m) {
+        const pop = document.getElementById('ph-pop');
+        pop.innerHTML =
+            `<div class="ph-sheet" style="--c:#9b2d2d;max-width:340px">` +
+                `<button class="ph-cc-close" title="Close">✕</button>` +
+                `<div class="ph-sheet-top"><div class="ph-sheet-head"><h3>☠ ${esc(m.label)}</h3><span>minion</span></div></div>` +
+                `<div class="ph-sheet-body" style="display:block"><div class="ph-sheet-info">` +
+                    `<div class="ph-cc-block"><h4>Piece · ${m.x + 1}-${String.fromCharCode(65 + m.y)}</h4>` +
+                        `<div class="ph-hp-row"><button class="ph-btn ph-hp-dn">−</button>` +
+                        `<span class="ph-hp-val">❤ ${m.hp}/${m.maxHp}</span>` +
+                        `<button class="ph-btn ph-hp-up">+</button>` +
+                        `<button class="ph-btn ph-btn-warn ph-min-remove">Remove</button></div>` +
+                        `<div class="ph-muted" style="font-size:10px;margin-top:4px;">Drag on the board to move.</div></div>` +
+                    `<div class="ph-cc-block"><h4>Combat — ⚔ ${m.attack} / 🛡 ${m.defense}</h4>${this.attackRow(m)}</div>` +
+                `</div></div>` +
+            `</div>`;
+        pop.style.display = 'flex';
+        pop.querySelector('.ph-cc-close').onclick = () => this.closePopover();
+        pop.querySelector('.ph-hp-dn').onclick = () => this.gs.adjustHp(m.id, -1);
+        pop.querySelector('.ph-hp-up').onclick = () => this.gs.adjustHp(m.id, 1);
+        pop.querySelector('.ph-min-remove').onclick = () => { this.gs.removeMinion(m.id); this.closePopover(); };
+        const go = pop.querySelector('.ph-atk-go');
+        if (go) go.onclick = () => { const t = pop.querySelector('.ph-atk-target'); if (t && t.value) this.gs.attack(m.id, t.value, this.app.board.cols, this.app.board.rows); };
+    }
 
     pieceBlock(seat) {
         if (seat.kind !== 'hero') return '';
