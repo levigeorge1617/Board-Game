@@ -22,6 +22,7 @@ const DZ_FIELDS = {
         { key: 'stats.m2', label: 'Movement die 2 — M2  (optional)', type: 'die' },
         { key: 'stats.ba', label: 'Bonus action die — BA', type: 'die' },
         { key: 'stats.bm', label: 'Bonus movement die — BM', type: 'die' },
+        { key: 'stats.life', label: 'Starting life ❤ (piece HP)', type: 'number', hint: 'Max HP of this hero’s board piece. Defaults to 10 if blank.' },
         { key: 'abilities', label: 'Abilities', type: 'textarea' },
         { key: 'objectiveAbilities', label: 'Objective-die abilities  ◆/◇', type: 'textarea' },
     ],

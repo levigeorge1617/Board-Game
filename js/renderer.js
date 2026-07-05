@@ -5,6 +5,17 @@ class Renderer {
         this.state = boardState;
         this.panX = 50; this.panY = 50; this.zoom = 1.0;
         this.minZoom = 0.1; this.maxZoom = 3.0;
+        this.imgCache = {};
+    }
+
+    getImg(src) {
+        if (!src) return null;
+        if (this.imgCache[src]) return this.imgCache[src];
+        const img = new Image();
+        img.onload = () => this.draw();
+        img.src = src;
+        this.imgCache[src] = img;
+        return img;
     }
 
     resizeCanvas() {
@@ -148,6 +159,11 @@ class Renderer {
             ctx.restore();
         });
 
+        // 6.5 Game pieces (heroes/monster) from the synced play state
+        if (window.app && window.app.appMode === 'play' && window.app.play && window.app.play.gs.state.started) {
+            this.drawPieces(ctx, size);
+        }
+
         // 7. Render Active Structural Region Template Selection Outlines
         if (selectionBox) {
             ctx.strokeStyle = '#e0a800'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
@@ -156,5 +172,72 @@ class Renderer {
             ctx.setLineDash([]);
         }
         ctx.restore();
+    }
+
+    drawPieces(ctx, size) {
+        const play = window.app.play;
+        const gs = play.gs;
+        const drag = play.dragPiece;
+        const FORM_ART = { DEER: 'players/druid1.jpg', BEAR: 'players/druid2.jpg', TURTLE: 'players/druid3.jpg', CHEETAH: 'players/druid4.jpg' };
+        const colorOf = (typeof PH_COLOR !== 'undefined') ? PH_COLOR : {};
+
+        gs.state.seats.forEach(seat => {
+            if (seat.x == null || seat.y == null) return;
+            let px = seat.x, py = seat.y;
+            if (drag && drag.seatId === seat.id) { px = drag.x; py = drag.y; }
+            const cx = px * size + size / 2, cy = py * size + size / 2, r = size * 0.42;
+            const color = colorOf[seat.color] || '#888';
+
+            ctx.save();
+            if (seat.dead) {
+                // gravestone
+                ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.fillStyle = '#3a3f43'; ctx.fill();
+                ctx.lineWidth = 3; ctx.strokeStyle = color; ctx.stroke();
+                ctx.fillStyle = '#cfd6db'; ctx.font = `bold ${size * 0.5}px sans-serif`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('☠', cx, cy - size * 0.05);
+                this.badge(ctx, cx + r * 0.7, cy + r * 0.7, size, seat.grave ? seat.grave.count : 0, '#111', '#e0a800');
+            } else {
+                const ch = gs.character(seat);
+                let art = ch && ch.art;
+                if (seat.form && FORM_ART[seat.form]) art = FORM_ART[seat.form];
+                const img = art ? this.getImg(art) : null;
+                ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.fillStyle = color; ctx.fill();
+                if (img && img.complete && img.naturalWidth) {
+                    ctx.save(); ctx.clip();
+                    const s = Math.max((r * 2) / img.naturalWidth, (r * 2) / img.naturalHeight);
+                    const w = img.naturalWidth * s, h = img.naturalHeight * s;
+                    ctx.drawImage(img, cx - w / 2, cy - h / 2 - r * 0.15, w, h);
+                    ctx.restore();
+                }
+                ctx.lineWidth = 3.5; ctx.strokeStyle = color; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+                ctx.lineWidth = 1.5; ctx.strokeStyle = '#0d0f11'; ctx.beginPath(); ctx.arc(cx, cy, r + 1.8, 0, Math.PI * 2); ctx.stroke();
+                if (seat.kind === 'hero') this.badge(ctx, cx + r * 0.72, cy + r * 0.72, size, seat.hp, '#111', color, '#fff');
+                if (seat.form) {
+                    ctx.fillStyle = '#0d0f11cc'; ctx.strokeStyle = color; ctx.lineWidth = 1;
+                    const fw = size * 0.62;
+                    ctx.beginPath(); ctx.roundRect(cx - fw / 2, cy - r - size * 0.28, fw, size * 0.26, 3); ctx.fill(); ctx.stroke();
+                    ctx.fillStyle = '#fff'; ctx.font = `bold ${size * 0.17}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(seat.form, cx, cy - r - size * 0.15);
+                }
+            }
+            // name label
+            ctx.fillStyle = '#e8ecef'; ctx.font = `${size * 0.2}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+            ctx.shadowColor = '#000'; ctx.shadowBlur = 3;
+            ctx.fillText(seat.label, cx, cy + r + 2);
+            ctx.restore();
+        });
+    }
+
+    badge(ctx, x, y, size, text, textColor, bg, ring) {
+        const br = size * 0.2;
+        ctx.beginPath(); ctx.arc(x, y, br, 0, Math.PI * 2);
+        ctx.fillStyle = bg; ctx.fill();
+        if (ring) { ctx.lineWidth = 1.5; ctx.strokeStyle = ring; ctx.stroke(); }
+        ctx.fillStyle = textColor === '#111' ? '#fff' : textColor;
+        ctx.font = `bold ${size * 0.22}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(text, x, y);
     }
 }

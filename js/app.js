@@ -30,7 +30,33 @@ class AppController {
         window.addEventListener('resize', () => this.renderer.resizeCanvas());
         this.renderer.resizeCanvas();
 
+        // Board layout (walls/floors/tokens) rides along in the synced game state,
+        // so the "drawn" map persists across sessions and syncs to other players.
+        this._lastBoardSnap = null;
+        this.play.gs.subscribe(() => this.applyBoardFromState());
+        this.applyBoardFromState();                       // load a persisted/remote map on start
+        setInterval(() => this.pushBoardToState(), 1500); // debounced push of local edits
+
         if (this.appMode === 'play') this.play.activate();
+    }
+
+    boardSnapshot() {
+        return JSON.stringify({ cols: this.board.cols, rows: this.board.rows, tokens: this.board.tokens, edges: this.board.edges, floors: this.board.floors });
+    }
+    applyBoardFromState() {
+        const b = this.play.gs.state.board; if (!b) return;
+        const incoming = JSON.stringify(b);
+        if (incoming === this._lastBoardSnap) return;     // our own push or already applied
+        this._lastBoardSnap = incoming;
+        this.board.applySnapshot(incoming);
+        this.ui.updateGridInputs(this.board.cols, this.board.rows);
+        this.renderer.draw();
+    }
+    pushBoardToState() {
+        const snap = this.boardSnapshot();
+        if (snap === this._lastBoardSnap) return;         // unchanged since last sync
+        this._lastBoardSnap = snap;
+        this.play.gs.setBoard(JSON.parse(snap));
     }
 
     setLibraryDragItem(itemData) { this.activeLibraryItem = itemData; }
@@ -331,11 +357,17 @@ class AppController {
             } 
             // Play Mode Click Interactions
             else {
+                // game pieces (synced) take priority over manual board tokens
+                if (this.play && this.play.onPieceDown(cellX, cellY)) {
+                    this.hideHPPopover();
+                    this.renderer.draw();
+                    return;
+                }
                 const targetToken = this.board.tokens.find(t => t.x === cellX && t.y === cellY);
                 if (targetToken) {
                     this.draggedToken = targetToken;
                     this.board.saveHistory();
-                    this.hideHPPopover(); 
+                    this.hideHPPopover();
                 } else {
                     this.hideHPPopover();
                 }
@@ -349,7 +381,9 @@ class AppController {
             const { cellX, cellY } = this.renderer.screenToWorld(mouseX, mouseY);
             this.currentMouseCell = { x: cellX, y: cellY };
 
-            if (this.isPanning && e.buttons === 2) {
+            if (this.play && this.play.dragPiece && e.buttons === 1) {
+                this.play.onPieceMove(cellX, cellY);
+            } else if (this.isPanning && e.buttons === 2) {
                 this.renderer.panX = mouseX - this.startX; this.renderer.panY = mouseY - this.startY;
                 this.renderer.draw(null, 0, 0, this.selectionBox);
             } else if (this.isSelecting && e.buttons === 1) {
@@ -366,9 +400,10 @@ class AppController {
             }
         });
 
-        this.canvas.addEventListener('mouseup', (e) => { 
-            if (e.button === 2) this.isPanning = false; 
+        this.canvas.addEventListener('mouseup', (e) => {
+            if (e.button === 2) this.isPanning = false;
             if (e.button === 0) {
+                if (this.play && this.play.dragPiece) { this.play.onPieceUp(); return; }
                 if (this.isSelecting && this.selectionBox) {
                     this.isSelecting = false;
                     this.saveRegionAsTemplate(this.selectionBox.x, this.selectionBox.y, this.selectionBox.w, this.selectionBox.h);

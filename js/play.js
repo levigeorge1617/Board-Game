@@ -16,12 +16,44 @@ class PlayController {
         this.openSeatId = null;      // character popover currently open (local)
         this.handHidden = false;
         this.built = false;
-        this.gs.subscribe(() => { if (this.app.appMode === 'play') this.render(); });
+        this.dragPiece = null;
+        this.gs.subscribe(() => { if (this.app.appMode === 'play') { this.render(); this.app.renderer.draw(); } });
+    }
+
+    // ---- board piece dragging (called from AppController canvas events) ---
+    pieceAt(x, y) {
+        if (!this.gs.state.started) return null;
+        const seats = this.gs.state.seats;
+        for (let i = seats.length - 1; i >= 0; i--) if (seats[i].x === x && seats[i].y === y) return seats[i].id;
+        return null;
+    }
+    onPieceDown(x, y) {
+        const id = this.pieceAt(x, y); if (!id) return false;
+        const seat = this.gs.seat(id);
+        this.dragPiece = { seatId: id, x, y, sx: seat.x, sy: seat.y };
+        return true;
+    }
+    onPieceMove(x, y) {
+        if (!this.dragPiece) return false;
+        const b = this.app.board;
+        this.dragPiece.x = Math.max(0, Math.min(b.cols - 1, x));
+        this.dragPiece.y = Math.max(0, Math.min(b.rows - 1, y));
+        this.app.renderer.draw();
+        return true;
+    }
+    onPieceUp() {
+        if (!this.dragPiece) return false;
+        const d = this.dragPiece; this.dragPiece = null;
+        if (d.x === d.sx && d.y === d.sy) this.openPopover(d.seatId);   // click = open sheet
+        else this.gs.movePiece(d.seatId, d.x, d.y);                     // drag = move
+        this.app.renderer.draw();
+        return true;
     }
 
     activate() {
         if (!this.built) { this.build(); this.built = true; }
         document.getElementById('play-hud').style.display = 'block';
+        const side = document.getElementById('play-sidebar'); if (side) side.style.display = 'block';
         this.maybeAutoConnect();
         this.render();
     }
@@ -34,26 +66,105 @@ class PlayController {
         const host = params.get('host') || window.GAME_SERVER;
         if (room && host && this.gs.status === 'offline') this.gs.connect(host, room);
     }
-    deactivate() { const h = document.getElementById('play-hud'); if (h) h.style.display = 'none'; }
+    deactivate() {
+        const h = document.getElementById('play-hud'); if (h) h.style.display = 'none';
+        const side = document.getElementById('play-sidebar'); if (side) side.style.display = 'none';
+    }
 
     build() {
         const hud = document.getElementById('play-hud');
         hud.innerHTML =
             '<div id="ph-roster"></div>' +
             '<div id="ph-roll"></div>' +
-            '<div id="ph-decks"></div>' +
+            '<div id="ph-log"></div>' +
+            '<div id="ph-played"></div>' +
             '<div id="ph-hand"></div>' +
             '<div id="ph-pop" class="ph-pop" style="display:none;"></div>';
         hud.addEventListener('click', (e) => { if (e.target.id === 'ph-pop') this.closePopover(); });
     }
 
     render() {
-        if (!this.gs.state.started) { this.renderWelcome(); return; }
+        const side = document.getElementById('play-sidebar');
+        if (!this.gs.state.started) { this.renderWelcome(); document.getElementById('ph-log').innerHTML = ''; if (side) side.innerHTML = ''; return; }
         this.renderRoster();
-        this.renderDecks();
+        this.renderSidebar();
         this.renderHand();
         this.renderRoll();
+        this.renderLog();
+        this.renderPlayed();
         if (this.openSeatId) this.renderPopover();
+    }
+
+    // ---- left play sidebar: your dice + the decks --------------------------
+    renderSidebar() {
+        const wrap = document.getElementById('play-sidebar'); if (!wrap) return;
+        const seat = this.gs.seat(this.gs.mySeatId);
+        let html = '<hr><h2>Your Rolls</h2>';
+        if (!seat) {
+            html += '<p class="ph-side-hint">Pick your seat (top bar) to roll here.</p>';
+        } else {
+            const ch = this.gs.character(seat);
+            html += `<div class="ph-side-seat" style="--c:${PH_COLOR[seat.color] || '#888'}">${esc(seat.label)}</div>`;
+            html += this.diceBar(seat, ch, true);
+            if (seat.kind === 'monster') html += `<button id="ph-side-grid" class="ph-btn ph-btn-go" style="width:100%;margin-top:6px;">Roll grid ▸ #/A</button>`;
+        }
+        html += '<hr><h2>Decks</h2><div id="ph-decks"></div>';
+        wrap.innerHTML = html;
+        if (seat) {
+            this.wireDice(wrap, seat);
+            const g = document.getElementById('ph-side-grid');
+            if (g) g.onclick = () => this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows);
+        }
+        this.renderDecks();
+    }
+
+    // ---- dice bar (shared by sidebar + character sheet) -------------------
+    // Action (a1/a2) left · Bonus (BA left, BM right) middle · Movement (m1/m2) right.
+    // Bonus dice are locked until enough objectives: BM at 4, BA at 7.
+    diceBar(seat, ch, vertical) {
+        const dice = this.characterDice(seat, ch);
+        const score = (this.gs.state.score && this.gs.state.score.collected) || 0;
+        const find = k => dice.find(d => d.key === k);
+        const dbtn = (d, locked, unlockAt) => {
+            if (!d) return '<span class="ph-muted ph-die-none">—</span>';
+            return `<button class="ph-die-btn${locked ? ' locked' : ''}" ${locked ? 'disabled' : ''} data-die="${d.die}" data-key="${d.key}"` +
+                ` title="${locked ? 'Unlocks at ' + unlockAt + ' objectives' : 'Roll ' + d.key + ' (d' + d.die + ')'}">` +
+                this.dieFace(d.die) + `<span class="ph-die-k">${icon(d.label)}${locked ? ' 🔒' : ''}</span></button>`;
+        };
+        const setA = dice.filter(d => d.grp === 'a').map(d => dbtn(d)).join('') || '<span class="ph-muted ph-die-none">—</span>';
+        const setM = dice.filter(d => d.grp === 'm').map(d => dbtn(d)).join('') || '<span class="ph-muted ph-die-none">—</span>';
+        const ba = find('ba'), bm = find('bm');
+        const setB = (ba || bm) ? (dbtn(ba, score < 7, 7) + dbtn(bm, score < 4, 4)) : '<span class="ph-muted ph-die-none">—</span>';
+        const head = (grp, label) => `<button class="ph-dhead" data-grp="${grp}">${icon(label)}</button>`;
+        return `<div class="ph-dicebar${vertical ? ' vert' : ''}">` +
+            `<div class="ph-dcol">${head('a', 'Action ☼')}<div class="ph-dset">${setA}</div></div>` +
+            `<div class="ph-dcol ph-dcol-bonus"><div class="ph-dhead-s">Bonus</div><div class="ph-dset">${setB}</div></div>` +
+            `<div class="ph-dcol">${head('m', 'Move ֍')}<div class="ph-dset">${setM}</div></div>` +
+        `</div>`;
+    }
+    wireDice(container, seat) {
+        const dice = this.characterDice(seat, this.gs.character(seat));
+        container.querySelectorAll('.ph-die-btn:not(.locked)').forEach(b =>
+            b.onclick = () => this.gs.rollDice(seat.id, [{ key: b.dataset.key, die: Number(b.dataset.die) }]));
+        container.querySelectorAll('.ph-dhead[data-grp]').forEach(b =>
+            b.onclick = () => { const list = dice.filter(d => d.grp === b.dataset.grp); if (list.length) this.gs.rollDice(seat.id, list.map(d => ({ key: d.key, die: d.die }))); });
+    }
+
+    // ---- shared "last played card" (each player dismisses their own view) --
+    renderPlayed() {
+        const wrap = document.getElementById('ph-played');
+        const lp = this.gs.state.lastPlayed;
+        if (!lp || this.dismissedPlayedTs === lp.ts) { wrap.innerHTML = ''; return; }
+        const c = this.gs.card(lp.cid); if (!c) { wrap.innerHTML = ''; return; }
+        const seat = this.gs.seat(lp.seatId);
+        const col = seat ? (PH_COLOR[seat.color] || '#888') : '#888';
+        wrap.innerHTML =
+            `<div class="ph-played-card" style="--c:${col}">` +
+                `<div class="ph-played-head"><span style="color:${col}">${esc(seat ? seat.label : '')} played</span>` +
+                    `<button class="ph-played-x" title="Dismiss for me">✕</button></div>` +
+                this.cardFace(c) +
+            `</div>`;
+        wrap.querySelector('.ph-played-x').onclick = () => { this.dismissedPlayedTs = lp.ts; this.renderPlayed(); };
     }
 
     renderWelcome() {
@@ -63,7 +174,7 @@ class PlayController {
             `<div class="ph-welcome"><b>Game table</b>` +
             `<p>${online ? 'Connected — anyone in this room can deal.' : 'Play solo/hotseat here, or go online for cross-device play.'}<br>Deal the decks and seat the 5 heroes + monster.</p>` +
             `<button id="ph-new" class="ph-btn ph-btn-go">Deal &amp; start</button></div>`;
-        ['ph-roll', 'ph-decks', 'ph-hand'].forEach(id => document.getElementById(id).innerHTML = '');
+        ['ph-roll', 'ph-hand', 'ph-played'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
         document.getElementById('ph-new').onclick = () => this.gs.newGame();
         this.wireOnline();
     }
@@ -78,8 +189,9 @@ class PlayController {
     // ---- roster / seats ---------------------------------------------------
     renderRoster() {
         const s = this.gs.state;
+        const heroesTurn = s.phase !== 'monster';
         const chips = s.seats.map(seat => {
-            const active = seat.id === s.activeSeatId ? ' active' : '';
+            const active = ((seat.kind === 'monster') ? !heroesTurn : heroesTurn) ? ' active' : '';
             const mine = seat.id === this.gs.mySeatId ? ' mine' : '';
             const col = PH_COLOR[seat.color] || '#888';
             return `<button class="ph-chip${active}${mine}" data-seat="${seat.id}" style="--c:${col}">` +
@@ -87,23 +199,33 @@ class PlayController {
                 `<span class="ph-chip-name">${esc(seat.label)}</span>` +
                 `<span class="ph-chip-count">${seat.hand.length}🂠</span></button>`;
         }).join('');
+        const sc = s.score || { collected: 0, goal: 0 };
+        const scoreChip =
+            `<div class="ph-score" title="Objectives collected">` +
+                `<button class="ph-score-btn" id="ph-score-dn">−</button>` +
+                `<span class="ph-score-val">${GAME_ICONS.obj} <b>${sc.collected}</b>${sc.goal ? ' / ' + sc.goal : ''}</span>` +
+                `<button class="ph-score-btn" id="ph-score-up">+</button>` +
+            `</div>`;
         document.getElementById('ph-roster').innerHTML =
             `<div class="ph-bar">` +
                 `<div class="ph-seats">${chips}</div>` +
                 `<div class="ph-bar-ctl">` +
+                    scoreChip +
                     `<label class="ph-me">You: <select id="ph-myseat">` +
                         `<option value="">— pick seat —</option>` +
                         s.seats.map(seat => `<option value="${seat.id}"${seat.id === this.gs.mySeatId ? ' selected' : ''}>${esc(seat.label)}</option>`).join('') +
                     `</select></label>` +
                     this.onlineControl() +
-                    `<button id="ph-next" class="ph-btn">End turn ▸</button>` +
+                    `<button id="ph-next" class="ph-btn ${heroesTurn ? 'ph-turn-hero' : 'ph-turn-mon'}">${heroesTurn ? "Heroes' turn" : "Monster's turn"} ▸ end</button>` +
                     `<button id="ph-reset" class="ph-btn ph-btn-warn">Reset</button>` +
                 `</div>` +
             `</div>`;
         document.querySelectorAll('#ph-roster .ph-chip').forEach(b =>
             b.onclick = () => this.openPopover(b.dataset.seat));
         document.getElementById('ph-myseat').onchange = (e) => this.gs.setMySeat(e.target.value || null);
-        document.getElementById('ph-next').onclick = () => this.gs.nextTurn();
+        document.getElementById('ph-next').onclick = () => this.gs.togglePhase();
+        document.getElementById('ph-score-up').onclick = () => this.gs.score(1, this.gs.mySeatId);
+        document.getElementById('ph-score-dn').onclick = () => this.gs.score(-1, this.gs.mySeatId);
         document.getElementById('ph-reset').onclick = () => { if (confirm('Reset the whole table?')) this.gs.resetGame(); };
         this.wireOnline();
     }
@@ -191,16 +313,39 @@ class PlayController {
         let html = '';
         if (lastDice) {
             const seat = this.gs.seat(lastDice.seatId);
+            const col = seat ? (PH_COLOR[seat.color] || '#888') : '#888';
             const chips = lastDice.rolls.map(r => this.dieResult(r.die, r.value, r.key)).join('');
-            html += `<div class="ph-roll-card"><div class="ph-roll-who">${esc(seat ? seat.label : '')} rolled</div>` +
+            html += `<div class="ph-roll-card" style="--c:${col}"><div class="ph-roll-who" style="color:${col}">${esc(seat ? seat.label : '')} rolled</div>` +
                 `<div class="ph-roll-dice">${chips}</div>` +
                 (lastDice.rolls.length > 1 ? `<div class="ph-roll-total">total ${lastDice.total}</div>` : '') + `</div>`;
         }
         if (lastGrid) {
-            html += `<div class="ph-roll-card ph-grid-card"><div class="ph-roll-who">Monster target</div>` +
+            html += `<div class="ph-roll-card ph-grid-card" style="--c:${PH_COLOR.MONSTER}"><div class="ph-roll-who" style="color:${PH_COLOR.MONSTER}">Monster target</div>` +
                 `<div class="ph-grid-res"><b>${lastGrid.col}</b><b>${esc(lastGrid.row)}</b></div></div>`;
         }
         document.getElementById('ph-roll').innerHTML = html;
+    }
+
+    // ---- event log --------------------------------------------------------
+    renderLog() {
+        const wrap = document.getElementById('ph-log');
+        if (this.logCollapsed) {
+            wrap.innerHTML = `<button id="ph-log-toggle" class="ph-log-tab">📜 Log</button>`;
+            document.getElementById('ph-log-toggle').onclick = () => { this.logCollapsed = false; this.renderLog(); };
+            return;
+        }
+        const entries = (this.gs.state.log || []).slice(-40);
+        const rows = entries.map(e => {
+            const seat = this.gs.seat(e.seatId);
+            const col = seat ? (PH_COLOR[seat.color] || '#8a95a0') : '#8a95a0';
+            const who = seat ? `<b style="color:${col}">${esc(seat.label)}</b> ` : '';
+            return `<div class="ph-log-row">${who}${esc(e.text)}</div>`;
+        }).join('') || '<div class="ph-log-row ph-muted">No events yet.</div>';
+        wrap.innerHTML =
+            `<div class="ph-log-head"><span>📜 Event log</span><button id="ph-log-toggle" class="ph-log-min">–</button></div>` +
+            `<div class="ph-log-body" id="ph-log-body">${rows}</div>`;
+        document.getElementById('ph-log-toggle').onclick = () => { this.logCollapsed = true; this.renderLog(); };
+        const body = document.getElementById('ph-log-body'); if (body) body.scrollTop = body.scrollHeight;
     }
 
     // ---- character popover (art + shaded blocks + rollers) ----------------
@@ -212,46 +357,87 @@ class PlayController {
         const ch = this.gs.character(seat);
         const pop = document.getElementById('ph-pop');
         const col = PH_COLOR[seat.color] || '#888';
-        const dice = this.characterDice(seat, ch);
-
-        const diceChips = dice.map(d =>
-            `<button class="ph-die-btn" data-die="${d.die}" data-key="${d.key}" title="Roll ${d.key} (d${d.die})">` +
-                this.dieFace(d.die) + `<span class="ph-die-k">${icon(d.label)}</span></button>`).join('') || '<span class="ph-muted">no dice set</span>';
-
-        const groups = [];
-        const acts = dice.filter(d => d.grp === 'a'); const moves = dice.filter(d => d.grp === 'm');
-        if (acts.length) groups.push(`<button class="ph-btn ph-roll-grp" data-grp="a">Roll action ${icon('☼')}</button>`);
-        if (moves.length) groups.push(`<button class="ph-btn ph-roll-grp" data-grp="m">Roll movement ${icon('֍')}</button>`);
-
-        const gridBtn = seat.kind === 'monster'
-            ? `<button id="ph-roll-grid" class="ph-btn ph-btn-go">Roll grid ▸ #/A</button>` : '';
-
         const chooser = window.GAME_DATA ? this.characterChooser(seat) : '';
+        const gridBtn = seat.kind === 'monster'
+            ? `<button id="ph-roll-grid" class="ph-btn ph-btn-go" style="width:100%;margin-bottom:8px;">Roll grid ▸ #/A</button>` : '';
 
         pop.innerHTML =
-            `<div class="ph-charcard" style="--c:${col};${ch && ch.art ? `background-image:url('${esc(ch.art)}')` : ''}">` +
+            `<div class="ph-sheet" style="--c:${col}">` +
                 `<button class="ph-cc-close" title="Close">✕</button>` +
-                `<div class="ph-cc-shade"></div>` +
-                `<div class="ph-cc-body">` +
-                    `<div class="ph-cc-head"><h3>${esc(ch ? ch.name : seat.label)}</h3>` +
+                `<div class="ph-sheet-top">` +
+                    `<div class="ph-sheet-head"><h3>${esc(ch ? ch.name : seat.label)}</h3>` +
                         `<span>${esc(ch ? (ch.color || ch.element || '') : '')}</span>${chooser}</div>` +
-                    `<div class="ph-cc-dice">${diceChips}</div>` +
-                    `<div class="ph-cc-rollbar">${groups.join('')}${gridBtn}</div>` +
-                    (ch && ch.abilities ? `<div class="ph-cc-block"><h4>Abilities</h4><p>${fmt(ch.abilities)}</p></div>` : '') +
-                    (ch && ch.objectiveAbilities ? `<div class="ph-cc-block"><h4>Objective ${icon('◆/◇')}</h4><p>${fmt(ch.objectiveAbilities)}</p></div>` : '') +
+                    this.diceBar(seat, ch, false) +
+                `</div>` +
+                `<div class="ph-sheet-body">` +
+                    `<div class="ph-sheet-art"${ch && ch.art ? ` style="background-image:url('${esc(ch.art)}')"` : ''}></div>` +
+                    `<div class="ph-sheet-info">` +
+                        gridBtn +
+                        this.pieceBlock(seat) +
+                        this.formsBlock(seat, ch) +
+                        (ch && ch.abilities ? `<div class="ph-cc-block"><h4>Abilities</h4><p>${fmt(ch.abilities)}</p></div>` : '') +
+                        (ch && ch.objectiveAbilities ? `<div class="ph-cc-block"><h4>Objective ${icon('◆/◇')}</h4><p>${fmt(ch.objectiveAbilities)}</p></div>` : '') +
+                    `</div>` +
                 `</div>` +
             `</div>`;
         pop.style.display = 'flex';
 
         pop.querySelector('.ph-cc-close').onclick = () => this.closePopover();
-        pop.querySelectorAll('.ph-die-btn').forEach(b =>
-            b.onclick = () => this.gs.rollDice(seat.id, [{ key: b.dataset.key, die: Number(b.dataset.die) }]));
-        pop.querySelectorAll('.ph-roll-grp').forEach(b =>
-            b.onclick = () => this.gs.rollDice(seat.id, dice.filter(d => d.grp === b.dataset.grp).map(d => ({ key: d.key, die: d.die }))));
+        this.wireDice(pop, seat);
         const gb = pop.querySelector('#ph-roll-grid');
-        if (gb) gb.onclick = () => this.gs.rollGrid(this.app.board.cols, this.app.board.rows);
+        if (gb) gb.onclick = () => this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows);
         const sel = pop.querySelector('.ph-cc-choose');
         if (sel) sel.onchange = (e) => this.gs.setSeatCharacter(seat.id, e.target.value);
+
+        // piece controls
+        const on = (s, fn) => { const el = pop.querySelector(s); if (el) el.onclick = fn; };
+        on('.ph-hp-dn', () => this.gs.adjustHp(seat.id, -1));
+        on('.ph-hp-up', () => this.gs.adjustHp(seat.id, 1));
+        on('.ph-hp-dmg', () => this.gs.adjustHp(seat.id, -(parseInt(pop.querySelector('.ph-hp-amt').value, 10) || 0)));
+        on('.ph-kill', () => this.gs.kill(seat.id));
+        on('.ph-rev-tick', () => this.gs.reviveTick(seat.id, 1));
+        on('.ph-revive', () => this.gs.reviveTick(seat.id, 9999));
+        // druid forms
+        pop.querySelectorAll('.ph-form-btn').forEach(b => b.onclick = () => this.gs.setForm(seat.id, b.dataset.form || null, false));
+        on('.ph-ally-go', () => {
+            const who = pop.querySelector('.ph-ally-sel').value;
+            const form = pop.querySelector('.ph-ally-form').value;
+            if (who) this.gs.setForm(who, form, true);
+        });
+    }
+
+    pieceBlock(seat) {
+        if (seat.kind !== 'hero') return '';
+        const cell = (seat.x != null) ? `${seat.x + 1}-${String.fromCharCode(65 + seat.y)}` : 'off board';
+        let inner;
+        if (seat.dead) {
+            inner = `<div class="ph-hp-dead">☠ Gravestone — revive counter <b>${seat.grave ? seat.grave.count : 0}</b>` +
+                `<div class="ph-hp-row"><button class="ph-btn ph-rev-tick">Spend action −1</button>` +
+                `<button class="ph-btn ph-btn-go ph-revive">Revive now (life 4)</button></div></div>`;
+        } else {
+            inner = `<div class="ph-hp-row">` +
+                `<button class="ph-btn ph-hp-dn">−</button>` +
+                `<span class="ph-hp-val">❤ ${seat.hp}/${seat.maxHp}</span>` +
+                `<button class="ph-btn ph-hp-up">+</button>` +
+                `<input class="ph-hp-amt" type="number" value="5" min="1" style="width:44px">` +
+                `<button class="ph-btn ph-hp-dmg">damage</button>` +
+                `<button class="ph-btn ph-btn-warn ph-kill">Down ☠</button></div>`;
+        }
+        return `<div class="ph-cc-block"><h4>Piece · ${cell}</h4>${inner}` +
+            `<div class="ph-muted" style="font-size:10px;margin-top:4px;">Drag the piece on the board to move it.</div></div>`;
+    }
+
+    formsBlock(seat, ch) {
+        if (!ch || !/TURTLE|CHEETAH|BEAR|DEER/i.test(ch.abilities || '')) return '';
+        const forms = ['TURTLE', 'CHEETAH', 'BEAR', 'DEER'];
+        const btns = forms.map(f => `<button class="ph-form-btn${seat.form === f ? ' on' : ''}" data-form="${f}">${f}</button>`).join('') +
+            `<button class="ph-form-btn${!seat.form ? ' on' : ''}" data-form="">Normal</button>`;
+        const allies = this.gs.state.seats.filter(s => s.kind === 'hero' && s.id !== seat.id);
+        const allyRow = allies.length ? `<div class="ph-ally-row">Transform ally: ` +
+            `<select class="ph-ally-sel">${allies.map(a => `<option value="${a.id}">${esc(a.label)}</option>`).join('')}</select>` +
+            `<select class="ph-ally-form">${forms.map(f => `<option>${f}</option>`).join('')}</select>` +
+            `<button class="ph-btn ph-ally-go">Apply (this turn)</button></div>` : '';
+        return `<div class="ph-cc-block"><h4>Druid forms</h4><div class="ph-forms">${btns}</div>${allyRow}</div>`;
     }
 
     characterChooser(seat) {
@@ -280,6 +466,7 @@ class PlayController {
     // ---- discard viewer ---------------------------------------------------
     showDiscard(name) {
         const d = this.gs.state.decks[name]; if (!d || !d.discard.length) return;
+        if (this.gs.mySeatId) this.gs.log(`looked at the ${name} discard`, this.gs.mySeatId);
         const cards = d.discard.slice().reverse().map(inst => {
             const c = this.gs.card(inst.cid); return c ? `<div class="ph-card">${this.cardFace(c)}</div>` : '';
         }).join('');

@@ -13,7 +13,22 @@
 
     const HERO_COLORS = ['RED', 'YELLOW', 'GREEN', 'BLUE', 'PURPLE'];
 
-    function empty() { return { rev: 0, started: false, decks: null, seats: [], activeSeatId: null, lastDice: null, lastGrid: null }; }
+    function empty() { return { rev: 0, started: false, decks: null, seats: [], phase: 'heroes', score: { collected: 0, goal: 0 }, log: [], board: null, lastDice: null, lastGrid: null }; }
+
+    const MAX_LOG = 150;
+    function logEvent(s, seatId, text) {
+        (s.log = s.log || []).push({ id: Date.now() + Math.random(), ts: Date.now(), seatId: seatId || null, text });
+        if (s.log.length > MAX_LOG) s.log = s.log.slice(-MAX_LOG);
+    }
+    const nameOf = (s, seatId) => { const seat = (s.seats || []).find(x => x.id === seatId); return seat ? seat.label : ''; };
+    const cellName = (x, y) => `${(x | 0) + 1}-${String.fromCharCode(65 + (y | 0))}`;
+    function die(s, seat, data) {
+        seat.dead = true; seat.form = null; seat.formTemp = false;
+        const ch = (seat.kind === 'monster' ? data.monsters : data.heroes).find(c => c.id === seat.characterId);
+        const a1 = (ch && ch.stats && ch.stats.a1) || 4;   // guidebook: roll action die for the revive counter
+        seat.grave = { count: 1 + Math.floor(Math.random() * a1) };
+        logEvent(s, seat.id, `died — gravestone (revive ${seat.grave.count})`);
+    }
 
     function newGame(data) {
         const state = empty();
@@ -30,16 +45,23 @@
         const byColor = {};
         (data.heroes || []).forEach(h => { if (!byColor[h.color] || h.cardFace === 'front') byColor[h.color] = h; });
         const seats = [];
+        let i = 0;
         HERO_COLORS.forEach(col => {
             const h = byColor[col]; if (!h) return;
-            seats.push({ id: 'seat-' + col.toLowerCase(), label: h.name, kind: 'hero', deck: 'White', color: col, characterId: h.id, hand: [] });
+            const life = (h.stats && h.stats.life) || 10;
+            seats.push({
+                id: 'seat-' + col.toLowerCase(), label: h.name, kind: 'hero', deck: 'White', color: col, characterId: h.id, hand: [],
+                x: 2 + i, y: 6, hp: life, maxHp: life, dead: false, grave: null, form: null, formTemp: false,
+            });
+            i++;
         });
         const mon = (data.monsters || [])[0];
-        seats.push({ id: 'seat-monster', label: mon ? mon.name : 'Monster', kind: 'monster', deck: 'Black', color: 'MONSTER', characterId: mon ? mon.id : null, hand: [] });
+        seats.push({ id: 'seat-monster', label: mon ? mon.name : 'Monster', kind: 'monster', deck: 'Black', color: 'MONSTER', characterId: mon ? mon.id : null, hand: [], x: 4, y: 9 });
 
         state.seats = seats;
-        state.activeSeatId = seats[0] ? seats[0].id : null;
+        state.phase = 'heroes';
         state.started = true;
+        logEvent(state, null, 'Table dealt — heroes go first.');
         return state;
     }
 
@@ -53,13 +75,14 @@
         const s = clone(state || empty());
         const a = action || {};
         switch (a.type) {
-            case 'NEW_GAME': return newGame(data);
-            case 'RESET': return empty();
+            case 'NEW_GAME': { const ng = newGame(data); ng.board = (state && state.board) || null; return ng; }  // keep the drawn map
+            case 'RESET': { const e = empty(); e.board = (state && state.board) || null; return e; }
+            case 'SET_BOARD': s.board = a.board || null; break;
             case 'DRAW': {
                 const seat = seatOf(s, a.seatId); const deck = s.decks && s.decks[a.deck || (seat && seat.deck)];
                 if (!seat || !deck) break;
                 if (!deck.draw.length) { deck.draw = shuffle(deck.discard); deck.discard = []; }
-                if (deck.draw.length) seat.hand.push(deck.draw.pop());
+                if (deck.draw.length) { seat.hand.push(deck.draw.pop()); logEvent(s, seat.id, `drew a card`); }
                 break;
             }
             case 'DISCARD': {
@@ -69,31 +92,72 @@
                 const card = cardOf(data, inst.cid);
                 const deck = s.decks[(card && card.deck) || seat.deck] || s.decks[seat.deck];
                 if (deck) deck.discard.push(inst);
+                s.lastPlayed = { seatId: seat.id, cid: inst.cid, ts: Date.now() };
+                logEvent(s, seat.id, `played ${card ? card.name : 'a card'}`);
                 break;
             }
-            case 'SET_ACTIVE': s.activeSeatId = a.seatId; break;
-            case 'NEXT_TURN': {
-                const i = s.seats.findIndex(x => x.id === s.activeSeatId);
-                if (s.seats.length) s.activeSeatId = s.seats[(i + 1) % s.seats.length].id;
+            case 'SET_PHASE': {
+                s.phase = a.phase === 'monster' ? 'monster' : 'heroes';
+                (s.seats || []).forEach(seat => { if (seat.formTemp) { seat.form = null; seat.formTemp = false; } });
+                logEvent(s, null, s.phase === 'heroes' ? "Heroes' turn" : "Monster's turn");
+                break;
+            }
+            case 'MOVE_PIECE': {
+                const seat = seatOf(s, a.seatId); if (!seat) break;
+                seat.x = a.x; seat.y = a.y;
+                logEvent(s, seat.id, `moved to ${cellName(a.x, a.y)}`);
+                break;
+            }
+            case 'ADJUST_HP': {
+                const seat = seatOf(s, a.seatId); if (!seat || seat.kind !== 'hero' || seat.dead) break;
+                const max = seat.maxHp || seat.hp || 10;
+                seat.hp = Math.max(0, Math.min(max, (seat.hp || 0) + (a.delta || 0)));
+                logEvent(s, seat.id, `${a.delta >= 0 ? 'gained ' + a.delta : 'took ' + (-a.delta) + ' damage,'} life ${seat.hp}/${max}`);
+                if (seat.hp <= 0) die(s, seat, data);
+                break;
+            }
+            case 'KILL': { const seat = seatOf(s, a.seatId); if (seat && seat.kind === 'hero' && !seat.dead) { seat.hp = 0; die(s, seat, data); } break; }
+            case 'REVIVE_TICK': {
+                const seat = seatOf(s, a.seatId); if (!seat || !seat.dead || !seat.grave) break;
+                seat.grave.count = Math.max(0, seat.grave.count - (a.amount || 1));
+                if (seat.grave.count <= 0) { seat.dead = false; seat.grave = null; seat.hp = Math.min(4, seat.maxHp || 4); logEvent(s, seat.id, 'was revived (life 4)'); }
+                else logEvent(s, seat.id, `revive progress (${seat.grave.count} to go)`);
+                break;
+            }
+            case 'SET_FORM': {
+                const seat = seatOf(s, a.seatId); if (!seat) break;
+                seat.form = a.form || null; seat.formTemp = !!a.temp;
+                logEvent(s, seat.id, a.form ? `transformed → ${a.form}${a.temp ? ' (this turn)' : ''}` : 'reverted to normal');
                 break;
             }
             case 'SET_CHARACTER': {
                 const seat = seatOf(s, a.seatId); if (!seat) break;
                 seat.characterId = a.characterId;
                 const c = charOf(data, seat); if (c) seat.label = c.name;
+                logEvent(s, seat.id, `is now ${c ? c.name : 'a new character'}`);
                 break;
             }
+            case 'SCORE': {
+                s.score = s.score || { collected: 0, goal: 0 };
+                s.score.collected = Math.max(0, (s.score.collected || 0) + (a.delta || 0));
+                logEvent(s, a.seatId || null, `${a.delta >= 0 ? 'collected an objective' : 'removed an objective'} (${s.score.collected}${s.score.goal ? '/' + s.score.goal : ''})`);
+                break;
+            }
+            case 'SET_GOAL': { s.score = s.score || { collected: 0, goal: 0 }; s.score.goal = Math.max(0, a.goal || 0); break; }
             case 'ROLL_DICE': {
                 const rolls = (a.dieList || []).filter(d => d.die).map(d => ({ key: d.key, die: d.die, value: 1 + Math.floor(Math.random() * d.die) }));
                 s.lastDice = { seatId: a.seatId, rolls, total: rolls.reduce((n, r) => n + r.value, 0), ts: Date.now() };
+                logEvent(s, a.seatId, `rolled ${rolls.map(r => `d${r.die}=${r.value}`).join(', ')}${rolls.length > 1 ? ` (total ${s.lastDice.total})` : ''}`);
                 break;
             }
             case 'ROLL_GRID': {
                 const col = 1 + Math.floor(Math.random() * Math.max(1, a.cols || 1));
                 const row = String.fromCharCode(65 + Math.floor(Math.random() * Math.max(1, a.rows || 1)));
                 s.lastGrid = { col, row, ts: Date.now() };
+                logEvent(s, a.seatId || 'seat-monster', `rolled grid target ${col}-${row}`);
                 break;
             }
+            case 'LOG': logEvent(s, a.seatId || null, a.text || ''); break;
         }
         s.rev = (state && state.rev || 0) + 1;
         return s;

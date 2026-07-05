@@ -112,9 +112,17 @@ class GameState {
     resetGame() { this.dispatch({ type: 'RESET' }); }
     draw(seatId, deck) { this.dispatch({ type: 'DRAW', seatId, deck }); }
     discard(seatId, iid) { this.dispatch({ type: 'DISCARD', seatId, iid }); }
-    setActive(seatId) { this.dispatch({ type: 'SET_ACTIVE', seatId }); }
-    nextTurn() { this.dispatch({ type: 'NEXT_TURN' }); }
+    togglePhase() { this.dispatch({ type: 'SET_PHASE', phase: this.state.phase === 'heroes' ? 'monster' : 'heroes' }); }
     setSeatCharacter(seatId, characterId) { this.dispatch({ type: 'SET_CHARACTER', seatId, characterId }); }
+    score(delta, seatId) { this.dispatch({ type: 'SCORE', delta, seatId }); }
+    setGoal(goal) { this.dispatch({ type: 'SET_GOAL', goal }); }
+    log(text, seatId) { this.dispatch({ type: 'LOG', text, seatId }); }
     rollDice(seatId, dieList) { this.dispatch({ type: 'ROLL_DICE', seatId, dieList }); }
-    rollGrid(cols, rows) { this.dispatch({ type: 'ROLL_GRID', cols, rows }); }
+    rollGrid(seatId, cols, rows) { this.dispatch({ type: 'ROLL_GRID', seatId, cols, rows }); }
+    movePiece(seatId, x, y) { this.dispatch({ type: 'MOVE_PIECE', seatId, x, y }); }
+    adjustHp(seatId, delta) { this.dispatch({ type: 'ADJUST_HP', seatId, delta }); }
+    kill(seatId) { this.dispatch({ type: 'KILL', seatId }); }
+    reviveTick(seatId, amount) { this.dispatch({ type: 'REVIVE_TICK', seatId, amount }); }
+    setForm(seatId, form, temp) { this.dispatch({ type: 'SET_FORM', seatId, form, temp }); }
+    setBoard(board) { this.dispatch({ type: 'SET_BOARD', board }); }
 }
