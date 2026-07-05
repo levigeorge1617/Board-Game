@@ -13,7 +13,7 @@
 
     const HERO_COLORS = ['RED', 'YELLOW', 'GREEN', 'BLUE', 'PURPLE'];
 
-    function empty() { return { rev: 0, started: false, decks: null, seats: [], phase: 'heroes', score: { collected: 0, goal: 0 }, log: [], lastDice: null, lastGrid: null }; }
+    function empty() { return { rev: 0, started: false, decks: null, seats: [], phase: 'heroes', score: { collected: 0, goal: 0 }, log: [], board: null, lastDice: null, lastGrid: null }; }
 
     const MAX_LOG = 150;
     function logEvent(s, seatId, text) {
@@ -75,8 +75,9 @@
         const s = clone(state || empty());
         const a = action || {};
         switch (a.type) {
-            case 'NEW_GAME': return newGame(data);
-            case 'RESET': return empty();
+            case 'NEW_GAME': { const ng = newGame(data); ng.board = (state && state.board) || null; return ng; }  // keep the drawn map
+            case 'RESET': { const e = empty(); e.board = (state && state.board) || null; return e; }
+            case 'SET_BOARD': s.board = a.board || null; break;
             case 'DRAW': {
                 const seat = seatOf(s, a.seatId); const deck = s.decks && s.decks[a.deck || (seat && seat.deck)];
                 if (!seat || !deck) break;

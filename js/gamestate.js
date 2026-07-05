@@ -124,4 +124,5 @@ class GameState {
     kill(seatId) { this.dispatch({ type: 'KILL', seatId }); }
     reviveTick(seatId, amount) { this.dispatch({ type: 'REVIVE_TICK', seatId, amount }); }
     setForm(seatId, form, temp) { this.dispatch({ type: 'SET_FORM', seatId, form, temp }); }
+    setBoard(board) { this.dispatch({ type: 'SET_BOARD', board }); }
 }

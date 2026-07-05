@@ -30,7 +30,33 @@ class AppController {
         window.addEventListener('resize', () => this.renderer.resizeCanvas());
         this.renderer.resizeCanvas();
 
+        // Board layout (walls/floors/tokens) rides along in the synced game state,
+        // so the "drawn" map persists across sessions and syncs to other players.
+        this._lastBoardSnap = null;
+        this.play.gs.subscribe(() => this.applyBoardFromState());
+        this.applyBoardFromState();                       // load a persisted/remote map on start
+        setInterval(() => this.pushBoardToState(), 1500); // debounced push of local edits
+
         if (this.appMode === 'play') this.play.activate();
+    }
+
+    boardSnapshot() {
+        return JSON.stringify({ cols: this.board.cols, rows: this.board.rows, tokens: this.board.tokens, edges: this.board.edges, floors: this.board.floors });
+    }
+    applyBoardFromState() {
+        const b = this.play.gs.state.board; if (!b) return;
+        const incoming = JSON.stringify(b);
+        if (incoming === this._lastBoardSnap) return;     // our own push or already applied
+        this._lastBoardSnap = incoming;
+        this.board.applySnapshot(incoming);
+        this.ui.updateGridInputs(this.board.cols, this.board.rows);
+        this.renderer.draw();
+    }
+    pushBoardToState() {
+        const snap = this.boardSnapshot();
+        if (snap === this._lastBoardSnap) return;         // unchanged since last sync
+        this._lastBoardSnap = snap;
+        this.play.gs.setBoard(JSON.parse(snap));
     }
 
     setLibraryDragItem(itemData) { this.activeLibraryItem = itemData; }

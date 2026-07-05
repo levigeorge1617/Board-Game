@@ -178,7 +178,7 @@ class Renderer {
         const play = window.app.play;
         const gs = play.gs;
         const drag = play.dragPiece;
-        const FORM_ART = { TURTLE: 'players/druid1.jpg', CHEETAH: 'players/druid2.jpg', BEAR: 'players/druid3.jpg', DEER: 'players/druid4.jpg' };
+        const FORM_ART = { DEER: 'players/druid1.jpg', BEAR: 'players/druid2.jpg', TURTLE: 'players/druid3.jpg', CHEETAH: 'players/druid4.jpg' };
         const colorOf = (typeof PH_COLOR !== 'undefined') ? PH_COLOR : {};
 
         gs.state.seats.forEach(seat => {
