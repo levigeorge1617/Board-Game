@@ -105,17 +105,88 @@
     const charOf = (data, seat) => seat && (seat.kind === 'monster' ? data.monsters : data.heroes).find(c => c.id === seat.characterId);
     const cardOf = (data, cid) => (data.cards || []).find(c => c.id === cid);
 
-    // Hook for card effects when a card is *played* (not merely discarded). Most
-    // cards' effects aren't wired yet — this is where they'll resolve. A `card.effect`
-    // key (structured effect) can be authored later; for now we recognise a couple of
-    // simple combat-augment tags so the play/discard split is already meaningful.
+    // ==================== ROLL / COMBAT MODIFIERS =========================
+    // Cards, abilities and terrain can queue "modifiers" onto a combatant. Each
+    // modifier is held on `ent.mods` until the roll it targets happens, then it is
+    // applied and (for one-shot effects) consumed. Multiple stack. A modifier is:
+    //   { id, source, scope, flat, dice:[{die,key}], attackDice, defenseDice,
+    //     skull, shield, duration:'once'|'turn'|'persist' }
+    //   scope: 'action' | 'move' | 'attack' | 'defense' | 'any'
+    //     • flat / dice apply to matching action/move ROLLS
+    //     • attackDice/defenseDice/skull/shield apply in COMBAT
+    //   duration: 'once' → consumed by the first matching roll; 'turn' → lasts until
+    //     the end of the turn (cleared on phase change); 'persist' → permanent.
+    const SCOPE_ROLL = { action: 1, move: 1, any: 1 };
+    function modId() { return 'mod-' + Date.now() + '-' + Math.floor(Math.random() * 1e5); }
+    function addMod(s, seatId, mod) {
+        const ent = combatantOf(s, seatId); if (!ent || !mod) return;
+        ent.mods = ent.mods || [];
+        ent.mods.push(Object.assign({ id: modId(), duration: 'once', scope: 'any' }, mod));
+    }
+    // A modifier applies to a die roll of `kind` (action/move) if its scope matches
+    // and it actually carries a roll effect (flat bonus or extra dice).
+    function modAffectsRoll(m, kind) {
+        if (!(m.flat || (m.dice && m.dice.length))) return false;
+        return m.scope === kind || (m.scope === 'any' && SCOPE_ROLL[kind]);
+    }
+    const modAffectsAttack = m => (m.attackDice || m.skull) && (m.scope === 'attack' || m.scope === 'any');
+    const modAffectsDefense = m => (m.defenseDice || m.shield) && (m.scope === 'defense' || m.scope === 'any');
+    // Infer a roll kind from the dice keys when the caller didn't pass one.
+    function rollKindOf(dieList) {
+        const keys = (dieList || []).map(d => d.key || '');
+        if (keys.length && keys.every(k => /^(m|bm|move)/.test(k))) return 'move';
+        if (keys.length && keys.every(k => /^(a|ba|die)/.test(k))) return 'action';
+        return 'any';
+    }
+    function describeMod(m) {
+        const bits = [];
+        if (m.flat) bits.push((m.flat >= 0 ? '+' : '') + m.flat + ' ' + m.scope);
+        (m.dice || []).forEach(d => bits.push('+d' + d.die + ' ' + m.scope));
+        if (m.attackDice) bits.push('+' + m.attackDice + ' attack die');
+        if (m.defenseDice) bits.push('+' + m.defenseDice + ' defense die');
+        if (m.skull) bits.push('+' + m.skull + '☠');
+        if (m.shield) bits.push('+' + m.shield + '🛡');
+        return bits.join(', ') || 'effect';
+    }
+    // Translate a played card into one or more modifiers. Prefers a structured
+    // `card.effect` (authored in the Designer); otherwise infers from the classic
+    // "+N to your next action/movement roll" card text so existing cards work.
+    function cardMods(card) {
+        if (!card) return [];
+        const src = card.name || 'card';
+        const e = card.effect;
+        if (e && (e.flat || e.extraDie || e.attackDice || e.defenseDice || e.skull || e.shield)) {
+            const mod = { source: src, scope: e.scope || 'any', duration: e.duration || 'once' };
+            if (e.flat) mod.flat = Number(e.flat);
+            if (e.extraDie) mod.dice = [{ die: Number(e.extraDie), key: 'mod' }];
+            if (e.attackDice) mod.attackDice = Number(e.attackDice);
+            if (e.defenseDice) mod.defenseDice = Number(e.defenseDice);
+            if (e.skull) mod.skull = Number(e.skull);
+            if (e.shield) mod.shield = Number(e.shield);
+            return [mod];
+        }
+        // --- text inference for the shipped cards ---
+        const name = src, text = card.text || '';
+        const both = /movement and your next action|next action and.*movement/i.test(text) || /aggressive sprint/i.test(name);
+        const num = (re, s) => { const m = (s || '').match(re); return m ? parseInt(m[1], 10) : 0; };
+        let n;
+        if (both) {
+            n = num(/\+\s*(\d+)/, text) || 2;
+            return [{ source: src, scope: 'action', flat: n, duration: 'once' }, { source: src, scope: 'move', flat: n, duration: 'once' }];
+        }
+        if (/spell\s*book/i.test(name) || /next action roll by\s*\+?(\d+)/i.test(text)) {
+            n = num(/spell\s*book\s*\+?(\d+)/i, name) || num(/\+?(\d+)/, name) || num(/by\s*\+?(\d+)/i, text) || 1;
+            return [{ source: src, scope: 'action', flat: n, duration: 'once' }];   // "next action roll"
+        }
+        if (/boots?/i.test(name) || /next movement roll by\s*\+?(\d+)/i.test(text)) {
+            n = num(/boots?\s*\+?(\d+)/i, name) || num(/\+?(\d+)/, name) || num(/by\s*\+?(\d+)/i, text) || 2;
+            return [{ source: src, scope: 'move', flat: n, duration: 'once' }];   // "next movement roll"
+        }
+        return [];
+    }
+    // Hook for card effects when a card is *played* (not merely discarded).
     function applyCardEffect(s, seat, card, data) {
-        if (!card) return;
-        const eff = card.effect || {};
-        // one-shot combat augments stored on the seat until consumed by the next attack
-        if (eff.autoSkull) seat.autoSkull = (seat.autoSkull || 0) + eff.autoSkull;
-        if (eff.autoShield) seat.autoShield = (seat.autoShield || 0) + eff.autoShield;
-        // (extend here as card effects are wired in)
+        cardMods(card).forEach(mod => { addMod(s, seat.id, mod); logEvent(s, seat.id, `${card.name}: ${describeMod(mod)}`); });
     }
 
     // Apply one action to `state`, returning the next state. `data` is the game
@@ -153,6 +224,8 @@
             case 'SET_PHASE': {
                 s.phase = a.phase === 'monster' ? 'monster' : 'heroes';
                 (s.seats || []).forEach(seat => { if (seat.formTemp) { seat.form = null; seat.formTemp = false; } });
+                // "one turn only" modifiers (once/turn) expire at the turn boundary; persistent stay
+                (s.seats || []).concat(s.minions || []).forEach(e => { if (e.mods) e.mods = e.mods.filter(m => m.duration === 'persist'); });
                 logEvent(s, null, s.phase === 'heroes' ? "Heroes' turn" : "Monster's turn");
                 break;
             }
@@ -165,14 +238,27 @@
             case 'ADD_MINION': {
                 const n = (s.minions || []).length + 1;
                 s.minions = s.minions || [];
+                const life = a.hp || (1 + Math.floor(Math.random() * 4));   // d4 health when spawned
                 s.minions.push({
                     id: 'min-' + Date.now() + '-' + Math.floor(Math.random() * 1000), kind: 'minion', label: 'Minion ' + n,
-                    x: a.x, y: a.y, hp: a.hp || 2, maxHp: a.hp || 2, attack: a.attack || 2, defense: a.defense || 1, reach: a.reach || 1, color: a.color || '#9b2d2d',
+                    x: a.x, y: a.y, hp: life, maxHp: life, attack: a.attack || 2, defense: a.defense || 1, reach: a.reach || 1,
+                    baseAttack: a.baseAttack || 0, baseShield: a.baseShield || 0, color: a.color || '#9b2d2d',
                 });
-                logEvent(s, null, `A minion was placed at ${cellName(a.x, a.y)}`);
+                logEvent(s, null, `A minion was placed at ${cellName(a.x, a.y)} (❤${life})`);
                 break;
             }
             case 'REMOVE_MINION': { s.minions = (s.minions || []).filter(m => m.id !== a.id); break; }
+            case 'ADJUST_MINION': {   // tweak/enhance one minion's stats (Oblex buffs, etc.)
+                const m = (s.minions || []).find(x => x.id === a.id); if (!m) break;
+                const d = a.delta || 0;
+                if (a.stat === 'maxHp') { m.maxHp = Math.max(1, (m.maxHp || 1) + d); if (d > 0) m.hp = Math.min(m.maxHp, (m.hp || 0) + d); else m.hp = Math.min(m.hp || 0, m.maxHp); }
+                else if (a.stat === 'attack') m.attack = Math.max(0, (m.attack || 0) + d);
+                else if (a.stat === 'defense') m.defense = Math.max(0, (m.defense || 0) + d);
+                else if (a.stat === 'reach') m.reach = Math.max(1, (m.reach || 1) + d);
+                else break;
+                logEvent(s, null, `${m.label} ${a.stat} ${d >= 0 ? '+' : ''}${d}`);
+                break;
+            }
             case 'ADJUST_HP': {
                 const ent = combatantOf(s, a.seatId); if (!ent || ent.kind === 'monster' || ent.dead) break;
                 const max = ent.maxHp || ent.hp || 10;
@@ -210,9 +296,27 @@
             }
             case 'SET_GOAL': { s.score = s.score || { collected: 0, goal: 0 }; s.score.goal = Math.max(0, a.goal || 0); break; }
             case 'ROLL_DICE': {
-                const rolls = (a.dieList || []).filter(d => d.die).map(d => ({ key: d.key, die: d.die, value: 1 + Math.floor(Math.random() * d.die) }));
-                s.lastDice = { seatId: a.seatId, rolls, total: rolls.reduce((n, r) => n + r.value, 0), ts: Date.now() };
-                logEvent(s, a.seatId, `rolled ${rolls.map(r => `d${r.die}=${r.value}`).join(', ')}${rolls.length > 1 ? ` (total ${s.lastDice.total})` : ''}`);
+                const ent = combatantOf(s, a.seatId);
+                const kind = a.kind || rollKindOf(a.dieList);
+                // pull in modifiers that target this kind of roll (flat bonuses + extra dice)
+                const mods = ent ? (ent.mods || []).filter(m => modAffectsRoll(m, kind)) : [];
+                const dieList = (a.dieList || []).slice();
+                mods.forEach(m => (m.dice || []).forEach(d => dieList.push({ key: d.key || 'mod', die: d.die, from: m.source })));
+                const rolls = dieList.filter(d => d.die).map(d => ({ key: d.key, die: d.die, value: 1 + Math.floor(Math.random() * d.die), from: d.from }));
+                const flat = mods.reduce((n, m) => n + (m.flat || 0), 0);
+                const diceTotal = rolls.reduce((n, r) => n + r.value, 0);
+                const modsApplied = mods.map(m => ({ source: m.source, flat: m.flat || 0, dice: (m.dice || []).length }));
+                s.lastDice = { seatId: a.seatId, kind, rolls, flat, modsApplied, total: diceTotal + flat, ts: Date.now() };
+                // consume one-shot modifiers that just fired
+                if (ent) ent.mods = (ent.mods || []).filter(m => !(m.duration === 'once' && modAffectsRoll(m, kind)));
+                const flatStr = flat ? ` ${flat >= 0 ? '+' : ''}${flat}` : '';
+                logEvent(s, a.seatId, `rolled ${rolls.map(r => `d${r.die}=${r.value}`).join(', ')}${flatStr}${(rolls.length > 1 || flat) ? ` (total ${s.lastDice.total})` : ''}`);
+                break;
+            }
+            case 'ADD_MOD': { addMod(s, a.seatId, a.mod); const e = combatantOf(s, a.seatId); if (e && a.mod) logEvent(s, a.seatId, `gained ${describeMod(a.mod)}`); break; }
+            case 'CLEAR_MODS': {
+                const ent = combatantOf(s, a.seatId); if (!ent) break;
+                ent.mods = a.id ? (ent.mods || []).filter(m => m.id !== a.id) : [];
                 break;
             }
             case 'ROLL_GRID': {
@@ -229,15 +333,19 @@
                 const roll = () => 1 + Math.floor(Math.random() * 6);
                 const skulls = f => f.filter(v => v <= 3).length;   // faces 1-3 = ☠
                 const shields = f => f.filter(v => v >= 4 && v <= 5).length; // 4-5 = 🛡
+                // combat modifiers held on each fighter (extra pool dice + flat skulls/shields)
+                const atkMods = (atk.mods || []).filter(modAffectsAttack);
+                const defMods = (def.mods || []).filter(modAffectsDefense);
+                const sum = (list, k) => list.reduce((n, m) => n + (m[k] || 0), 0);
                 // Both sides roll their own pool: attacker rolls Attack dice, defender
                 // rolls Defense dice. EACH side's skulls wound the OTHER; each side's
                 // shields block the other's skulls. Damage flows both ways.
-                const atkFaces = Array.from({ length: Math.max(0, ac.attack) + (a.bonusAttack || 0) }, roll);
-                const defFaces = Array.from({ length: Math.max(0, dc.defense) + (a.bonusDefense || 0) }, roll);
-                const atkSkulls = skulls(atkFaces) + ac.baseAttack;   // hits the attacker deals
+                const atkFaces = Array.from({ length: Math.max(0, ac.attack) + (a.bonusAttack || 0) + sum(atkMods, 'attackDice') }, roll);
+                const defFaces = Array.from({ length: Math.max(0, dc.defense) + (a.bonusDefense || 0) + sum(defMods, 'defenseDice') }, roll);
+                const atkSkulls = skulls(atkFaces) + ac.baseAttack + sum(atkMods, 'skull');   // hits the attacker deals
                 const atkShields = shields(atkFaces) + ac.baseShield; // blocks the attacker has
                 const defSkulls = skulls(defFaces) + dc.baseAttack;   // hits the defender deals back
-                const defShields = shields(defFaces) + dc.baseShield; // blocks the defender has
+                const defShields = shields(defFaces) + dc.baseShield + sum(defMods, 'shield'); // blocks the defender has
                 const woundsToDef = Math.max(0, atkSkulls - defShields);
                 const woundsToAtk = Math.max(0, defSkulls - atkShields);
 
@@ -253,10 +361,15 @@
                 const repelDef = applyWounds(def, atk, woundsToDef);
                 const repelAtk = applyWounds(atk, def, woundsToAtk);
 
+                // consume one-shot combat modifiers that just fired
+                atk.mods = (atk.mods || []).filter(m => !(m.duration === 'once' && modAffectsAttack(m)));
+                def.mods = (def.mods || []).filter(m => !(m.duration === 'once' && modAffectsDefense(m)));
+
                 s.lastCombat = {
                     attackerId: atk.id, defenderId: def.id, atkFaces, defFaces,
                     atkKey: colorKeyOf(atk), defKey: colorKeyOf(def),
                     atkSkulls, atkShields, defSkulls, defShields,
+                    modsAtk: atkMods.map(describeMod), modsDef: defMods.map(describeMod),
                     woundsToDef, woundsToAtk, repelDef, repelAtk, ts: Date.now(),
                 };
                 const dmgOut = (target, wounds, repel) => target.kind === 'monster'
