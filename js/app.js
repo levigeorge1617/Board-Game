@@ -19,6 +19,7 @@ class AppController {
         this.draggedToken = null;
         this.activeLibraryItem = null;
         this.selectedTokenForMenu = null;
+        this.inspectPieceId = null;   // piece whose range/LoS overlay is shown
         
         this.activeTemplate = null;
         this.currentMouseCell = { x: 0, y: 0 };
@@ -335,7 +336,12 @@ class AppController {
             const ry = (mouseY - this.renderer.panY) / this.renderer.zoom;
 
             // Right Click Event Mapping
-            if (e.button === 2) { 
+            if (e.button === 2) {
+                // right-click a game piece → toggle its range / line-of-sight overlay
+                if (this.appMode === 'play' && this.play) {
+                    const pid = this.play.pieceAt(cellX, cellY);
+                    if (pid) { this.inspectPieceId = (this.inspectPieceId === pid) ? null : pid; this.hideHPPopover(); this.renderer.draw(); return; }
+                }
                 const targetToken = this.board.tokens.find(t => t.x === cellX && t.y === cellY);
                 if (this.appMode === 'play' && targetToken) {
                     this.showHPPopover(targetToken, mouseX, mouseY);
@@ -393,6 +399,7 @@ class AppController {
                     this.hideHPPopover();
                 } else {
                     this.hideHPPopover();
+                    this.inspectPieceId = null;   // clicking empty board clears the range/LoS overlay
                 }
             }
             this.renderer.draw(this.currentTool === 'stamp' ? this.activeTemplate : null, cellX, cellY, this.selectionBox);
@@ -477,6 +484,7 @@ class AppController {
             for (const t of e.changedTouches) this._touch.pointers.set(t.identifier, { x: t.clientX, y: t.clientY });
             const n = this._touch.pointers.size;
             if (n >= 2) {                                   // enter pinch, drop any single gesture
+                if (this._touch.holdTimer) { clearTimeout(this._touch.holdTimer); this._touch.holdTimer = null; }
                 if (this._touch.mode === 'piece' && this.play) { this.play.dragPiece = null; }
                 this._touch.mode = null; this.draggedToken = null; this.isSelecting = false;
                 const cd = centroidDist();
@@ -497,7 +505,18 @@ class AppController {
                 e.preventDefault(); return;
             }
             // play mode
-            if (this.play && this.play.onPieceDown(g.cellX, g.cellY)) { this._touch.mode = 'piece'; }
+            if (this.play && this.play.onPieceDown(g.cellX, g.cellY)) {
+                this._touch.mode = 'piece';
+                // touch-and-hold a piece → toggle its range / line-of-sight overlay
+                const pid = this.play.dragPiece && this.play.dragPiece.seatId;
+                this._touch.longPressed = false;
+                this._touch.holdTimer = setTimeout(() => {
+                    this.inspectPieceId = (this.inspectPieceId === pid) ? null : pid;
+                    this._touch.longPressed = true;
+                    if (this.play) this.play.dragPiece = null;   // cancel drag so the lift doesn't move it / open the sheet
+                    this.renderer.draw();
+                }, 450);
+            }
             else {
                 const token = this.board.tokens.find(tk => tk.x === g.cellX && tk.y === g.cellY);
                 if (token) { this._touch.mode = 'token'; this.draggedToken = token; this.board.saveHistory(); }
@@ -526,6 +545,7 @@ class AppController {
             const g = cellOf(t); T.last = g;
             // only count as a real drag past a small threshold, so a jittery tap still taps
             if (T.startClient && Math.hypot(t.clientX - T.startClient.x, t.clientY - T.startClient.y) > 10) T.moved = true;
+            if (T.moved && T.holdTimer) { clearTimeout(T.holdTimer); T.holdTimer = null; }   // movement cancels long-press
             if (T.mode === 'place') { e.preventDefault(); return; }   // placement happens on lift
             if (T.mode === 'piece' && this.play) { this.play.onPieceMove(g.cellX, g.cellY); }
             else if (T.mode === 'token' && this.draggedToken) {
@@ -545,6 +565,8 @@ class AppController {
         const end = (e) => {
             for (const t of e.changedTouches) this._touch.pointers.delete(t.identifier);
             const T = this._touch;
+            if (T.holdTimer) { clearTimeout(T.holdTimer); T.holdTimer = null; }
+            if (T.longPressed) { T.longPressed = false; T.mode = null; T.start = null; T.moved = false; e.preventDefault(); return; }   // long-press already handled
             if (this._touch.pointers.size >= 2) { const cd = centroidDist(); T.pinch = { d: cd.d, cx: cd.cx, cy: cd.cy, zoom: this.renderer.zoom, panX: this.renderer.panX, panY: this.renderer.panY }; e.preventDefault(); return; }
             if (this._touch.pointers.size === 1) {   // 2→1: keep panning with the remaining finger, no jump
                 T.pinch = null; const [p] = [...this._touch.pointers.values()]; const rect = c.getBoundingClientRect();

@@ -159,6 +159,12 @@ class Renderer {
             ctx.restore();
         });
 
+        // 6.4 LoS / range inspector overlay (under the pieces so tokens stay readable)
+        if (window.app && window.app.appMode === 'play' && window.app.inspectPieceId &&
+            window.app.play && window.app.play.gs.state.started) {
+            this.drawInspect(ctx, size);
+        }
+
         // 6.5 Game pieces (heroes/monster/minions) from the synced play state.
         // Shown in play AND design mode (so wired pieces can be pre-placed on a map).
         if (window.app && (window.app.appMode === 'play' || window.app.appMode === 'design') &&
@@ -247,6 +253,86 @@ class Renderer {
             this.badge(ctx, cx + r * 0.7, cy + r * 0.7, size, m.hp, '#111', '#9b2d2d', '#fff');
             ctx.restore();
         });
+    }
+
+    // Is line-of-sight from cell (x0,y0) to (x1,y1) blocked by a wall edge?
+    // A ray between the two cell centers is traced; crossing a wall (edge value 1)
+    // blocks it. Doors (value 2) are treated as see-through openings.
+    losBlocked(x0, y0, x1, y1) {
+        if (x0 === x1 && y0 === y1) return false;
+        const edges = this.state.edges;
+        const isWall = (key, side) => { const e = edges[key]; return !!(e && e[side] === 1); };
+        const ax = x0 + 0.5, ay = y0 + 0.5, bx = x1 + 0.5, by = y1 + 0.5;
+        const dx = bx - ax, dy = by - ay;
+        // vertical grid-line crossings → the "left" wall of the entered column
+        if (dx !== 0) {
+            const lo = Math.min(ax, bx), hi = Math.max(ax, bx);
+            for (let gx = Math.ceil(lo); gx <= Math.floor(hi); gx++) {
+                if (gx <= lo || gx >= hi) continue;
+                const t = (gx - ax) / dx, row = Math.floor(ay + dy * t);
+                if (isWall(`${gx},${row}`, 'left')) return true;
+            }
+        }
+        // horizontal grid-line crossings → the "top" wall of the entered row
+        if (dy !== 0) {
+            const lo = Math.min(ay, by), hi = Math.max(ay, by);
+            for (let gy = Math.ceil(lo); gy <= Math.floor(hi); gy++) {
+                if (gy <= lo || gy >= hi) continue;
+                const t = (gy - ay) / dy, col = Math.floor(ax + dx * t);
+                if (isWall(`${col},${gy}`, 'top')) return true;
+            }
+        }
+        return false;
+    }
+    reachOf(ent) {
+        if (!ent) return 1;
+        if (ent.kind === 'minion') return ent.reach || 1;
+        const ch = window.app.play.gs.character(ent);
+        return (ch && ch.combat && ch.combat.reach) || 1;
+    }
+
+    // Draw the attack-range cells + line-of-sight rays for the inspected piece.
+    drawInspect(ctx, size) {
+        const play = window.app.play;
+        const ent = play.gs.combatant(window.app.inspectPieceId);
+        if (!ent || ent.x == null || ent.dead) return;
+        const reach = this.reachOf(ent);
+        const cx = ent.x * size + size / 2, cy = ent.y * size + size / 2;
+        const cols = this.state.cols, rows = this.state.rows;
+
+        ctx.save();
+        // range cells within reach (Chebyshev), tinted by whether LoS is clear
+        for (let yy = Math.max(0, ent.y - reach); yy <= Math.min(rows - 1, ent.y + reach); yy++) {
+            for (let xx = Math.max(0, ent.x - reach); xx <= Math.min(cols - 1, ent.x + reach); xx++) {
+                if (xx === ent.x && yy === ent.y) continue;
+                const clear = !this.losBlocked(ent.x, ent.y, xx, yy);
+                ctx.fillStyle = clear ? 'rgba(70,198,166,0.20)' : 'rgba(120,130,140,0.12)';
+                ctx.fillRect(xx * size, yy * size, size, size);
+            }
+        }
+        // range boundary ring
+        ctx.strokeStyle = 'rgba(70,198,166,0.85)'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]);
+        ctx.strokeRect((ent.x - reach) * size, (ent.y - reach) * size, (reach * 2 + 1) * size, (reach * 2 + 1) * size);
+        ctx.setLineDash([]);
+
+        // line-of-sight rays to every enemy on the board
+        (play.enemiesOf(ent) || []).forEach(e => {
+            const ex = e.x * size + size / 2, ey = e.y * size + size / 2;
+            const blocked = this.losBlocked(ent.x, ent.y, e.x, e.y);
+            const dist = Math.max(Math.abs(ent.x - e.x), Math.abs(ent.y - e.y));
+            const inRange = dist <= reach;
+            ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ex, ey);
+            ctx.lineWidth = 2.5;
+            if (blocked) { ctx.strokeStyle = 'rgba(220,70,70,0.85)'; ctx.setLineDash([6, 5]); }
+            else { ctx.strokeStyle = inRange ? 'rgba(224,168,0,0.95)' : 'rgba(70,198,166,0.85)'; ctx.setLineDash([]); }
+            ctx.stroke(); ctx.setLineDash([]);
+            // mark a target you can actually hit (clear LoS + within reach)
+            if (!blocked && inRange) {
+                ctx.beginPath(); ctx.arc(ex, ey, size * 0.5, 0, Math.PI * 2);
+                ctx.strokeStyle = '#e0a800'; ctx.lineWidth = 3; ctx.stroke();
+            }
+        });
+        ctx.restore();
     }
 
     badge(ctx, x, y, size, text, textColor, bg, ring) {

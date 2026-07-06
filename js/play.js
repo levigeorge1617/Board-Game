@@ -6,7 +6,7 @@
  */
 const PH_BACKS = { White: 'css/CardBACK2.png', Black: 'css/CardBACK.png' };
 const PH_EMBLEM = { hero: 'css/good.png', monster: 'css/bad.png' };
-const PH_COLOR = { RED: '#ff3333', YELLOW: '#ffd21f', GREEN: '#33cc44', BLUE: '#3366ff', PURPLE: '#9933ff', MONSTER: '#b02a2a' };
+const PH_COLOR = { RED: '#ff3333', YELLOW: '#ffd21f', GREEN: '#33cc44', BLUE: '#3366ff', PURPLE: '#9933ff', MONSTER: '#5c1020' };
 const PH_DICE = [4, 6, 8, 10, 12, 20];
 const ICON_SKULL = '<svg class="ci ci-skull" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a8 8 0 0 0-8 8v3.2c0 1 .5 1.9 1.4 2.4l1.1.6V19a1 1 0 0 0 1 1h1v-2h1v2h2v-2h1v2h1a1 1 0 0 0 1-1v-2.8l1.1-.6c.9-.5 1.4-1.4 1.4-2.4V10a8 8 0 0 0-8-8Zm-3 9a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2Zm6 0a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2Z"/></svg>';
 const ICON_SHIELD = '<svg class="ci ci-shield" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2 4 5v6c0 4.5 3.2 8.6 8 11 4.8-2.4 8-6.5 8-11V5l-8-3Z"/></svg>';
@@ -656,6 +656,7 @@ class PlayController {
                     `<div class="ph-sheet-art"${ch && ch.art ? ` style="background-image:url('${esc(ch.art)}')"` : ''}></div>` +
                     `<div class="ph-sheet-info">` +
                         this.attackTargetBtn(seat) +
+                        this.losBtn() +
                         gridBtn +
                         this.pieceBlock(seat) +
                         this.combatBlock(seat) +
@@ -669,6 +670,7 @@ class PlayController {
 
         pop.querySelector('.ph-cc-close').onclick = () => this.closePopover();
         this.wireAttackTarget(pop, seat.id);
+        this.wireLosBtn(pop, seat.id);
         this.wireDice(pop, seat);
         const gb = pop.querySelector('#ph-roll-grid');
         if (gb) gb.onclick = () => this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows);
@@ -710,6 +712,12 @@ class PlayController {
     wireAttackTarget(pop, targetId) {
         const btn = pop.querySelector('.ph-attack-target');
         if (btn) btn.onclick = () => { this.gs.attack(this.gs.mySeatId, targetId, this.app.board.cols, this.app.board.rows); this.closePopover(); };
+    }
+    // Button (in a piece sheet) that shows this piece's range + line of sight on the board.
+    losBtn() { return `<button class="ph-btn ph-los-btn" style="width:100%;margin-bottom:8px;">👁 Show range / line of sight</button>`; }
+    wireLosBtn(pop, id) {
+        const b = pop.querySelector('.ph-los-btn');
+        if (b) b.onclick = () => { this.app.inspectPieceId = id; this.closePopover(); this.app.renderer.draw(); };
     }
 
     // enemies = the opposing side (heroes vs monster+minions), placed & alive
@@ -754,6 +762,7 @@ class PlayController {
                 `<div class="ph-sheet-top"><div class="ph-sheet-head"><h3>☠ ${esc(m.label)}</h3><span>minion</span></div></div>` +
                 `<div class="ph-sheet-body" style="display:block"><div class="ph-sheet-info">` +
                     this.attackTargetBtn(m) +
+                    this.losBtn() +
                     `<div class="ph-cc-block"><h4>Piece · ${m.x + 1}-${String.fromCharCode(65 + m.y)}</h4>` +
                         `<div class="ph-hp-row"><button class="ph-btn ph-hp-dn">−</button>` +
                         `<span class="ph-hp-val">❤ ${m.hp}/${m.maxHp}</span>` +
@@ -772,6 +781,7 @@ class PlayController {
         pop.style.display = 'flex';
         pop.querySelector('.ph-cc-close').onclick = () => this.closePopover();
         this.wireAttackTarget(pop, m.id);
+        this.wireLosBtn(pop, m.id);
         pop.querySelector('.ph-hp-dn').onclick = () => this.gs.adjustHp(m.id, -1);
         pop.querySelector('.ph-hp-up').onclick = () => this.gs.adjustHp(m.id, 1);
         pop.querySelectorAll('.ph-stat-dn').forEach(b => b.onclick = () => this.gs.adjustMinion(m.id, b.dataset.stat, -1));

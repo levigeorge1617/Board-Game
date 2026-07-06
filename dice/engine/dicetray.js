@@ -45,7 +45,7 @@ window.DiceColors = colors;
 // --- plain (textureless) color sets for our dice categories / seat colors ---
 const CATEGORY_COLOR = {
     action: '#f2b032', movement: '#46c6a6', bonus: '#c98bff', objective: '#37c0dd',
-    monster: '#b02a2a', RED: '#ff3333', YELLOW: '#ffd21f', GREEN: '#33cc44', BLUE: '#3366ff', PURPLE: '#9933ff',
+    monster: '#5c1020', RED: '#ff3333', YELLOW: '#ffd21f', GREEN: '#33cc44', BLUE: '#3366ff', PURPLE: '#9933ff',
 };
 const isLight = hex => {
     const c = hex.replace('#', ''); const r = parseInt(c.slice(0, 2), 16), g = parseInt(c.slice(2, 4), 16), b = parseInt(c.slice(4, 6), 16);
