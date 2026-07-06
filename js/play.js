@@ -102,13 +102,15 @@ class PlayController {
             sec('dice', '🎲 Dice', '', '<div id="ph-sec-dice"></div>') +
             sec('rolls', '🎯 Rolls',
                 '<button class="ph-tray-pop" id="ph-tray-pop" title="Pop the dice tray out over the board">⤢</button>',
-                '<div id="ph-tray-host">' +
-                    '<div id="ph-tray-move" class="ph-tray-move" title="Drag to move">⠿ dice tray</div>' +
-                    '<button id="ph-tray-dock" class="ph-tray-dock" title="Dock back into the menu">⤢ dock</button>' +
-                    '<div id="ph-tray" class="ph-tray"></div>' +
-                    '<div id="ph-tray-resize" class="ph-tray-resize" title="Drag to resize">⤡</div>' +
-                '</div>' +
-                '<div id="ph-roll-nums" class="ph-roll-nums"></div>') +
+                '<div id="ph-rolls-inner">' +
+                    '<div id="ph-tray-host">' +
+                        '<div id="ph-tray-move" class="ph-tray-move" title="Drag to move">⠿ dice tray</div>' +
+                        '<button id="ph-tray-dock" class="ph-tray-dock" title="Dock back into the menu">⤢ dock</button>' +
+                        '<div id="ph-tray" class="ph-tray"></div>' +
+                        '<div id="ph-tray-resize" class="ph-tray-resize" title="Drag to resize">⤡</div>' +
+                    '</div>' +
+                    '<div id="ph-roll-nums" class="ph-roll-nums"></div>' +
+                '</div>') +
             sec('combat', '⚔ Combat', '', '<div id="ph-sec-combat"></div>') +
             sec('decks', '🂠 Decks', '', '<div id="ph-decks"></div>');
         this.sidebarBuilt = true;
@@ -130,40 +132,40 @@ class PlayController {
         this.initTrayDrag();
     }
 
-    // Float the dice tray over the board (or dock it back into the sidebar).
+    // Float the dice tray + roll numbers over the board (or dock back into the sidebar).
     // force===true → pop out, false → dock, undefined → toggle.
     toggleTrayPopout(force) {
-        const host = document.getElementById('ph-tray-host');
-        if (!host) return;
-        const floating = force === undefined ? !host.classList.contains('popped') : force;
-        host.classList.toggle('popped', floating);
+        const inner = document.getElementById('ph-rolls-inner');
+        if (!inner) return;
+        const floating = force === undefined ? !inner.classList.contains('popped') : force;
+        inner.classList.toggle('popped', floating);
         if (floating) {
-            document.body.appendChild(host);
+            document.body.appendChild(inner);
             // land bottom-right on screen unless a previous position is remembered
             const pos = this._trayPos;
-            host.style.left = (pos ? pos.x : Math.max(8, window.innerWidth - 340)) + 'px';
-            host.style.top = (pos ? pos.y : Math.max(8, window.innerHeight - 280)) + 'px';
-            host.style.right = 'auto'; host.style.bottom = 'auto';
+            inner.style.left = (pos ? pos.x : Math.max(8, window.innerWidth - 340)) + 'px';
+            inner.style.top = (pos ? pos.y : Math.max(8, window.innerHeight - 300)) + 'px';
+            inner.style.right = 'auto'; inner.style.bottom = 'auto';
         } else {
-            host.style.left = host.style.top = host.style.right = host.style.bottom = '';
+            inner.style.left = inner.style.top = inner.style.right = inner.style.bottom = '';
             const wrap = document.getElementById('ph-sec-rolls-wrap');
-            if (wrap) wrap.insertBefore(host, wrap.firstChild);
+            if (wrap) wrap.insertBefore(inner, wrap.firstChild);
         }
         if (window.DiceTray) setTimeout(() => window.DiceTray.resize(), 30);
     }
 
     // Drag the popped-out tray around the screen by its move handle.
     initTrayDrag() {
-        const host = document.getElementById('ph-tray-host');
+        const inner = document.getElementById('ph-rolls-inner');
         const handle = document.getElementById('ph-tray-move');
-        if (!host || !handle) return;
+        if (!inner || !handle) return;
         let start = null;
         const pt = e => (e.touches && e.touches[0]) || e;
         const move = e => {
             if (!start) return; const p = pt(e);
             const x = Math.max(0, Math.min(window.innerWidth - 60, start.x + (p.clientX - start.px)));
             const y = Math.max(0, Math.min(window.innerHeight - 40, start.y + (p.clientY - start.py)));
-            host.style.left = x + 'px'; host.style.top = y + 'px'; host.style.right = 'auto'; host.style.bottom = 'auto';
+            inner.style.left = x + 'px'; inner.style.top = y + 'px'; inner.style.right = 'auto'; inner.style.bottom = 'auto';
             this._trayPos = { x, y };
             if (e.cancelable) e.preventDefault();
         };
@@ -173,9 +175,9 @@ class PlayController {
             document.removeEventListener('touchmove', move); document.removeEventListener('touchend', up);
         };
         const down = e => {
-            if (!host.classList.contains('popped')) return;
+            if (!inner.classList.contains('popped')) return;
             e.preventDefault(); e.stopPropagation(); const p = pt(e);
-            const r = host.getBoundingClientRect();
+            const r = inner.getBoundingClientRect();
             start = { px: p.clientX, py: p.clientY, x: r.left, y: r.top };
             document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
             document.addEventListener('touchmove', move, { passive: false }); document.addEventListener('touchend', up);
@@ -228,7 +230,19 @@ class PlayController {
         this.renderPlayed();
         this.maybeAnimateDice();
         this.maybeAnimateCombat();
+        this.maybeHighlightGrid();
         if (this.openSeatId) this.renderPopover();
+    }
+
+    // When the monster rolls a grid target, light up that column + row on the
+    // board (same highlight as tapping a gutter), once per new synced roll.
+    maybeHighlightGrid() {
+        const lg = this.gs.state.lastGrid;
+        if (!lg || lg.ts === this._gridTs) return;
+        this._gridTs = lg.ts;
+        this.app.highlightedCol = (lg.col | 0) - 1;
+        this.app.highlightedRow = String(lg.row).charCodeAt(0) - 65;
+        this.app.renderer.draw();
     }
 
     _clearSidebarDynamic() {
@@ -697,10 +711,17 @@ class PlayController {
     }
     dist(a, b) { return (a.x == null || b.x == null) ? '?' : Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)); }
 
+    // a −/value/+ stepper row for tweaking a single minion stat
+    minionStat(label, value, stat) {
+        return `<div class="ph-stat-row"><span class="ph-stat-lbl">${label}</span>` +
+            `<button class="ph-btn ph-stat-dn" data-stat="${stat}">−</button>` +
+            `<span class="ph-stat-val">${value}</span>` +
+            `<button class="ph-btn ph-stat-up" data-stat="${stat}">+</button></div>`;
+    }
     renderMinionSheet(m) {
         const pop = document.getElementById('ph-pop');
         pop.innerHTML =
-            `<div class="ph-sheet" style="--c:#9b2d2d;max-width:340px">` +
+            `<div class="ph-sheet" style="--c:#9b2d2d;max-width:360px">` +
                 `<button class="ph-cc-close" title="Close">✕</button>` +
                 `<div class="ph-sheet-top"><div class="ph-sheet-head"><h3>☠ ${esc(m.label)}</h3><span>minion</span></div></div>` +
                 `<div class="ph-sheet-body" style="display:block"><div class="ph-sheet-info">` +
@@ -710,7 +731,13 @@ class PlayController {
                         `<span class="ph-hp-val">❤ ${m.hp}/${m.maxHp}</span>` +
                         `<button class="ph-btn ph-hp-up">+</button>` +
                         `<button class="ph-btn ph-btn-warn ph-min-remove">Remove</button></div>` +
-                        `<div class="ph-muted" style="font-size:10px;margin-top:4px;">Drag on the board to move.</div></div>` +
+                        `<div class="ph-muted" style="font-size:10px;margin-top:4px;">Drag on the board to move. HP is rolled (d4) on spawn.</div></div>` +
+                    `<div class="ph-cc-block"><h4>Enhance</h4>` +
+                        this.minionStat('Max ❤', m.maxHp, 'maxHp') +
+                        this.minionStat('⚔ Attack', m.attack, 'attack') +
+                        this.minionStat('🛡 Defense', m.defense, 'defense') +
+                        this.minionStat('Reach', m.reach || 1, 'reach') +
+                    `</div>` +
                     `<div class="ph-cc-block"><h4>Combat — ⚔ ${m.attack} / 🛡 ${m.defense}</h4>${this.attackRow(m)}</div>` +
                 `</div></div>` +
             `</div>`;
@@ -719,6 +746,8 @@ class PlayController {
         this.wireAttackTarget(pop, m.id);
         pop.querySelector('.ph-hp-dn').onclick = () => this.gs.adjustHp(m.id, -1);
         pop.querySelector('.ph-hp-up').onclick = () => this.gs.adjustHp(m.id, 1);
+        pop.querySelectorAll('.ph-stat-dn').forEach(b => b.onclick = () => this.gs.adjustMinion(m.id, b.dataset.stat, -1));
+        pop.querySelectorAll('.ph-stat-up').forEach(b => b.onclick = () => this.gs.adjustMinion(m.id, b.dataset.stat, 1));
         pop.querySelector('.ph-min-remove').onclick = () => { this.gs.removeMinion(m.id); this.closePopover(); };
         const go = pop.querySelector('.ph-atk-go');
         if (go) go.onclick = () => { const t = pop.querySelector('.ph-atk-target'); if (t && t.value) this.gs.attack(m.id, t.value, this.app.board.cols, this.app.board.rows); };
