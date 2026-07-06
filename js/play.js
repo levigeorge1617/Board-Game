@@ -102,7 +102,12 @@ class PlayController {
             sec('dice', '🎲 Dice', '', '<div id="ph-sec-dice"></div>') +
             sec('rolls', '🎯 Rolls',
                 '<button class="ph-tray-pop" id="ph-tray-pop" title="Pop the dice tray out over the board">⤢</button>',
-                '<div id="ph-tray-host"><div id="ph-tray" class="ph-tray"></div><div id="ph-tray-resize" class="ph-tray-resize" title="Drag to resize">⤡</div></div>' +
+                '<div id="ph-tray-host">' +
+                    '<div id="ph-tray-move" class="ph-tray-move" title="Drag to move">⠿ dice tray</div>' +
+                    '<button id="ph-tray-dock" class="ph-tray-dock" title="Dock back into the menu">⤢ dock</button>' +
+                    '<div id="ph-tray" class="ph-tray"></div>' +
+                    '<div id="ph-tray-resize" class="ph-tray-resize" title="Drag to resize">⤡</div>' +
+                '</div>' +
                 '<div id="ph-roll-nums" class="ph-roll-nums"></div>') +
             sec('combat', '⚔ Combat', '', '<div id="ph-sec-combat"></div>') +
             sec('decks', '🂠 Decks', '', '<div id="ph-decks"></div>');
@@ -118,20 +123,65 @@ class PlayController {
             if (s.dataset.sec === 'rolls' && window.DiceTray) window.DiceTray.resize();
         });
         const pop = document.getElementById('ph-tray-pop');
-        if (pop) pop.onclick = () => this.toggleTrayPopout();
+        if (pop) pop.onclick = () => this.toggleTrayPopout(true);
+        const dock = document.getElementById('ph-tray-dock');
+        if (dock) dock.onclick = () => this.toggleTrayPopout(false);
         this.initTrayResize();
+        this.initTrayDrag();
     }
 
     // Float the dice tray over the board (or dock it back into the sidebar).
-    toggleTrayPopout() {
+    // force===true → pop out, false → dock, undefined → toggle.
+    toggleTrayPopout(force) {
         const host = document.getElementById('ph-tray-host');
         if (!host) return;
-        const floating = host.classList.toggle('popped');
-        if (floating) document.body.appendChild(host); else {
+        const floating = force === undefined ? !host.classList.contains('popped') : force;
+        host.classList.toggle('popped', floating);
+        if (floating) {
+            document.body.appendChild(host);
+            // land bottom-right on screen unless a previous position is remembered
+            const pos = this._trayPos;
+            host.style.left = (pos ? pos.x : Math.max(8, window.innerWidth - 340)) + 'px';
+            host.style.top = (pos ? pos.y : Math.max(8, window.innerHeight - 280)) + 'px';
+            host.style.right = 'auto'; host.style.bottom = 'auto';
+        } else {
+            host.style.left = host.style.top = host.style.right = host.style.bottom = '';
             const wrap = document.getElementById('ph-sec-rolls-wrap');
             if (wrap) wrap.insertBefore(host, wrap.firstChild);
         }
         if (window.DiceTray) setTimeout(() => window.DiceTray.resize(), 30);
+    }
+
+    // Drag the popped-out tray around the screen by its move handle.
+    initTrayDrag() {
+        const host = document.getElementById('ph-tray-host');
+        const handle = document.getElementById('ph-tray-move');
+        if (!host || !handle) return;
+        let start = null;
+        const pt = e => (e.touches && e.touches[0]) || e;
+        const move = e => {
+            if (!start) return; const p = pt(e);
+            const x = Math.max(0, Math.min(window.innerWidth - 60, start.x + (p.clientX - start.px)));
+            const y = Math.max(0, Math.min(window.innerHeight - 40, start.y + (p.clientY - start.py)));
+            host.style.left = x + 'px'; host.style.top = y + 'px'; host.style.right = 'auto'; host.style.bottom = 'auto';
+            this._trayPos = { x, y };
+            if (e.cancelable) e.preventDefault();
+        };
+        const up = () => {
+            start = null;
+            document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up);
+            document.removeEventListener('touchmove', move); document.removeEventListener('touchend', up);
+        };
+        const down = e => {
+            if (!host.classList.contains('popped')) return;
+            e.preventDefault(); e.stopPropagation(); const p = pt(e);
+            const r = host.getBoundingClientRect();
+            start = { px: p.clientX, py: p.clientY, x: r.left, y: r.top };
+            document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
+            document.addEventListener('touchmove', move, { passive: false }); document.addEventListener('touchend', up);
+        };
+        handle.addEventListener('mousedown', down);
+        handle.addEventListener('touchstart', down, { passive: false });
     }
 
     // Drag the corner handle to set the dice tray height (it spans the sidebar width).
@@ -209,7 +259,7 @@ class PlayController {
         if (!seat) { wrap.innerHTML = '<p class="ph-side-hint">Pick your seat (top bar) to roll here.</p>'; return; }
         const ch = this.gs.character(seat);
         let html = `<div class="ph-side-seat" style="--c:${PH_COLOR[seat.color] || '#888'}">${esc(seat.label)}</div>`;
-        html += this.diceBar(seat, ch, true);
+        html += this.diceBar(seat, ch, false);
         if (seat.kind === 'monster') html += `<button id="ph-side-grid" class="ph-btn ph-btn-go" style="width:100%;margin-top:6px;">Roll grid ▸ #/A</button>`;
         wrap.innerHTML = html;
         this.wireDice(wrap, seat);
@@ -331,18 +381,25 @@ class PlayController {
                 `<span class="ph-score-val">${GAME_ICONS.obj} <b>${sc.collected}</b>${sc.goal ? ' / ' + sc.goal : ''}</span>` +
                 `<button class="ph-score-btn" id="ph-score-up">+</button>` +
             `</div>`;
+        // Objective score + turn button stay inline; the seat picker, online
+        // control and Reset live in a compact ⋯ menu so the bar fits on phones.
         document.getElementById('ph-roster').innerHTML =
             `<div class="ph-bar">` +
                 `<div class="ph-seats">${chips}</div>` +
                 `<div class="ph-bar-ctl">` +
                     scoreChip +
-                    `<label class="ph-me">You: <select id="ph-myseat">` +
-                        `<option value="">— pick seat —</option>` +
-                        s.seats.map(seat => `<option value="${seat.id}"${seat.id === this.gs.mySeatId ? ' selected' : ''}>${esc(seat.label)}</option>`).join('') +
-                    `</select></label>` +
-                    this.onlineControl() +
-                    `<button id="ph-next" class="ph-btn ${heroesTurn ? 'ph-turn-hero' : 'ph-turn-mon'}">${heroesTurn ? "Heroes' turn" : "Monster's turn"} ▸ end</button>` +
-                    `<button id="ph-reset" class="ph-btn ph-btn-warn">Reset</button>` +
+                    `<button id="ph-next" class="ph-btn ${heroesTurn ? 'ph-turn-hero' : 'ph-turn-mon'}">${heroesTurn ? "Heroes'" : "Monster's"} turn ▸ end</button>` +
+                    `<div class="ph-more-wrap">` +
+                        `<button id="ph-more" class="ph-btn" title="Table options">⋯</button>` +
+                        `<div id="ph-more-menu" class="ph-more-menu" style="display:none">` +
+                            `<label class="ph-me">You: <select id="ph-myseat">` +
+                                `<option value="">— pick seat —</option>` +
+                                s.seats.map(seat => `<option value="${seat.id}"${seat.id === this.gs.mySeatId ? ' selected' : ''}>${esc(seat.label)}</option>`).join('') +
+                            `</select></label>` +
+                            this.onlineControl() +
+                            `<button id="ph-reset" class="ph-btn ph-btn-warn">Reset table</button>` +
+                        `</div>` +
+                    `</div>` +
                 `</div>` +
             `</div>`;
         document.querySelectorAll('#ph-roster .ph-chip').forEach(b =>
@@ -352,6 +409,12 @@ class PlayController {
         document.getElementById('ph-score-up').onclick = () => this.gs.score(1, this.gs.mySeatId);
         document.getElementById('ph-score-dn').onclick = () => this.gs.score(-1, this.gs.mySeatId);
         document.getElementById('ph-reset').onclick = () => { if (confirm('Reset the whole table?')) this.gs.resetGame(); };
+        const more = document.getElementById('ph-more'), menu = document.getElementById('ph-more-menu');
+        if (more && menu) {
+            more.onclick = (e) => { e.stopPropagation(); menu.style.display = menu.style.display === 'none' ? 'flex' : 'none'; };
+            menu.onclick = (e) => e.stopPropagation();   // interacting inside shouldn't close it
+            if (!this._moreDocHooked) { this._moreDocHooked = true; document.addEventListener('click', () => { const m = document.getElementById('ph-more-menu'); if (m) m.style.display = 'none'; }); }
+        }
         this.wireOnline();
     }
 
@@ -550,6 +613,7 @@ class PlayController {
                 `<div class="ph-sheet-body">` +
                     `<div class="ph-sheet-art"${ch && ch.art ? ` style="background-image:url('${esc(ch.art)}')"` : ''}></div>` +
                     `<div class="ph-sheet-info">` +
+                        this.attackTargetBtn(seat) +
                         gridBtn +
                         this.pieceBlock(seat) +
                         this.combatBlock(seat) +
@@ -562,6 +626,7 @@ class PlayController {
         pop.style.display = 'flex';
 
         pop.querySelector('.ph-cc-close').onclick = () => this.closePopover();
+        this.wireAttackTarget(pop, seat.id);
         this.wireDice(pop, seat);
         const gb = pop.querySelector('#ph-roll-grid');
         if (gb) gb.onclick = () => this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows);
@@ -587,6 +652,22 @@ class PlayController {
             const target = pop.querySelector('.ph-atk-target');
             if (target && target.value) this.gs.attack(seat.id, target.value, this.app.board.cols, this.app.board.rows);
         });
+    }
+
+    // When you (mySeat) tap an enemy piece, offer to attack it — you are the
+    // attacker, the tapped piece is the target (no dropdown needed on the board).
+    attackTargetBtn(target) {
+        const me = this.gs.seat(this.gs.mySeatId);
+        if (!me || !target || me.id === target.id) return '';
+        if (me.dead || target.dead || me.x == null || target.x == null) return '';
+        if (!this.enemiesOf(me).some(e => e.id === target.id)) return '';
+        const col = PH_COLOR[me.color] || '#888';
+        return `<button class="ph-btn ph-btn-warn ph-attack-target" style="width:100%;margin-bottom:8px;background:${col};border-color:${col}">` +
+            `⚔ Attack with ${esc(me.label)}</button>`;
+    }
+    wireAttackTarget(pop, targetId) {
+        const btn = pop.querySelector('.ph-attack-target');
+        if (btn) btn.onclick = () => { this.gs.attack(this.gs.mySeatId, targetId, this.app.board.cols, this.app.board.rows); this.closePopover(); };
     }
 
     // enemies = the opposing side (heroes vs monster+minions), placed & alive
@@ -623,6 +704,7 @@ class PlayController {
                 `<button class="ph-cc-close" title="Close">✕</button>` +
                 `<div class="ph-sheet-top"><div class="ph-sheet-head"><h3>☠ ${esc(m.label)}</h3><span>minion</span></div></div>` +
                 `<div class="ph-sheet-body" style="display:block"><div class="ph-sheet-info">` +
+                    this.attackTargetBtn(m) +
                     `<div class="ph-cc-block"><h4>Piece · ${m.x + 1}-${String.fromCharCode(65 + m.y)}</h4>` +
                         `<div class="ph-hp-row"><button class="ph-btn ph-hp-dn">−</button>` +
                         `<span class="ph-hp-val">❤ ${m.hp}/${m.maxHp}</span>` +
@@ -634,6 +716,7 @@ class PlayController {
             `</div>`;
         pop.style.display = 'flex';
         pop.querySelector('.ph-cc-close').onclick = () => this.closePopover();
+        this.wireAttackTarget(pop, m.id);
         pop.querySelector('.ph-hp-dn').onclick = () => this.gs.adjustHp(m.id, -1);
         pop.querySelector('.ph-hp-up').onclick = () => this.gs.adjustHp(m.id, 1);
         pop.querySelector('.ph-min-remove').onclick = () => { this.gs.removeMinion(m.id); this.closePopover(); };

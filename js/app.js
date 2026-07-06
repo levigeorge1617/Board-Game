@@ -484,7 +484,8 @@ class AppController {
                 e.preventDefault(); return;
             }
             const t = e.changedTouches[0]; const g = cellOf(t);
-            this._touch.moved = false; this._touch.start = g;
+            this._touch.moved = false; this._touch.start = g; this._touch.last = g;
+            this._touch.startClient = { x: t.clientX, y: t.clientY };
 
             // tap-to-place a selected palette item wins over everything
             if (this.activeLibraryItem) { this._touch.mode = 'place'; e.preventDefault(); return; }
@@ -522,7 +523,10 @@ class AppController {
                 e.preventDefault(); return;
             }
             const t = e.changedTouches[0]; if (!t) return;
-            const g = cellOf(t); T.moved = true;
+            const g = cellOf(t); T.last = g;
+            // only count as a real drag past a small threshold, so a jittery tap still taps
+            if (T.startClient && Math.hypot(t.clientX - T.startClient.x, t.clientY - T.startClient.y) > 10) T.moved = true;
+            if (T.mode === 'place') { e.preventDefault(); return; }   // placement happens on lift
             if (T.mode === 'piece' && this.play) { this.play.onPieceMove(g.cellX, g.cellY); }
             else if (T.mode === 'token' && this.draggedToken) {
                 if (g.cellX >= 0 && g.cellX < this.board.cols && g.cellY >= 0 && g.cellY < this.board.rows) { this.draggedToken.x = g.cellX; this.draggedToken.y = g.cellY; this.renderer.draw(); }
@@ -549,7 +553,8 @@ class AppController {
             }
             // last finger up — finalize
             const tap = !T.moved;
-            if (T.mode === 'place' && tap && T.start) { this.placeLibraryItem(T.start.cellX, T.start.cellY); this.activeLibraryItem = null; if (this.ui) this.ui.clearPaletteSelection(); }
+            // place the armed token where the finger lifted (a small drag still places)
+            if (T.mode === 'place') { const cell = T.last || T.start; if (cell) { this.placeLibraryItem(cell.cellX, cell.cellY); this.activeLibraryItem = null; if (this.ui) this.ui.clearPaletteSelection(); } }
             else if (T.mode === 'piece' && this.play) { this.play.onPieceUp(); }
             else if (T.mode === 'token') { this.draggedToken = null; this.renderer.draw(); }
             else if (T.mode === 'select' && this.selectionBox) { this.isSelecting = false; this.saveRegionAsTemplate(this.selectionBox.x, this.selectionBox.y, this.selectionBox.w, this.selectionBox.h); this.currentTool = 'pan'; this.ui.setActiveTool('pan'); this.selectionBox = null; this.renderer.draw(); }
