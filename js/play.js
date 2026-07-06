@@ -16,7 +16,7 @@ class PlayController {
         this.app = app;
         this.gs = new GameState();
         this.openSeatId = null;      // character popover currently open (local)
-        this.handHidden = false;
+        this.handOpen = true;
         this.built = false;
         this.dragPiece = null;
         this.gs.subscribe(() => { if (this.app.appMode === 'play') { this.render(); this.app.renderer.draw(); } });
@@ -75,48 +75,89 @@ class PlayController {
 
     build() {
         const hud = document.getElementById('play-hud');
+        // Board overlay: only the top bar, the log, the played-card banner, the
+        // bottom hand tray and the popover live here now. The dice roller, roll
+        // numbers, combat and decks all moved into the left sidebar trays.
         hud.innerHTML =
             '<div id="ph-roster"></div>' +
-            '<div id="ph-roll"></div>' +
-            '<div id="ph-tray" class="ph-tray"><div id="ph-tray-resize" class="ph-tray-resize" title="Drag to resize the dice tray">⤡</div></div>' +
             '<div id="ph-log"></div>' +
             '<div id="ph-played"></div>' +
-            '<div id="ph-hand"></div>' +
+            '<div id="ph-hand" class="ph-hand"></div>' +
             '<div id="ph-pop" class="ph-pop" style="display:none;"></div>';
         hud.addEventListener('click', (e) => { if (e.target.id === 'ph-pop') this.closePopover(); });
+    }
+
+    // Build the persistent left-sidebar tray scaffold ONCE. It is never wiped by
+    // render() (only its sub-sections are), so the 3D dice tray's WebGL canvas —
+    // created lazily into #ph-tray — survives re-renders.
+    ensureSidebar() {
+        const wrap = document.getElementById('play-sidebar');
+        if (!wrap || this.sidebarBuilt) return;
+        const sec = (key, title, extra, body) =>
+            `<section class="ph-tray-sec" data-sec="${key}">` +
+                `<header class="ph-tray-head"><span>${title}</span><span class="ph-tray-head-r">${extra || ''}<button class="ph-tray-toggle" data-sec="${key}" title="Collapse">▾</button></span></header>` +
+                `<div class="ph-tray-body" id="ph-sec-${key}-wrap">${body}</div>` +
+            `</section>`;
+        wrap.innerHTML =
+            sec('dice', '🎲 Dice', '', '<div id="ph-sec-dice"></div>') +
+            sec('rolls', '🎯 Rolls',
+                '<button class="ph-tray-pop" id="ph-tray-pop" title="Pop the dice tray out over the board">⤢</button>',
+                '<div id="ph-tray-host"><div id="ph-tray" class="ph-tray"></div><div id="ph-tray-resize" class="ph-tray-resize" title="Drag to resize">⤡</div></div>' +
+                '<div id="ph-roll-nums" class="ph-roll-nums"></div>') +
+            sec('combat', '⚔ Combat', '', '<div id="ph-sec-combat"></div>') +
+            sec('decks', '🂠 Decks', '', '<div id="ph-decks"></div>');
+        this.sidebarBuilt = true;
+
+        // collapse/expand each tray section
+        const collapsed = JSON.parse(localStorage.getItem('ph_sec_collapsed') || '{}');
+        wrap.querySelectorAll('.ph-tray-sec').forEach(s => { if (collapsed[s.dataset.sec]) s.classList.add('collapsed'); });
+        wrap.querySelectorAll('.ph-tray-toggle').forEach(btn => btn.onclick = () => {
+            const s = btn.closest('.ph-tray-sec'); s.classList.toggle('collapsed');
+            collapsed[s.dataset.sec] = s.classList.contains('collapsed');
+            localStorage.setItem('ph_sec_collapsed', JSON.stringify(collapsed));
+            if (s.dataset.sec === 'rolls' && window.DiceTray) window.DiceTray.resize();
+        });
+        const pop = document.getElementById('ph-tray-pop');
+        if (pop) pop.onclick = () => this.toggleTrayPopout();
         this.initTrayResize();
     }
 
-    // Drag the bottom-left handle to resize the (top-right anchored) dice tray.
+    // Float the dice tray over the board (or dock it back into the sidebar).
+    toggleTrayPopout() {
+        const host = document.getElementById('ph-tray-host');
+        if (!host) return;
+        const floating = host.classList.toggle('popped');
+        if (floating) document.body.appendChild(host); else {
+            const wrap = document.getElementById('ph-sec-rolls-wrap');
+            if (wrap) wrap.insertBefore(host, wrap.firstChild);
+        }
+        if (window.DiceTray) setTimeout(() => window.DiceTray.resize(), 30);
+    }
+
+    // Drag the corner handle to set the dice tray height (it spans the sidebar width).
     initTrayResize() {
-        const tray = document.getElementById('ph-tray');
+        const host = document.getElementById('ph-tray-host');
         const handle = document.getElementById('ph-tray-resize');
-        if (!tray || !handle) return;
-        try {
-            const s = JSON.parse(localStorage.getItem('ph_tray_size') || 'null');
-            if (s && s.w && s.h) { tray.style.width = s.w + 'px'; tray.style.height = s.h + 'px'; }
-        } catch (e) {}
+        if (!host || !handle) return;
+        try { const h = Number(localStorage.getItem('ph_tray_h')); if (h) host.style.height = h + 'px'; } catch (e) {}
         let start = null;
         const pt = e => (e.touches && e.touches[0]) || e;
         const move = e => {
-            if (!start) return;
-            const p = pt(e);
-            const w = Math.max(160, Math.min(720, start.w + (start.x - p.clientX)));  // anchored right → grow left
-            const h = Math.max(120, Math.min(600, start.h + (p.clientY - start.y)));  // anchored top → grow down
-            tray.style.width = w + 'px'; tray.style.height = h + 'px';
+            if (!start) return; const p = pt(e);
+            const h = Math.max(120, Math.min(520, start.h + (p.clientY - start.y)));
+            host.style.height = h + 'px';
             if (e.cancelable) e.preventDefault();
         };
         const up = () => {
             if (!start) return; start = null;
-            localStorage.setItem('ph_tray_size', JSON.stringify({ w: tray.offsetWidth, h: tray.offsetHeight }));
+            localStorage.setItem('ph_tray_h', String(host.offsetHeight));
             if (window.DiceTray) window.DiceTray.resize();
             document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up);
             document.removeEventListener('touchmove', move); document.removeEventListener('touchend', up);
         };
         const down = e => {
-            e.preventDefault(); e.stopPropagation();
-            const p = pt(e);
-            start = { x: p.clientX, y: p.clientY, w: tray.offsetWidth, h: tray.offsetHeight };
+            e.preventDefault(); e.stopPropagation(); const p = pt(e);
+            start = { y: p.clientY, h: host.offsetHeight };
             document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
             document.addEventListener('touchmove', move, { passive: false }); document.addEventListener('touchend', up);
         };
@@ -125,17 +166,23 @@ class PlayController {
     }
 
     render() {
-        const side = document.getElementById('play-sidebar');
-        if (!this.gs.state.started) { this.renderWelcome(); document.getElementById('ph-log').innerHTML = ''; if (side) side.innerHTML = ''; return; }
+        this.ensureSidebar();
+        if (!this.gs.state.started) { this.renderWelcome(); return; }
         this.renderRoster();
-        this.renderSidebar();
+        this.renderDiceSection();
+        this.renderCombatSection();
+        this.renderDecks();
+        this.renderRollNums();
         this.renderHand();
-        this.renderRoll();
         this.renderLog();
         this.renderPlayed();
         this.maybeAnimateDice();
         this.maybeAnimateCombat();
         if (this.openSeatId) this.renderPopover();
+    }
+
+    _clearSidebarDynamic() {
+        ['ph-sec-dice', 'ph-sec-combat', 'ph-decks', 'ph-roll-nums'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
     }
 
     // Fire the 3D dice tray once per new (synced) roll, forced to the result.
@@ -144,35 +191,46 @@ class PlayController {
         if (!ld || ld.ts === this._diceTs) return;
         this._diceTs = ld.ts;
         if (!window.DiceTray) return;
-        const specs = ld.rolls.filter(r => r.die).map(r => ({ type: 'd' + r.die, value: r.value }));
-        if (!specs.length) return;
         const seat = this.gs.seat(ld.seatId);
         // colored by the hero (seat color); monster uses its own red
         const colorKey = seat ? (seat.kind === 'monster' ? 'monster' : seat.color) : 'action';
-        window.DiceTray.roll(specs, colorKey);
+        // each die keeps its own color; bonus dice (ba/bm) render marbled/special
+        const specs = ld.rolls.filter(r => r.die).map(r => ({
+            type: 'd' + r.die, value: r.value, colorKey, marble: r.key === 'ba' || r.key === 'bm',
+        }));
+        if (!specs.length) return;
+        window.DiceTray.roll(specs, colorKey, null);
     }
 
-    // ---- left play sidebar: your dice + the decks --------------------------
-    renderSidebar() {
-        const wrap = document.getElementById('play-sidebar'); if (!wrap) return;
+    // ---- sidebar: Dice tray -----------------------------------------------
+    renderDiceSection() {
+        const wrap = document.getElementById('ph-sec-dice'); if (!wrap) return;
         const seat = this.gs.seat(this.gs.mySeatId);
-        let html = '<hr><h2>Your Rolls</h2>';
-        if (!seat) {
-            html += '<p class="ph-side-hint">Pick your seat (top bar) to roll here.</p>';
-        } else {
-            const ch = this.gs.character(seat);
-            html += `<div class="ph-side-seat" style="--c:${PH_COLOR[seat.color] || '#888'}">${esc(seat.label)}</div>`;
-            html += this.diceBar(seat, ch, true);
-            if (seat.kind === 'monster') html += `<button id="ph-side-grid" class="ph-btn ph-btn-go" style="width:100%;margin-top:6px;">Roll grid ▸ #/A</button>`;
-        }
-        html += '<hr><h2>Decks</h2><div id="ph-decks"></div>';
+        if (!seat) { wrap.innerHTML = '<p class="ph-side-hint">Pick your seat (top bar) to roll here.</p>'; return; }
+        const ch = this.gs.character(seat);
+        let html = `<div class="ph-side-seat" style="--c:${PH_COLOR[seat.color] || '#888'}">${esc(seat.label)}</div>`;
+        html += this.diceBar(seat, ch, true);
+        if (seat.kind === 'monster') html += `<button id="ph-side-grid" class="ph-btn ph-btn-go" style="width:100%;margin-top:6px;">Roll grid ▸ #/A</button>`;
         wrap.innerHTML = html;
-        if (seat) {
-            this.wireDice(wrap, seat);
-            const g = document.getElementById('ph-side-grid');
-            if (g) g.onclick = () => this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows);
-        }
-        this.renderDecks();
+        this.wireDice(wrap, seat);
+        const g = document.getElementById('ph-side-grid');
+        if (g) g.onclick = () => this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows);
+    }
+
+    // ---- sidebar: Combat --------------------------------------------------
+    renderCombatSection() {
+        const wrap = document.getElementById('ph-sec-combat'); if (!wrap) return;
+        const seat = this.gs.seat(this.gs.mySeatId);
+        if (!seat) { wrap.innerHTML = '<p class="ph-side-hint">Pick your seat to attack.</p>'; return; }
+        const ch = this.gs.character(seat);
+        const c = (ch && ch.combat) || {};
+        const base = (c.baseAttack ? ` · +${c.baseAttack}☠` : '') + (c.baseShield ? ` · +${c.baseShield}🛡` : '');
+        wrap.innerHTML =
+            `<div class="ph-side-seat" style="--c:${PH_COLOR[seat.color] || '#888'}">⚔ ${c.attack || 0} / 🛡 ${c.defense || 0}${symbolize(base)}</div>` +
+            this.attackRow(seat) +
+            `<div class="ph-muted" style="font-size:10px;margin-top:5px;">Both sides roll: your skulls wound the target, their skulls wound you — shields block.</div>`;
+        const go = wrap.querySelector('.ph-atk-go');
+        if (go) go.onclick = () => { const t = wrap.querySelector('.ph-atk-target'); if (t && t.value) this.gs.attack(seat.id, t.value, this.app.board.cols, this.app.board.rows); };
     }
 
     // ---- dice bar (shared by sidebar + character sheet) -------------------
@@ -201,10 +259,19 @@ class PlayController {
     }
     wireDice(container, seat) {
         const dice = this.characterDice(seat, this.gs.character(seat));
+        const score = (this.gs.state.score && this.gs.state.score.collected) || 0;
         container.querySelectorAll('.ph-die-btn:not(.locked)').forEach(b =>
             b.onclick = () => this.gs.rollDice(seat.id, [{ key: b.dataset.key, die: Number(b.dataset.die) }]));
         container.querySelectorAll('.ph-dhead[data-grp]').forEach(b =>
-            b.onclick = () => { const list = dice.filter(d => d.grp === b.dataset.grp); if (list.length) this.gs.rollDice(seat.id, list.map(d => ({ key: d.key, die: d.die }))); });
+            b.onclick = () => {
+                const grp = b.dataset.grp;
+                let list = dice.filter(d => d.grp === grp);
+                // once unlocked via objectives, the bonus die rolls together with its
+                // group's action/move button (BM at 4◆, BA at 7◆).
+                if (grp === 'a' && score >= 7) list = list.concat(dice.filter(d => d.key === 'ba'));
+                if (grp === 'm' && score >= 4) list = list.concat(dice.filter(d => d.key === 'bm'));
+                if (list.length) this.gs.rollDice(seat.id, list.map(d => ({ key: d.key, die: d.die })));
+            });
     }
 
     // ---- shared "last played card" (each player dismisses their own view) --
@@ -231,7 +298,8 @@ class PlayController {
             `<div class="ph-welcome"><b>Game table</b>` +
             `<p>${online ? 'Connected — anyone in this room can deal.' : 'Play solo/hotseat here, or go online for cross-device play.'}<br>Deal the decks and seat the 5 heroes + monster.</p>` +
             `<button id="ph-new" class="ph-btn ph-btn-go">Deal &amp; start</button></div>`;
-        ['ph-roll', 'ph-hand', 'ph-played'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
+        ['ph-hand', 'ph-played', 'ph-log'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
+        this._clearSidebarDynamic();   // keep the sidebar scaffold (and dice tray) intact
         document.getElementById('ph-new').onclick = () => this.gs.newGame();
         this.wireOnline();
     }
@@ -341,69 +409,98 @@ class PlayController {
             el.onclick = () => this.showDiscard(el.dataset.discard));
     }
 
-    // ---- hand (private) ---------------------------------------------------
+    // ---- hand (private, bottom slide-in tray) -----------------------------
     renderHand() {
         const seat = this.gs.seat(this.gs.mySeatId);
         const wrap = document.getElementById('ph-hand');
-        if (!seat) { wrap.innerHTML = `<div class="ph-hand-empty">Pick your seat to see your hand.</div>`; return; }
+        if (this.handOpen === undefined) this.handOpen = true;
+        if (!seat) {
+            wrap.className = 'ph-hand';
+            wrap.innerHTML = `<div class="ph-hand-empty" style="padding:10px 12px;">Pick your seat to see your hand.</div>`;
+            return;
+        }
         const cards = seat.hand.map(inst => {
             const c = this.gs.card(inst.cid); if (!c) return '';
             return `<div class="ph-card" data-iid="${inst.iid}">` +
                 this.cardFace(c) +
-                `<div class="ph-card-actions"><button data-play="${inst.iid}">Play ▸ discard</button></div>` +
+                `<div class="ph-card-actions">` +
+                    `<button class="ph-play-btn" data-play="${inst.iid}" title="Play — trigger its effect, then discard">▶ Play</button>` +
+                    `<button class="ph-disc-btn" data-disc="${inst.iid}" title="Discard without effect">Discard</button>` +
+                `</div>` +
             `</div>`;
         }).join('');
+        wrap.className = 'ph-hand' + (this.handOpen ? ' open' : '');
         wrap.innerHTML =
-            `<div class="ph-hand-head">` +
-                `<span><b style="color:${PH_COLOR[seat.color]}">${esc(seat.label)}</b> · hand (${seat.hand.length}/10)</span>` +
-                `<button id="ph-hide" class="ph-btn">${this.handHidden ? 'Show hand' : 'Hide hand'}</button>` +
-            `</div>` +
-            `<div class="ph-cards${this.handHidden ? ' hidden' : ''}">${cards || '<div class="ph-hand-empty">Empty — draw from your pile.</div>'}</div>`;
-        document.getElementById('ph-hide').onclick = () => { this.handHidden = !this.handHidden; this.renderHand(); };
+            `<button class="ph-hand-handle" id="ph-hand-handle">` +
+                `<span class="ph-hand-grip">${this.handOpen ? '▾' : '▴'}</span>` +
+                `<b style="color:${PH_COLOR[seat.color]}">${esc(seat.label)}</b> · hand ${seat.hand.length}/10` +
+            `</button>` +
+            `<div class="ph-hand-body">` +
+                `<div class="ph-cards">${cards || '<div class="ph-hand-empty">Empty — draw from your pile.</div>'}</div>` +
+            `</div>`;
+        document.getElementById('ph-hand-handle').onclick = () => {
+            this.handOpen = !this.handOpen;
+            wrap.className = 'ph-hand' + (this.handOpen ? ' open' : '');
+            const grip = wrap.querySelector('.ph-hand-grip'); if (grip) grip.textContent = this.handOpen ? '▾' : '▴';
+        };
         wrap.querySelectorAll('[data-play]').forEach(b =>
-            b.onclick = (e) => { e.stopPropagation(); this.gs.discard(this.gs.mySeatId, b.dataset.play); });
+            b.onclick = (e) => { e.stopPropagation(); this.gs.playCard(this.gs.mySeatId, b.dataset.play); });
+        wrap.querySelectorAll('[data-disc]').forEach(b =>
+            b.onclick = (e) => { e.stopPropagation(); this.gs.discard(this.gs.mySeatId, b.dataset.disc); });
     }
 
-    // ---- shared roll readout ---------------------------------------------
-    renderRoll() {
-        const { lastDice, lastGrid } = this.gs.state;
+    // Resolve a combat color key (from GameLogic) to a CSS hex.
+    keyHex(key) { return PH_COLOR[key] || (key === 'monster' ? PH_COLOR.MONSTER : key) || '#888'; }
+
+    // ---- shared roll readout (sidebar, color-coded per owner, numbers only) --
+    renderRollNums() {
+        const el = document.getElementById('ph-roll-nums'); if (!el) return;
+        const { lastDice, lastGrid, lastCombat } = this.gs.state;
         let html = '';
         if (lastDice) {
             const seat = this.gs.seat(lastDice.seatId);
             const col = seat ? (PH_COLOR[seat.color] || '#888') : '#888';
-            const chips = lastDice.rolls.map(r => this.dieResult(r.die, r.value, r.key)).join('');
-            html += `<div class="ph-roll-card" style="--c:${col}"><div class="ph-roll-who" style="color:${col}">${esc(seat ? seat.label : '')} rolled</div>` +
-                `<div class="ph-roll-dice">${chips}</div>` +
-                (lastDice.rolls.length > 1 ? `<div class="ph-roll-total">total ${lastDice.total}</div>` : '') + `</div>`;
+            const chips = lastDice.rolls.map(r => {
+                const bonus = r.key === 'ba' || r.key === 'bm';
+                return `<span class="ph-num${bonus ? ' bonus' : ''}" style="--c:${col}" title="d${r.die}${r.key ? ' · ' + r.key : ''}">${r.value}${bonus ? '★' : ''}</span>`;
+            }).join('');
+            html += `<div class="ph-nums-row"><span class="ph-nums-who" style="color:${col}">${esc(seat ? seat.label : '')}</span>` +
+                `<span class="ph-nums-vals">${chips}</span>` +
+                (lastDice.rolls.length > 1 ? `<span class="ph-nums-tot">=${lastDice.total}</span>` : '') + `</div>`;
         }
         if (lastGrid) {
-            html += `<div class="ph-roll-card ph-grid-card" style="--c:${PH_COLOR.MONSTER}"><div class="ph-roll-who" style="color:${PH_COLOR.MONSTER}">Monster target</div>` +
-                `<div class="ph-grid-res"><b>${lastGrid.col}</b><b>${esc(lastGrid.row)}</b></div></div>`;
+            const col = PH_COLOR.MONSTER;
+            html += `<div class="ph-nums-row"><span class="ph-nums-who" style="color:${col}">grid</span>` +
+                `<span class="ph-nums-vals"><span class="ph-num" style="--c:${col}">${lastGrid.col}</span>` +
+                `<span class="ph-num" style="--c:${col}">${esc(lastGrid.row)}</span></span></div>`;
         }
-        const lc = this.gs.state.lastCombat;
-        if (lc && (!lastDice || lc.ts >= (lastDice.ts || 0))) {
-            const atk = this.gs.seat(lc.attackerId), def = this.gs.seat(lc.defenderId);
-            const ac = atk ? (PH_COLOR[atk.color] || '#888') : '#888';
-            const outcome = lc.repelled ? `pushed back ${lc.repelled}` : (lc.wounds ? `${lc.wounds} wound${lc.wounds !== 1 ? 's' : ''}` : 'no damage');
-            html += `<div class="ph-roll-card ph-combat-card" style="--c:${ac}">` +
-                `<div class="ph-roll-who" style="color:${ac}">${esc(atk ? atk.label : '')} ⚔ ${esc(def ? def.label : '')}</div>` +
-                `<div class="ph-combat-res"><span class="ph-cr-skull">${ICON_SKULL}${lc.hits}</span>` +
-                `<span class="ph-cr-vs">vs</span><span class="ph-cr-shield">${ICON_SHIELD}${lc.blocks}</span></div>` +
-                `<div class="ph-roll-total">${outcome}</div></div>`;
+        if (lastCombat) {
+            const atk = this.gs.combatant(lastCombat.attackerId), def = this.gs.combatant(lastCombat.defenderId);
+            const ac = this.keyHex(lastCombat.atkKey), dc = this.keyHex(lastCombat.defKey);
+            const side = (label, colHex, skulls, shields, dmg) =>
+                `<div class="ph-cb-side" style="--c:${colHex}"><span class="ph-cb-name">${esc(label)}</span>` +
+                `<span class="ph-cb-nums"><span class="ph-cb-sk">${ICON_SKULL}${skulls}</span>` +
+                `<span class="ph-cb-sh">${ICON_SHIELD}${shields}</span></span>` +
+                `<span class="ph-cb-dmg">${dmg}</span></div>`;
+            const dmgTxt = (target, wounds, repel) => !target ? '' : (target.kind === 'monster'
+                ? (repel ? `→ push ${repel}` : 'held') : (wounds ? `→ −${wounds}❤` : 'no dmg'));
+            html += `<div class="ph-nums-combat">` +
+                side(atk ? atk.label : 'Attacker', ac, lastCombat.atkSkulls, lastCombat.atkShields, dmgTxt(def, lastCombat.woundsToDef, lastCombat.repelDef)) +
+                `<span class="ph-cb-vs">vs</span>` +
+                side(def ? def.label : 'Defender', dc, lastCombat.defSkulls, lastCombat.defShields, dmgTxt(atk, lastCombat.woundsToAtk, lastCombat.repelAtk)) +
+                `</div>`;
         }
-        document.getElementById('ph-roll').innerHTML = html;
+        el.innerHTML = html || '<div class="ph-side-hint">Rolls show here.</div>';
     }
 
-    // Fire the 3D combat dice once per new resolved exchange.
+    // Fire the 3D combat dice once per new resolved exchange (attacker vs defender colors).
     maybeAnimateCombat() {
         const lc = this.gs.state.lastCombat;
         if (!lc || lc.ts === this._combatTs) return;
         this._combatTs = lc.ts;
         if (!window.DiceTray || !window.DiceTray.rollCombat) return;
-        const faces = (lc.atkFaces || []).concat(lc.defFaces || []);
-        if (!faces.length) return;
-        const atk = this.gs.seat(lc.attackerId);
-        window.DiceTray.rollCombat(faces, atk ? (atk.kind === 'monster' ? 'monster' : atk.color) : 'monster');
+        if (!(lc.atkFaces || []).length && !(lc.defFaces || []).length) return;
+        window.DiceTray.rollCombat(lc.atkFaces || [], lc.defFaces || [], lc.atkKey || 'monster', lc.defKey || 'monster');
     }
 
     // ---- event log --------------------------------------------------------
@@ -512,9 +609,10 @@ class PlayController {
         const ch = this.gs.character(seat);
         const c = (ch && ch.combat) || {};
         const reachNote = c.reach > 1 ? ` · reach ${c.reach}` : '';
-        return `<div class="ph-cc-block"><h4>Combat — ⚔ ${c.attack || 0} / 🛡 ${c.defense || 0}${reachNote}</h4>` +
+        const base = (c.baseAttack ? ` · +${c.baseAttack}☠` : '') + (c.baseShield ? ` · +${c.baseShield}🛡` : '');
+        return `<div class="ph-cc-block"><h4>Combat — ⚔ ${c.attack || 0} / 🛡 ${c.defense || 0}${symbolize(base)}${reachNote}</h4>` +
             this.attackRow(seat) +
-            `<div class="ph-muted" style="font-size:10px;margin-top:4px;">Rolls your attack pool vs the target's defense; wounds apply automatically.</div></div>`;
+            `<div class="ph-muted" style="font-size:10px;margin-top:4px;">Both sides roll — your skulls wound the target, their skulls wound you; shields block. Damage applies automatically.</div></div>`;
     }
     dist(a, b) { return (a.x == null || b.x == null) ? '?' : Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)); }
 

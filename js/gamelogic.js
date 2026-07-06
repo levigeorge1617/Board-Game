@@ -26,13 +26,19 @@
     const combatantOf = (s, id) => (s.seats || []).find(x => x.id === id) || (s.minions || []).find(x => x.id === id) || null;
     // combat die faces: 1-3 = skull ☠, 4-5 = shield 🛡, 6 = blank
     const FORM_COMBAT = { BEAR: [1, 1], TURTLE: [0, 2], CHEETAH: [0, -1], DEER: [0, -1] };
+    // A dice-tray/readout color key for a combatant (hero color name, else 'monster').
+    function colorKeyOf(ent) { return ent && ent.kind === 'hero' ? ent.color : 'monster'; }
     function combatStats(ent, data) {
         let c;
-        if (ent.kind === 'minion') c = { attack: ent.attack, defense: ent.defense, reach: ent.reach || 1 };
+        if (ent.kind === 'minion') c = { attack: ent.attack, defense: ent.defense, reach: ent.reach || 1, baseAttack: ent.baseAttack, baseShield: ent.baseShield };
         else { const ch = (ent.kind === 'monster' ? data.monsters : data.heroes).find(x => x.id === ent.characterId); c = (ch && ch.combat) || {}; }
         let attack = c.attack || 0, defense = c.defense || 0;
         if (ent.form && FORM_COMBAT[ent.form]) { attack += FORM_COMBAT[ent.form][0]; defense += FORM_COMBAT[ent.form][1]; }
-        return { attack: Math.max(0, attack), defense: Math.max(0, defense), reach: c.reach || 1, autoSkull: ent.autoSkull || 0, autoShield: ent.autoShield || 0 };
+        // baseAttack = flat skulls always dealt; baseShield = flat shields always blocked.
+        // (ent.autoSkull/autoShield kept as per-instance one-shot augments from cards.)
+        const baseAttack = (c.baseAttack || 0) + (ent.autoSkull || 0);
+        const baseShield = (c.baseShield || 0) + (ent.autoShield || 0);
+        return { attack: Math.max(0, attack), defense: Math.max(0, defense), reach: c.reach || 1, baseAttack, baseShield };
     }
     function pushAway(mon, from, n, cols, rows) {
         if (mon.x == null || from.x == null) return 0;
@@ -99,6 +105,19 @@
     const charOf = (data, seat) => seat && (seat.kind === 'monster' ? data.monsters : data.heroes).find(c => c.id === seat.characterId);
     const cardOf = (data, cid) => (data.cards || []).find(c => c.id === cid);
 
+    // Hook for card effects when a card is *played* (not merely discarded). Most
+    // cards' effects aren't wired yet — this is where they'll resolve. A `card.effect`
+    // key (structured effect) can be authored later; for now we recognise a couple of
+    // simple combat-augment tags so the play/discard split is already meaningful.
+    function applyCardEffect(s, seat, card, data) {
+        if (!card) return;
+        const eff = card.effect || {};
+        // one-shot combat augments stored on the seat until consumed by the next attack
+        if (eff.autoSkull) seat.autoSkull = (seat.autoSkull || 0) + eff.autoSkull;
+        if (eff.autoShield) seat.autoShield = (seat.autoShield || 0) + eff.autoShield;
+        // (extend here as card effects are wired in)
+    }
+
     // Apply one action to `state`, returning the next state. `data` is the game
     // content (heroes/monsters/cards). Randomness lives here on purpose.
     function apply(state, action, data) {
@@ -115,15 +134,20 @@
                 if (deck.draw.length) { seat.hand.push(deck.draw.pop()); logEvent(s, seat.id, `drew a card`); }
                 break;
             }
-            case 'DISCARD': {
+            case 'DISCARD': case 'PLAY_CARD': {
                 const seat = seatOf(s, a.seatId); if (!seat) break;
                 const idx = seat.hand.findIndex(c => c && c.iid === a.iid); if (idx < 0) break;
                 const [inst] = seat.hand.splice(idx, 1);
                 const card = cardOf(data, inst.cid);
                 const deck = s.decks[(card && card.deck) || seat.deck] || s.decks[seat.deck];
                 if (deck) deck.discard.push(inst);
-                s.lastPlayed = { seatId: seat.id, cid: inst.cid, ts: Date.now() };
-                logEvent(s, seat.id, `played ${card ? card.name : 'a card'}`);
+                if (a.type === 'PLAY_CARD') {
+                    s.lastPlayed = { seatId: seat.id, cid: inst.cid, ts: Date.now() };
+                    applyCardEffect(s, seat, card, data);   // effect hook (mostly stubbed until wired)
+                    logEvent(s, seat.id, `played ${card ? card.name : 'a card'}`);
+                } else {
+                    logEvent(s, seat.id, `discarded ${card ? card.name : 'a card'}`);
+                }
                 break;
             }
             case 'SET_PHASE': {
@@ -203,23 +227,43 @@
                 if (!atk || !def || atk.id === def.id) break;
                 const ac = combatStats(atk, data), dc = combatStats(def, data);
                 const roll = () => 1 + Math.floor(Math.random() * 6);
+                const skulls = f => f.filter(v => v <= 3).length;   // faces 1-3 = ☠
+                const shields = f => f.filter(v => v >= 4 && v <= 5).length; // 4-5 = 🛡
+                // Both sides roll their own pool: attacker rolls Attack dice, defender
+                // rolls Defense dice. EACH side's skulls wound the OTHER; each side's
+                // shields block the other's skulls. Damage flows both ways.
                 const atkFaces = Array.from({ length: Math.max(0, ac.attack) + (a.bonusAttack || 0) }, roll);
                 const defFaces = Array.from({ length: Math.max(0, dc.defense) + (a.bonusDefense || 0) }, roll);
-                const hits = atkFaces.filter(v => v <= 3).length + ac.autoSkull;
-                const blocks = defFaces.filter(v => v >= 4 && v <= 5).length + dc.autoShield;
-                const wounds = Math.max(0, hits - blocks);
-                let repelled = 0;
-                if (def.kind === 'monster') {
-                    repelled = pushAway(def, atk, wounds, a.cols, a.rows);       // heroes can't kill the monster — they shove it back
-                } else if (wounds > 0) {
-                    def.hp = Math.max(0, (def.hp || 0) - wounds);
-                    if (def.hp <= 0 && !def.dead) die(s, def, data);   // hero → gravestone, minion → removed
-                }
-                s.lastCombat = { attackerId: atk.id, defenderId: def.id, atkFaces, defFaces, hits, blocks, wounds, repelled, ts: Date.now() };
-                const outcome = def.kind === 'monster'
-                    ? (repelled ? `pushed back ${repelled}` : 'held ground')
+                const atkSkulls = skulls(atkFaces) + ac.baseAttack;   // hits the attacker deals
+                const atkShields = shields(atkFaces) + ac.baseShield; // blocks the attacker has
+                const defSkulls = skulls(defFaces) + dc.baseAttack;   // hits the defender deals back
+                const defShields = shields(defFaces) + dc.baseShield; // blocks the defender has
+                const woundsToDef = Math.max(0, atkSkulls - defShields);
+                const woundsToAtk = Math.max(0, defSkulls - atkShields);
+
+                // Apply wounds to a fighter: the monster can't be killed (heroes shove
+                // it back instead); heroes/minions lose HP → gravestone/removal.
+                const applyWounds = (target, from, wounds) => {
+                    if (wounds <= 0) return 0;
+                    if (target.kind === 'monster') return pushAway(target, from, wounds, a.cols, a.rows);
+                    target.hp = Math.max(0, (target.hp || 0) - wounds);
+                    if (target.hp <= 0 && !target.dead) die(s, target, data);
+                    return 0;
+                };
+                const repelDef = applyWounds(def, atk, woundsToDef);
+                const repelAtk = applyWounds(atk, def, woundsToAtk);
+
+                s.lastCombat = {
+                    attackerId: atk.id, defenderId: def.id, atkFaces, defFaces,
+                    atkKey: colorKeyOf(atk), defKey: colorKeyOf(def),
+                    atkSkulls, atkShields, defSkulls, defShields,
+                    woundsToDef, woundsToAtk, repelDef, repelAtk, ts: Date.now(),
+                };
+                const dmgOut = (target, wounds, repel) => target.kind === 'monster'
+                    ? (repel ? `pushed back ${repel}` : 'held ground')
                     : (wounds ? `${wounds} wound${wounds !== 1 ? 's' : ''}` : 'no damage');
-                logEvent(s, atk.id, `attacks ${def.label} — ${hits} skull / ${blocks} shield → ${outcome}`);
+                logEvent(s, atk.id, `attacks ${def.label} — ${atkSkulls}☠/${atkShields}🛡 vs ${defSkulls}☠/${defShields}🛡 → ` +
+                    `${def.label} ${dmgOut(def, woundsToDef, repelDef)}, ${atk.label} ${dmgOut(atk, woundsToAtk, repelAtk)}`);
                 break;
             }
             case 'LOG': logEvent(s, a.seatId || null, a.text || ''); break;
