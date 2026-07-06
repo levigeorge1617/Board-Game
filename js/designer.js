@@ -54,6 +54,17 @@ const DZ_FIELDS = {
         { key: 'copies', label: 'Copies in deck', type: 'number' },
         { key: 'art', label: 'Art', type: 'art' },
         { key: 'text', label: 'Card text', type: 'textarea' },
+        // --- structured effect: applied when the card is *played* (not discarded) ---
+        { key: 'effect.scope', label: 'Effect — scope', type: 'select', options: ['', 'action', 'move', 'attack', 'defense', 'any'],
+          hint: 'Which roll this card modifies. Blank = no wired effect (falls back to text inference for +N cards).' },
+        { key: 'effect.flat', label: 'Effect — flat bonus to roll (+/−)', type: 'number', hint: 'e.g. SpellBook +1 → scope action, flat 1.' },
+        { key: 'effect.extraDie', label: 'Effect — extra die on the roll', type: 'die' },
+        { key: 'effect.attackDice', label: 'Effect — extra attack dice (combat)', type: 'number' },
+        { key: 'effect.defenseDice', label: 'Effect — extra defense dice (combat)', type: 'number' },
+        { key: 'effect.skull', label: 'Effect — flat skulls ☠ (combat)', type: 'number' },
+        { key: 'effect.shield', label: 'Effect — flat shields 🛡 (combat)', type: 'number' },
+        { key: 'effect.duration', label: 'Effect — lasts', type: 'select', options: ['once', 'turn', 'persist'],
+          hint: 'once = next matching roll · turn = until end of your turn · persist = permanent.' },
     ],
 };
 

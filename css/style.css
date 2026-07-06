@@ -495,3 +495,17 @@ textarea.dz-input { resize: vertical; line-height: 1.5; }
     .ph-sheet-info { position: relative; z-index: 1; height: 100%;
         background: linear-gradient(180deg, #0a0c0e77 0%, #0a0c0ed8 38%, #0a0c0ef4 100%); }
 }
+
+/* ============================================================
+   ROLL / COMBAT MODIFIERS (card effects held & resolved on use)
+   ============================================================ */
+.ph-mods { margin-top: 8px; background: #12151a; border: 1px solid #2a2f33; border-radius: 8px; padding: 7px 8px; }
+.ph-mods-head { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: #9aa7b5; margin-bottom: 5px; }
+.ph-mods-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.ph-mod { display: inline-flex; align-items: center; gap: 5px; background: #1c2a17; border: 1px solid #3a5a2c; color: #d7f0c8;
+    border-radius: 6px; padding: 2px 4px 2px 6px; font-size: 12px; font-weight: bold; }
+.ph-mod-scope { font-size: 9px; text-transform: uppercase; letter-spacing: .4px; color: #9fca86; background: #10200a; border-radius: 4px; padding: 1px 4px; }
+.ph-mod-x { background: transparent; border: none; color: #9aa7b5; cursor: pointer; font-size: 12px; line-height: 1; padding: 0 2px; }
+.ph-mod-x:hover { color: #ff6b6b; }
+/* a rolled value that came from a modifier (extra die) or the flat +N chip */
+.ph-num.mod { background: #2d6a4f; box-shadow: inset 0 0 0 2px #46c6a6, 0 0 6px #46c6a688; }

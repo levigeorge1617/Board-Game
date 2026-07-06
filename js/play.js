@@ -275,10 +275,31 @@ class PlayController {
         let html = `<div class="ph-side-seat" style="--c:${PH_COLOR[seat.color] || '#888'}">${esc(seat.label)}</div>`;
         html += this.diceBar(seat, ch, false);
         if (seat.kind === 'monster') html += `<button id="ph-side-grid" class="ph-btn ph-btn-go" style="width:100%;margin-top:6px;">Roll grid ▸ #/A</button>`;
+        html += this.modsBar(seat);
         wrap.innerHTML = html;
         this.wireDice(wrap, seat);
+        this.wireMods(wrap, seat);
         const g = document.getElementById('ph-side-grid');
         if (g) g.onclick = () => this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows);
+    }
+
+    // Active roll/combat modifiers queued on a fighter (from played cards, etc.).
+    // Each shows what it does, when it applies, and can be cancelled.
+    modsBar(ent) {
+        const mods = (ent && ent.mods) || [];
+        if (!mods.length) return '';
+        const dur = { once: 'next roll', turn: 'this turn', persist: 'permanent' };
+        const chips = mods.map(m => {
+            const label = describeModShort(m);
+            return `<span class="ph-mod" title="${esc(m.source || '')} · ${dur[m.duration] || ''}">` +
+                `<span class="ph-mod-scope">${esc(m.scope)}</span>${label}` +
+                `<button class="ph-mod-x" data-mod="${m.id}" title="Cancel">✕</button></span>`;
+        }).join('');
+        return `<div class="ph-mods"><div class="ph-mods-head">Active effects</div><div class="ph-mods-row">${chips}</div></div>`;
+    }
+    wireMods(container, ent) {
+        container.querySelectorAll('.ph-mod-x').forEach(b =>
+            b.onclick = () => this.gs.clearMod(ent.id, b.dataset.mod));
     }
 
     // ---- sidebar: Combat --------------------------------------------------
@@ -321,11 +342,13 @@ class PlayController {
             `<div class="ph-dcol">${head('m', 'Move ֍')}<div class="ph-dset">${setM}</div></div>` +
         `</div>`;
     }
+    // action/move classification drives which modifiers apply to a roll
+    kindOfKey(key) { return /^(m|bm|move)/.test(key || '') ? 'move' : 'action'; }
     wireDice(container, seat) {
         const dice = this.characterDice(seat, this.gs.character(seat));
         const score = (this.gs.state.score && this.gs.state.score.collected) || 0;
         container.querySelectorAll('.ph-die-btn:not(.locked)').forEach(b =>
-            b.onclick = () => this.gs.rollDice(seat.id, [{ key: b.dataset.key, die: Number(b.dataset.die) }]));
+            b.onclick = () => this.gs.rollDice(seat.id, [{ key: b.dataset.key, die: Number(b.dataset.die) }], this.kindOfKey(b.dataset.key)));
         container.querySelectorAll('.ph-dhead[data-grp]').forEach(b =>
             b.onclick = () => {
                 const grp = b.dataset.grp;
@@ -334,7 +357,7 @@ class PlayController {
                 // group's action/move button (BM at 4◆, BA at 7◆).
                 if (grp === 'a' && score >= 7) list = list.concat(dice.filter(d => d.key === 'ba'));
                 if (grp === 'm' && score >= 4) list = list.concat(dice.filter(d => d.key === 'bm'));
-                if (list.length) this.gs.rollDice(seat.id, list.map(d => ({ key: d.key, die: d.die })));
+                if (list.length) this.gs.rollDice(seat.id, list.map(d => ({ key: d.key, die: d.die })), grp === 'm' ? 'move' : 'action');
             });
     }
 
@@ -539,11 +562,16 @@ class PlayController {
             const col = seat ? (PH_COLOR[seat.color] || '#888') : '#888';
             const chips = lastDice.rolls.map(r => {
                 const bonus = r.key === 'ba' || r.key === 'bm';
-                return `<span class="ph-num${bonus ? ' bonus' : ''}" style="--c:${col}" title="d${r.die}${r.key ? ' · ' + r.key : ''}">${r.value}${bonus ? '★' : ''}</span>`;
+                const fromMod = !!r.from;
+                return `<span class="ph-num${bonus ? ' bonus' : ''}${fromMod ? ' mod' : ''}" style="--c:${col}" title="d${r.die}${r.from ? ' · ' + esc(r.from) : (r.key ? ' · ' + r.key : '')}">${r.value}${bonus ? '★' : ''}</span>`;
             }).join('');
+            // flat modifier bonus (e.g. SpellBook +1 ×2 → +2), shown as its own chip
+            const flat = lastDice.flat || 0;
+            const flatChip = flat ? `<span class="ph-num mod" style="--c:${col}" title="${(lastDice.modsApplied || []).map(m => esc(m.source)).join(', ')}">${flat >= 0 ? '+' : ''}${flat}</span>` : '';
+            const showTotal = (lastDice.rolls.length > 1 || flat);
             html += `<div class="ph-nums-row"><span class="ph-nums-who" style="color:${col}">${esc(seat ? seat.label : '')}</span>` +
-                `<span class="ph-nums-vals">${chips}</span>` +
-                (lastDice.rolls.length > 1 ? `<span class="ph-nums-tot">=${lastDice.total}</span>` : '') + `</div>`;
+                `<span class="ph-nums-vals">${chips}${flatChip}</span>` +
+                (showTotal ? `<span class="ph-nums-tot">=${lastDice.total}</span>` : '') + `</div>`;
         }
         if (lastGrid) {
             const col = PH_COLOR.MONSTER;
@@ -854,3 +882,14 @@ function symbolize(html) {
 }
 function icon(s) { return symbolize(esc(s)); }
 function fmt(s) { return symbolize(esc(s).replace(/\n/g, '<br>')); }
+// compact label for a queued modifier chip
+function describeModShort(m) {
+    const b = [];
+    if (m.flat) b.push((m.flat >= 0 ? '+' : '') + m.flat);
+    (m.dice || []).forEach(d => b.push('+d' + d.die));
+    if (m.attackDice) b.push('+' + m.attackDice + '⚔');
+    if (m.defenseDice) b.push('+' + m.defenseDice + '🛡');
+    if (m.skull) b.push('+' + m.skull + '☠');
+    if (m.shield) b.push('+' + m.shield + '🛡');
+    return esc(b.join(' ') || '·');
+}
