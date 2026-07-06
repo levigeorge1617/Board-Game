@@ -159,8 +159,10 @@ class Renderer {
             ctx.restore();
         });
 
-        // 6.5 Game pieces (heroes/monster) from the synced play state
-        if (window.app && window.app.appMode === 'play' && window.app.play && window.app.play.gs.state.started) {
+        // 6.5 Game pieces (heroes/monster/minions) from the synced play state.
+        // Shown in play AND design mode (so wired pieces can be pre-placed on a map).
+        if (window.app && (window.app.appMode === 'play' || window.app.appMode === 'design') &&
+            window.app.play && window.app.play.gs.state.started) {
             this.drawPieces(ctx, size);
         }
 

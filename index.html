@@ -8,7 +8,10 @@
 </head>
 <body>
     <div id="app-container">
+        <button id="sidebar-toggle" title="Menu" aria-label="Toggle menu">☰</button>
+        <div id="sidebar-backdrop"></div>
         <aside id="sidebar">
+            <div id="sidebar-resize" title="Drag to resize the menu"></div>
             <div class="mode-toggle-container">
                 <button id="btn-mode-play" class="mode-btn active">⚔️ Play</button>
                 <button id="btn-mode-design" class="mode-btn">🛠️ Board</button>
@@ -18,18 +21,11 @@
             <div id="board-tools">
             <hr>
             <h2>Token Palette</h2>
+            <p class="palette-hint">Tap to arm, then tap the board to place (or drag on desktop).</p>
             <div class="palette-shelf">
-                <div class="palette-item" draggable="true" data-type="hero" data-color="#ff3333" data-label=""><span class="token-preview" style="background:#ff3333;"></span> Red Hero</div>
-                <div class="palette-item" draggable="true" data-type="hero" data-color="#33cc33" data-label=""><span class="token-preview" style="background:#33cc33;"></span> Green Hero</div>
-                <div class="palette-item" draggable="true" data-type="hero" data-color="#3366ff" data-label=""><span class="token-preview" style="background:#3366ff;"></span> Blue Hero</div>
-                <div class="palette-item" draggable="true" data-type="hero" data-color="#ffff33" data-label=""><span class="token-preview" style="background:#ffff33;"></span> Yellow Hero</div>
-                <div class="palette-item" draggable="true" data-type="hero" data-color="#9933ff" data-label=""><span class="token-preview" style="background:#9933ff;"></span> Purple Hero</div>
-                <div class="palette-item" draggable="true" data-type="boss" data-color="#000000" data-label=""><span class="token-preview" style="background:#000000; border-color:#ff3333;"></span> Black Boss</div>
                 <div class="palette-item" draggable="true" data-type="minion" data-color="#9b2d2d" data-label=""><span class="token-preview" style="background:#9b2d2d; color:#f2e6e6;">☠</span> Minion</div>
-                <div class="palette-item" draggable="true" data-type="enemy" data-color="#800000" data-label=""><span class="token-preview" style="background:#800000;"></span> Maroon Enemy</div>
-                <div class="palette-item" draggable="true" data-type="barrier" data-color="#8B4513" data-label=""><span class="token-preview" style="background:#8B4513;"></span> Brown Barrier</div>
-                
-                <div class="palette-item" draggable="true" data-type="lock" data-color="#444444" data-label=""><span class="token-preview" style="background:#444444; border: 2px dashed #ffcc00;">🔒</span> Lock & Key</div>
+                <div class="palette-item" draggable="true" data-type="barrier" data-color="#8B4513" data-label=""><span class="token-preview" style="background:#8B4513;"></span> Barrier</div>
+                <div class="palette-item" draggable="true" data-type="lock" data-color="#444444" data-label=""><span class="token-preview" style="background:#444444; border: 2px dashed #ffcc00;">🔒</span> Lock &amp; Key</div>
                 <div class="palette-item" draggable="true" data-type="objective" data-color="#00ffff" data-label=""><span class="token-preview" style="background:#00ffff; color:#0a3a44;"><svg viewBox="0 0 24 24" style="width:14px;height:14px;"><path fill="currentColor" d="M5 3h14l3 5.5L12 21 2 8.5z"/><path fill="#000" fill-opacity=".2" d="M2 8.5h20L12 21z"/></svg></span> Objectives</div>
             </div>
 

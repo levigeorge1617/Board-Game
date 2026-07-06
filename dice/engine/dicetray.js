@@ -53,11 +53,31 @@ const isLight = hex => {
 };
 // A resolved "none" texture object (the factory expects an object, not the string).
 const PLAIN_TEX = { name: 'none', texture: '', composite: 'source-over', bump: '', data: {}, material: 'plastic' };
+function hexFor(key) { return CATEGORY_COLOR[key] || CATEGORY_COLOR.action; }
 function colordataFor(key) {
-    const bg = CATEGORY_COLOR[key] || CATEGORY_COLOR.action;
+    const bg = hexFor(key);
     return {
         id: 'bg_' + key, name: 'bg_' + key,
         foreground: isLight(bg) ? '#1a1206' : '#ffffff', background: bg, outline: '#00000066', edge: bg, texture: PLAIN_TEX,
+    };
+}
+// "Special" marbled look for bonus dice: the hero color with a bright gold rim/outline
+// so unlocked bonus dice read as distinct from ordinary action/move dice.
+function colordataMarble(key) {
+    const bg = hexFor(key);
+    return {
+        id: 'mrb_' + key, name: 'mrb_' + key,
+        foreground: '#fff6d8', background: bg, outline: '#e0a800', edge: '#ffcf4d', texture: PLAIN_TEX,
+    };
+}
+// Two-color set (attacker vs defender). The engine picks per-die from the array,
+// so both sides' colors appear in one combat roll instead of all one color.
+function colordataPair(keyA, keyB) {
+    const a = hexFor(keyA), b = hexFor(keyB);
+    return {
+        id: 'pair_' + keyA + '_' + keyB, name: 'pair',
+        foreground: ['#ffffff', '#ffffff'], background: [a, b], outline: ['#00000066', '#00000066'], edge: [a, b],
+        texture: [PLAIN_TEX, PLAIN_TEX],
     };
 }
 
@@ -83,12 +103,13 @@ window.DiceTray = {
         if (box && c && c.clientWidth) box.setDimensions({ w: c.clientWidth, h: c.clientHeight });
     },
     // specs: [{type:'d20', value:14}, ...]  colorKey: category or seat color name
-    roll(specs, colorKey, onDone) {
+    // opts.marble → render as the "special" bonus-die look (hero color + gold rim).
+    roll(specs, colorKey, onDone, opts) {
         let b;
         try { b = ensureBox(); } catch (e) { console.warn('DiceTray', e); }
         if (!b || !specs || !specs.length) { if (onDone) onDone(); return; }
         try { b.clearDice(); } catch (e) {}
-        try { factory.applyColorSet(colordataFor(colorKey)); } catch (e) {}
+        try { factory.applyColorSet((opts && opts.marble) ? colordataMarble(colorKey) : colordataFor(colorKey)); } catch (e) {}
 
         const counts = {}; specs.forEach(s => { counts[s.type] = (counts[s.type] || 0) + 1; });
         const notation = Object.entries(counts).map(([t, n]) => `${n}${t}`).join('+');
@@ -106,12 +127,14 @@ window.DiceTray = {
             b.rollDice(nv, () => { b.rolling = false; if (onDone) onDone(); });
         } catch (e) { console.warn('DiceTray roll failed', e); if (onDone) onDone(); }
     },
-    // faces: array of combat-die values (1-3 skull, 4-5 shield, 6 blank)
-    rollCombat(faces, colorKey, onDone) {
+    // atkFaces/defFaces: arrays of combat-die values (1-3 skull, 4-5 shield, 6 blank).
+    // Attacker dice are colored atkKey, defender dice defKey so you can tell whose is whose.
+    rollCombat(atkFaces, defFaces, atkKey, defKey, onDone) {
         let b; try { b = ensureBox(); } catch (e) {}
-        if (!b || !faces || !faces.length) { if (onDone) onDone(); return; }
+        const faces = (atkFaces || []).concat(defFaces || []);
+        if (!b || !faces.length) { if (onDone) onDone(); return; }
         try { b.clearDice(); } catch (e) {}
-        try { factory.applyColorSet(colordataFor(colorKey || 'monster')); } catch (e) {}
+        try { factory.applyColorSet(colordataPair(atkKey || 'monster', defKey || 'monster')); } catch (e) {}
         const w = b.display.currentWidth, h = b.display.currentHeight;
         const vector = { x: (Math.random() * 2 - 0.5) * w, y: -(Math.random() * 2 - 0.5) * h };
         const dist = Math.sqrt(vector.x * vector.x + vector.y * vector.y);

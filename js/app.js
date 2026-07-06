@@ -26,6 +26,7 @@ class AppController {
         this.selectionBox = null;
 
         this.initCanvasEvents();
+        this.initTouchEvents();
         this.initHTML5DropEvents();
         window.addEventListener('resize', () => this.renderer.resizeCanvas());
         this.renderer.resizeCanvas();
@@ -228,7 +229,16 @@ class AppController {
             e.preventDefault(); if (!this.activeLibraryItem) return;
             const rect = this.canvas.getBoundingClientRect();
             const { cellX, cellY } = this.renderer.screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
+            this.placeLibraryItem(cellX, cellY);
+            this.activeLibraryItem = null;
+        });
+    }
 
+    // Place the currently-selected palette item at a cell. Shared by desktop
+    // drag-drop and touch tap-to-place. Leaves activeLibraryItem for the caller to clear.
+    placeLibraryItem(cellX, cellY) {
+        if (!this.activeLibraryItem) return;
+        {
             if (cellX >= 0 && cellX < this.board.cols && cellY >= 0 && cellY < this.board.rows) {
                 this.board.saveHistory();
 
@@ -279,8 +289,36 @@ class AppController {
                 }
                 this.renderer.draw();
             }
-            this.activeLibraryItem = null;
-        });
+        }
+    }
+
+    // Apply the active design tool at a cell (extracted so touch + mouse share it).
+    applyDesignToolAt(cellX, cellY, localX, localY) {
+        if (this.currentTool === 'stamp' && this.activeTemplate) {
+            this.board.saveHistory();
+            Object.keys(this.activeTemplate.edges || {}).forEach(k => {
+                const [tx, ty] = k.split(',').map(Number); const gk = `${cellX + tx},${cellY + ty}`;
+                if (!this.board.edges[gk]) this.board.edges[gk] = { top: 0, left: 0 };
+                if (this.activeTemplate.edges[k].top) this.board.edges[gk].top = this.activeTemplate.edges[k].top;
+                if (this.activeTemplate.edges[k].left) this.board.edges[gk].left = this.activeTemplate.edges[k].left;
+            });
+            Object.keys(this.activeTemplate.floors || {}).forEach(k => {
+                const [tx, ty] = k.split(',').map(Number); this.board.floors[`${cellX + tx},${cellY + ty}`] = this.activeTemplate.floors[k];
+            });
+            this.currentTool = 'pan'; this.ui.setActiveTool('pan'); this.activeTemplate = null;
+        } else if (this.currentTool === 'select-box') {
+            this.isSelecting = true; this.selectStartCell = { x: cellX, y: cellY }; this.selectionBox = { x: cellX, y: cellY, w: 1, h: 1 };
+        } else if (this.currentTool === 'bucket-fill') {
+            this.executeBucketFill(cellX, cellY, this.selectedTerrain);
+        } else if (this.currentTool.startsWith('floor-')) {
+            this.board.setFloor(cellX, cellY, this.selectedTerrain);
+        } else if (this.currentTool === 'wall-edge' || this.currentTool === 'door-edge') {
+            const mode = this.currentTool === 'wall-edge' ? 1 : 2; const size = this.board.cellSize;
+            if (localY < 12) this.board.toggleEdgeStructure(cellX, cellY, 'top', mode);
+            else if (localY > size - 12) this.board.toggleEdgeStructure(cellX, cellY + 1, 'top', mode);
+            else if (localX < 12) this.board.toggleEdgeStructure(cellX, cellY, 'left', mode);
+            else if (localX > size - 12) this.board.toggleEdgeStructure(cellX + 1, cellY, 'left', mode);
+        }
     }
 
     initCanvasEvents() {
@@ -333,32 +371,13 @@ class AppController {
 
             // Design Mode Configuration Branches
             if (this.appMode === 'design') {
-                if (this.currentTool === 'stamp' && this.activeTemplate) {
-                    this.board.saveHistory();
-                    Object.keys(this.activeTemplate.edges || {}).forEach(k => {
-                        const [tx, ty] = k.split(',').map(Number); const gk = `${cellX + tx},${cellY + ty}`;
-                        if (!this.board.edges[gk]) this.board.edges[gk] = { top: 0, left: 0 };
-                        if (this.activeTemplate.edges[k].top) this.board.edges[gk].top = this.activeTemplate.edges[k].top;
-                        if (this.activeTemplate.edges[k].left) this.board.edges[gk].left = this.activeTemplate.edges[k].left;
-                    });
-                    Object.keys(this.activeTemplate.floors || {}).forEach(k => {
-                        const [tx, ty] = k.split(',').map(Number); this.board.floors[`${cellX + tx},${cellY + ty}`] = this.activeTemplate.floors[k];
-                    });
-                    this.currentTool = 'pan'; this.ui.setActiveTool('pan'); this.activeTemplate = null;
-                } else if (this.currentTool === 'select-box') {
-                    this.isSelecting = true; this.selectStartCell = { x: cellX, y: cellY }; this.selectionBox = { x: cellX, y: cellY, w: 1, h: 1 };
-                } else if (this.currentTool === 'bucket-fill') {
-                    this.executeBucketFill(cellX, cellY, this.selectedTerrain);
-                } else if (this.currentTool.startsWith('floor-')) {
-                    this.board.setFloor(cellX, cellY, this.selectedTerrain);
-                } else if (this.currentTool === 'wall-edge' || this.currentTool === 'door-edge') {
-                    const mode = this.currentTool === 'wall-edge' ? 1 : 2; const size = this.board.cellSize;
-                    if (localY < 12) this.board.toggleEdgeStructure(cellX, cellY, 'top', mode);
-                    else if (localY > size - 12) this.board.toggleEdgeStructure(cellX, cellY + 1, 'top', mode);
-                    else if (localX < 12) this.board.toggleEdgeStructure(cellX, cellY, 'left', mode);
-                    else if (localX > size - 12) this.board.toggleEdgeStructure(cellX + 1, cellY, 'left', mode);
+                // wired combat pieces (minions) can be repositioned in design mode so
+                // maps can pre-place them; grabbing a piece pre-empts the active tool.
+                if (this.play && this.play.onPieceDown(cellX, cellY)) {
+                    this.hideHPPopover(); this.renderer.draw(); return;
                 }
-            } 
+                this.applyDesignToolAt(cellX, cellY, localX, localY);
+            }
             // Play Mode Click Interactions
             else {
                 // game pieces (synced) take priority over manual board tokens
@@ -427,6 +446,131 @@ class AppController {
             this.hideHPPopover();
             this.renderer.draw(this.currentTool === 'stamp' ? this.activeTemplate : null, this.currentMouseCell.x, this.currentMouseCell.y, this.selectionBox);
         }, { passive: false });
+    }
+
+    // ---- Touch input (mobile) --------------------------------------------
+    // The mouse handlers use right-drag to pan + wheel to zoom, neither of which
+    // exist on touch. This adds finger gestures so the board is usable on phones:
+    //   • one finger on a piece  → drag it (tap = open its sheet)
+    //   • one finger on a token  → drag it
+    //   • one finger on empty    → pan (play) / apply the active tool (design)
+    //   • tap with a palette item selected → place it
+    //   • two fingers            → pinch-zoom + pan
+    initTouchEvents() {
+        const c = this.canvas;
+        this._touch = { pointers: new Map(), mode: null, moved: false, start: null, pinch: null };
+        const cellOf = (t) => {
+            const rect = c.getBoundingClientRect();
+            const mx = t.clientX - rect.left, my = t.clientY - rect.top;
+            const w = this.renderer.screenToWorld(mx, my);
+            return { mx, my, ...w };
+        };
+        const centroidDist = () => {
+            const p = [...this._touch.pointers.values()];
+            if (p.length < 2) return { d: 0, cx: 0, cy: 0 };
+            const rect = c.getBoundingClientRect();
+            const dx = p[0].x - p[1].x, dy = p[0].y - p[1].y;
+            return { d: Math.hypot(dx, dy), cx: (p[0].x + p[1].x) / 2 - rect.left, cy: (p[0].y + p[1].y) / 2 - rect.top };
+        };
+
+        c.addEventListener('touchstart', (e) => {
+            for (const t of e.changedTouches) this._touch.pointers.set(t.identifier, { x: t.clientX, y: t.clientY });
+            const n = this._touch.pointers.size;
+            if (n >= 2) {                                   // enter pinch, drop any single gesture
+                if (this._touch.mode === 'piece' && this.play) { this.play.dragPiece = null; }
+                this._touch.mode = null; this.draggedToken = null; this.isSelecting = false;
+                const cd = centroidDist();
+                this._touch.pinch = { d: cd.d, cx: cd.cx, cy: cd.cy, zoom: this.renderer.zoom, panX: this.renderer.panX, panY: this.renderer.panY };
+                e.preventDefault(); return;
+            }
+            const t = e.changedTouches[0]; const g = cellOf(t);
+            this._touch.moved = false; this._touch.start = g;
+
+            // tap-to-place a selected palette item wins over everything
+            if (this.activeLibraryItem) { this._touch.mode = 'place'; e.preventDefault(); return; }
+
+            if (this.appMode === 'design') {
+                if (this.play && this.play.onPieceDown(g.cellX, g.cellY)) { this._touch.mode = 'piece'; }
+                else if (this.currentTool === 'select-box') { this._touch.mode = 'select'; this.isSelecting = true; this.selectStartCell = { x: g.cellX, y: g.cellY }; this.selectionBox = { x: g.cellX, y: g.cellY, w: 1, h: 1 }; }
+                else { this._touch.mode = 'draw'; this.applyDesignToolAt(g.cellX, g.cellY, g.localX, g.localY); this.renderer.draw(); }
+                e.preventDefault(); return;
+            }
+            // play mode
+            if (this.play && this.play.onPieceDown(g.cellX, g.cellY)) { this._touch.mode = 'piece'; }
+            else {
+                const token = this.board.tokens.find(tk => tk.x === g.cellX && tk.y === g.cellY);
+                if (token) { this._touch.mode = 'token'; this.draggedToken = token; this.board.saveHistory(); }
+                else { this._touch.mode = 'pan'; this._touch.start = { ...g, panX: this.renderer.panX, panY: this.renderer.panY }; }
+            }
+            this.hideHPPopover();
+            e.preventDefault();
+        }, { passive: false });
+
+        c.addEventListener('touchmove', (e) => {
+            for (const t of e.changedTouches) { const p = this._touch.pointers.get(t.identifier); if (p) { p.x = t.clientX; p.y = t.clientY; } }
+            const T = this._touch;
+            if (T.pinch && this._touch.pointers.size >= 2) {
+                const cd = centroidDist();
+                const oldZoom = this.renderer.zoom;
+                let z = T.pinch.zoom * (cd.d / (T.pinch.d || 1));
+                z = Math.max(this.renderer.minZoom, Math.min(this.renderer.maxZoom, z));
+                // zoom about the pinch centroid, then pan by centroid drift
+                this.renderer.zoom = z;
+                this.renderer.panX = cd.cx - (T.pinch.cx - T.pinch.panX) * (z / T.pinch.zoom);
+                this.renderer.panY = cd.cy - (T.pinch.cy - T.pinch.panY) * (z / T.pinch.zoom);
+                this.renderer.draw(null, 0, 0, this.selectionBox);
+                e.preventDefault(); return;
+            }
+            const t = e.changedTouches[0]; if (!t) return;
+            const g = cellOf(t); T.moved = true;
+            if (T.mode === 'piece' && this.play) { this.play.onPieceMove(g.cellX, g.cellY); }
+            else if (T.mode === 'token' && this.draggedToken) {
+                if (g.cellX >= 0 && g.cellX < this.board.cols && g.cellY >= 0 && g.cellY < this.board.rows) { this.draggedToken.x = g.cellX; this.draggedToken.y = g.cellY; this.renderer.draw(); }
+            } else if (T.mode === 'select' && this.selectStartCell) {
+                const x = Math.min(this.selectStartCell.x, g.cellX), y = Math.min(this.selectStartCell.y, g.cellY);
+                this.selectionBox = { x, y, w: Math.abs(this.selectStartCell.x - g.cellX) + 1, h: Math.abs(this.selectStartCell.y - g.cellY) + 1 };
+                this.renderer.draw(null, 0, 0, this.selectionBox);
+            } else if (T.mode === 'pan' && T.start) {
+                this.renderer.panX = T.start.panX + (t.clientX - (T.start.mx + c.getBoundingClientRect().left));
+                this.renderer.panY = T.start.panY + (t.clientY - (T.start.my + c.getBoundingClientRect().top));
+                this.renderer.draw(null, 0, 0, this.selectionBox);
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        const end = (e) => {
+            for (const t of e.changedTouches) this._touch.pointers.delete(t.identifier);
+            const T = this._touch;
+            if (this._touch.pointers.size >= 2) { const cd = centroidDist(); T.pinch = { d: cd.d, cx: cd.cx, cy: cd.cy, zoom: this.renderer.zoom, panX: this.renderer.panX, panY: this.renderer.panY }; e.preventDefault(); return; }
+            if (this._touch.pointers.size === 1) {   // 2→1: keep panning with the remaining finger, no jump
+                T.pinch = null; const [p] = [...this._touch.pointers.values()]; const rect = c.getBoundingClientRect();
+                T.mode = 'pan'; T.moved = true; T.start = { mx: p.x - rect.left, my: p.y - rect.top, panX: this.renderer.panX, panY: this.renderer.panY };
+                e.preventDefault(); return;
+            }
+            // last finger up — finalize
+            const tap = !T.moved;
+            if (T.mode === 'place' && tap && T.start) { this.placeLibraryItem(T.start.cellX, T.start.cellY); this.activeLibraryItem = null; if (this.ui) this.ui.clearPaletteSelection(); }
+            else if (T.mode === 'piece' && this.play) { this.play.onPieceUp(); }
+            else if (T.mode === 'token') { this.draggedToken = null; this.renderer.draw(); }
+            else if (T.mode === 'select' && this.selectionBox) { this.isSelecting = false; this.saveRegionAsTemplate(this.selectionBox.x, this.selectionBox.y, this.selectionBox.w, this.selectionBox.h); this.currentTool = 'pan'; this.ui.setActiveTool('pan'); this.selectionBox = null; this.renderer.draw(); }
+            else if (T.mode === 'pan' && tap && this.appMode === 'play' && T.start) { this.handleGutterTap(T.start); }
+            T.mode = null; T.pinch = null; T.start = null; T.moved = false;
+            e.preventDefault();
+        };
+        c.addEventListener('touchend', end, { passive: false });
+        c.addEventListener('touchcancel', end, { passive: false });
+    }
+
+    // Tap in a play-mode row/column gutter toggles that lane's highlight (mirrors the mouse path).
+    handleGutterTap(g) {
+        const size = this.board.cellSize;
+        const rx = (g.mx - this.renderer.panX) / this.renderer.zoom;
+        const ry = (g.my - this.renderer.panY) / this.renderer.zoom;
+        if (ry >= -32 && ry < 0 && rx >= 0 && rx < this.board.cols * size) {
+            const col = Math.floor(rx / size); this.highlightedCol = (this.highlightedCol === col) ? null : col; this.renderer.draw();
+        } else if (rx >= -32 && rx < 0 && ry >= 0 && ry < this.board.rows * size) {
+            const row = Math.floor(ry / size); this.highlightedRow = (this.highlightedRow === row) ? null : row; this.renderer.draw();
+        }
     }
 
     handleUndo() { this.board.undo(); this.hideHPPopover(); this.renderer.draw(); }
