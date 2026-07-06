@@ -556,7 +556,12 @@ class AppController {
             // place the armed token where the finger lifted (a small drag still places)
             if (T.mode === 'place') { const cell = T.last || T.start; if (cell) { this.placeLibraryItem(cell.cellX, cell.cellY); this.activeLibraryItem = null; if (this.ui) this.ui.clearPaletteSelection(); } }
             else if (T.mode === 'piece' && this.play) { this.play.onPieceUp(); }
-            else if (T.mode === 'token') { this.draggedToken = null; this.renderer.draw(); }
+            else if (T.mode === 'token') {
+                // a tap (no drag) on a board token opens its value popover so it can
+                // be decremented/removed on touch (there is no right-click on mobile)
+                if (tap && this.draggedToken && this.appMode === 'play' && T.start) this.showHPPopover(this.draggedToken, T.start.mx, T.start.my);
+                this.draggedToken = null; this.renderer.draw();
+            }
             else if (T.mode === 'select' && this.selectionBox) { this.isSelecting = false; this.saveRegionAsTemplate(this.selectionBox.x, this.selectionBox.y, this.selectionBox.w, this.selectionBox.h); this.currentTool = 'pan'; this.ui.setActiveTool('pan'); this.selectionBox = null; this.renderer.draw(); }
             else if (T.mode === 'pan' && tap && this.appMode === 'play' && T.start) { this.handleGutterTap(T.start); }
             T.mode = null; T.pinch = null; T.start = null; T.moved = false;

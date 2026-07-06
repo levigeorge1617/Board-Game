@@ -165,14 +165,27 @@
             case 'ADD_MINION': {
                 const n = (s.minions || []).length + 1;
                 s.minions = s.minions || [];
+                const life = a.hp || (1 + Math.floor(Math.random() * 4));   // d4 health when spawned
                 s.minions.push({
                     id: 'min-' + Date.now() + '-' + Math.floor(Math.random() * 1000), kind: 'minion', label: 'Minion ' + n,
-                    x: a.x, y: a.y, hp: a.hp || 2, maxHp: a.hp || 2, attack: a.attack || 2, defense: a.defense || 1, reach: a.reach || 1, color: a.color || '#9b2d2d',
+                    x: a.x, y: a.y, hp: life, maxHp: life, attack: a.attack || 2, defense: a.defense || 1, reach: a.reach || 1,
+                    baseAttack: a.baseAttack || 0, baseShield: a.baseShield || 0, color: a.color || '#9b2d2d',
                 });
-                logEvent(s, null, `A minion was placed at ${cellName(a.x, a.y)}`);
+                logEvent(s, null, `A minion was placed at ${cellName(a.x, a.y)} (❤${life})`);
                 break;
             }
             case 'REMOVE_MINION': { s.minions = (s.minions || []).filter(m => m.id !== a.id); break; }
+            case 'ADJUST_MINION': {   // tweak/enhance one minion's stats (Oblex buffs, etc.)
+                const m = (s.minions || []).find(x => x.id === a.id); if (!m) break;
+                const d = a.delta || 0;
+                if (a.stat === 'maxHp') { m.maxHp = Math.max(1, (m.maxHp || 1) + d); if (d > 0) m.hp = Math.min(m.maxHp, (m.hp || 0) + d); else m.hp = Math.min(m.hp || 0, m.maxHp); }
+                else if (a.stat === 'attack') m.attack = Math.max(0, (m.attack || 0) + d);
+                else if (a.stat === 'defense') m.defense = Math.max(0, (m.defense || 0) + d);
+                else if (a.stat === 'reach') m.reach = Math.max(1, (m.reach || 1) + d);
+                else break;
+                logEvent(s, null, `${m.label} ${a.stat} ${d >= 0 ? '+' : ''}${d}`);
+                break;
+            }
             case 'ADJUST_HP': {
                 const ent = combatantOf(s, a.seatId); if (!ent || ent.kind === 'monster' || ent.dead) break;
                 const max = ent.maxHp || ent.hp || 10;
