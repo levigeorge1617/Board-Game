@@ -191,14 +191,15 @@ class PlayController {
         if (!ld || ld.ts === this._diceTs) return;
         this._diceTs = ld.ts;
         if (!window.DiceTray) return;
-        const specs = ld.rolls.filter(r => r.die).map(r => ({ type: 'd' + r.die, value: r.value }));
-        if (!specs.length) return;
         const seat = this.gs.seat(ld.seatId);
         // colored by the hero (seat color); monster uses its own red
         const colorKey = seat ? (seat.kind === 'monster' ? 'monster' : seat.color) : 'action';
-        // bonus dice (ba/bm) render as the "special" marbled hero-color look
-        const marble = ld.rolls.some(r => r.key === 'ba' || r.key === 'bm');
-        window.DiceTray.roll(specs, colorKey, null, { marble });
+        // each die keeps its own color; bonus dice (ba/bm) render marbled/special
+        const specs = ld.rolls.filter(r => r.die).map(r => ({
+            type: 'd' + r.die, value: r.value, colorKey, marble: r.key === 'ba' || r.key === 'bm',
+        }));
+        if (!specs.length) return;
+        window.DiceTray.roll(specs, colorKey, null);
     }
 
     // ---- sidebar: Dice tray -----------------------------------------------
