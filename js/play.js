@@ -655,14 +655,17 @@ class PlayController {
                 `<div class="ph-sheet-body">` +
                     `<div class="ph-sheet-art"${ch && ch.art ? ` style="background-image:url('${esc(ch.art)}')"` : ''}></div>` +
                     `<div class="ph-sheet-info">` +
-                        this.attackTargetBtn(seat) +
-                        this.losBtn() +
-                        gridBtn +
-                        this.pieceBlock(seat) +
-                        this.combatBlock(seat) +
-                        this.formsBlock(seat, ch) +
-                        (ch && ch.abilities ? `<div class="ph-cc-block"><h4>Abilities</h4><p>${fmt(ch.abilities)}</p></div>` : '') +
-                        (ch && ch.objectiveAbilities ? `<div class="ph-cc-block"><h4>Objective ${icon('◆/◇')}</h4><p>${fmt(ch.objectiveAbilities)}</p></div>` : '') +
+                        `<div class="ph-sheet-scrim"></div>` +   // transparent spacer on mobile: art peeks through
+                        `<div class="ph-sheet-panels">` +
+                            this.attackTargetBtn(seat) +
+                            this.losBtn() +
+                            gridBtn +
+                            this.pieceBlock(seat) +
+                            this.combatBlock(seat) +
+                            this.formsBlock(seat, ch) +
+                            (ch && ch.abilities ? `<div class="ph-cc-block"><h4>Abilities</h4><p>${fmt(ch.abilities)}</p></div>` : '') +
+                            (ch && ch.objectiveAbilities ? `<div class="ph-cc-block"><h4>Objective ${icon('◆/◇')}</h4><p>${fmt(ch.objectiveAbilities)}</p></div>` : '') +
+                        `</div>` +
                     `</div>` +
                 `</div>` +
             `</div>`;

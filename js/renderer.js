@@ -255,32 +255,47 @@ class Renderer {
         });
     }
 
-    // Is line-of-sight from cell (x0,y0) to (x1,y1) blocked by a wall edge?
-    // A ray between the two cell centers is traced; crossing a wall (edge value 1)
-    // blocks it. Doors (value 2) are treated as see-through openings.
+    // Is line-of-sight from cell (x0,y0) to (x1,y1) blocked? A ray between the two
+    // cell centers is traced. It is blocked by a wall OR a door edge (value >= 1),
+    // or by any object/token or piece sitting in an intermediate cell.
     losBlocked(x0, y0, x1, y1) {
         if (x0 === x1 && y0 === y1) return false;
         const edges = this.state.edges;
-        const isWall = (key, side) => { const e = edges[key]; return !!(e && e[side] === 1); };
+        const blockEdge = (key, side) => { const e = edges[key]; return !!(e && e[side] >= 1); };  // wall(1) or door(2)
         const ax = x0 + 0.5, ay = y0 + 0.5, bx = x1 + 0.5, by = y1 + 0.5;
         const dx = bx - ax, dy = by - ay;
-        // vertical grid-line crossings → the "left" wall of the entered column
+        // vertical grid-line crossings → the "left" edge of the entered column
         if (dx !== 0) {
             const lo = Math.min(ax, bx), hi = Math.max(ax, bx);
             for (let gx = Math.ceil(lo); gx <= Math.floor(hi); gx++) {
                 if (gx <= lo || gx >= hi) continue;
                 const t = (gx - ax) / dx, row = Math.floor(ay + dy * t);
-                if (isWall(`${gx},${row}`, 'left')) return true;
+                if (blockEdge(`${gx},${row}`, 'left')) return true;
             }
         }
-        // horizontal grid-line crossings → the "top" wall of the entered row
+        // horizontal grid-line crossings → the "top" edge of the entered row
         if (dy !== 0) {
             const lo = Math.min(ay, by), hi = Math.max(ay, by);
             for (let gy = Math.ceil(lo); gy <= Math.floor(hi); gy++) {
                 if (gy <= lo || gy >= hi) continue;
                 const t = (gy - ay) / dy, col = Math.floor(ax + dx * t);
-                if (isWall(`${col},${gy}`, 'top')) return true;
+                if (blockEdge(`${col},${gy}`, 'top')) return true;
             }
+        }
+        // objects/tokens (barriers, locks, objectives…) and pieces in an intermediate
+        // cell break line of sight — endpoints (the looker and the target) don't.
+        const gs = window.app && window.app.play && window.app.play.gs;
+        const occupied = (cx, cy) => {
+            if ((cx === x0 && cy === y0) || (cx === x1 && cy === y1)) return false;
+            if (this.state.tokens.some(t => t.x === cx && t.y === cy)) return true;
+            if (gs && gs.state.seats.some(s => s.x === cx && s.y === cy && !s.dead)) return true;
+            if (gs && (gs.state.minions || []).some(m => m.x === cx && m.y === cy)) return true;
+            return false;
+        };
+        const n = Math.ceil(Math.hypot(dx, dy) * 3) + 1;
+        for (let i = 1; i < n; i++) {
+            const t = i / n, cx = Math.floor(ax + dx * t), cy = Math.floor(ay + dy * t);
+            if (occupied(cx, cy)) return true;
         }
         return false;
     }
