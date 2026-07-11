@@ -771,7 +771,13 @@ class PlayController {
         if (c.vsMinionAttack) perks.push(`+${c.vsMinionAttack}⚔ vs minions`);
         if (c.vsMinionDefense) perks.push(`+${c.vsMinionDefense}🛡 vs minions`);
         if (c.rangedAttack) perks.push(`+${c.rangedAttack}⚔ from ${(c.rangedFrom || 1) + 1}+ away`);
+        if (c.flanking) perks.push(`+${c.flanking}⚔ flanking`);
+        if (c.lowLifeAttack) perks.push(`+${c.lowLifeAttack}⚔ at half life`);
+        if (c.pierce) perks.push(`pierce ${c.pierce}`);
+        if (c.riposte) perks.push(`riposte ${c.riposte}`);
         if (c.healOnMinionKill) perks.push(`heal ${c.healOnMinionKill} on a minion kill`);
+        if (c.auraAllyDefense) perks.push(`allies +${c.auraAllyDefense}🛡 beside you`);
+        if (c.hexOnHit) perks.push(`hex −${c.hexOnHit}⚔ on hit`);
         if (c.ignoreCover || c.ignoreCoverAttack) perks.push(`attacks ignore walls`);
         const perkRow = perks.length ? `<div class="ph-cc-perks">${perks.map(p => `<span class="ph-perk">${symbolize(esc(p))}</span>`).join('')}</div>` : '';
         return `<div class="ph-cc-block"><h4>Combat — ⚔ ${c.attack || 0} / 🛡 ${c.defense || 0}${symbolize(base)}${reachNote}</h4>` +

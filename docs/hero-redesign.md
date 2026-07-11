@@ -16,20 +16,20 @@ objectives; they can't kill the monster (a hit *repels* it).
 
 | Hero (color) | ⚔ | 🛡 | reach | ❤ | Identity & wired perks |
 |---|:-:|:-:|:-:|:-:|---|
-| **Paladin** (RED) | 2 | **3** | 1 | 8 | The wall. **+1🛡 base** (always blocks 1) · **+1⚔ vs minions** |
-| **Barbarian** (RED) | **4** | 2 | 1 | 8 | Bruiser. **+1⚔ vs minions** · **heal 2 on a minion kill** |
-| **Hunter** (YELLOW) | 3 | 1 | **2** | 6 | Ranged; **pet** (hero-side piece) |
-| **Scout** (YELLOW) | 2 | 2 | 1 | 5 | Evasion; **Flee even on 0 shields** once/turn |
-| **Wizard** (BLUE) | 1 | 1 | 1 | 4 | Glass cannon; leans on spell cards |
-| **Enchantress** (BLUE) | 1 | 1 | 1 | 5 | Control; move monster/ally, walk through walls |
-| **Thief** (GREEN) | **4** | 1 | 1 | 5 | Assassin; **attacks ignore walls** · diagonal move |
-| **Ranger** (GREEN) | 3 | 2 | **3** | 6 | Sharpshooter; **+1⚔ from 2+ away** · diagonal move |
+| **Paladin** (RED) | 2 | **3** | 1 | 8 | Guardian. **+1🛡 base** · adjacent allies **+1🛡 (aura)** · **riposte 1** · +1⚔ vs minions |
+| **Barbarian** (RED) | **4** | 2 | 1 | 8 | Bloodlust: **+2⚔ at ≤ half life** · +1⚔ vs minions · **heal 2 on a minion kill** |
+| **Hunter** (YELLOW) | 3 | 1 | **2** | 6 | Pack tactics: reach 2 · **+1⚔ flanking** · **pet** (hero-side piece) |
+| **Scout** (YELLOW) | 2 | 2 | 1 | 5 | Recon: **sight 8** · **Flee even on 0 shields** once/turn |
+| **Wizard** (BLUE) | 1 | 1 | **2** | 4 | Arcane: reach 2 · **pierce 1** · **+2⚔ at 5◆** (scales) |
+| **Enchantress** (BLUE) | 1 | 1 | 1 | 5 | Hexweaver: **hex −1⚔ on anything she hits** · move monster/ally |
+| **Thief** (GREEN) | **4** | 1 | 1 | 5 | Backstab: **ignores walls** · **pierce 1** · **+1⚔ flanking** · diagonal |
+| **Ranger** (GREEN) | 3 | 2 | **3** | 6 | Sharpshooter: reach 3 · **+1⚔ from 2+ away** · diagonal |
 | **Druid** (PURPLE) | 2 | 2 | 1 | 6 | Shapeshifter (forms below) |
-| **Cleric** (PURPLE) | 1 | **3** | 1 | 6 | Healer; solid 🛡, weak ⚔ |
+| **Cleric** (PURPLE) | 1 | **3** | 1 | 6 | Blessed: **+1🛡 base** · strong support |
 
-Druid forms (applied to the combat pool via `FORM_COMBAT`): **BEAR** +1⚔/+1🛡 ·
-**TURTLE** +2🛡 · **CHEETAH** −1🛡 (fast, fragile; +2 move is manual) · **DEER**
-−1🛡 (fragile healer).
+Druid forms (combat pool via `FORM_COMBAT` + `FORM_PERKS`): **BEAR** +1⚔/+1🛡 &
+takes 1 fewer die from minions · **TURTLE** +2🛡 & **riposte 1** · **CHEETAH**
+−1🛡 (fast, fragile; +2 move is manual) · **DEER** −1🛡 (fragile healer).
 
 Sanity: Barbarian ⚔4 vs a minion = **⚔5** ≈ 2.5 skulls — minions melt. Ranger at
 range = ⚔4. Thief ⚔4 through a wall is a real threat from cover. The casters
@@ -43,16 +43,26 @@ All read off the character's `combat` block in `GameLogic` COMBAT:
 
 | Field | Effect |
 |---|---|
-| `baseShield` / `baseAttack` | flat shields/skulls that always land (Paladin +1🛡) |
-| `vsMinionAttack` | extra attack dice when the **target is a minion** (Paladin, Barbarian) |
-| `vsMinionDefense` | extra defense dice when the **attacker is a minion** ("minions do less") |
-| `rangedAttack` / `rangedFrom` | extra attack dice when attacking from **> rangedFrom** spaces (Ranger) |
+| `baseShield` / `baseAttack` | flat shields/skulls that always land (Paladin, Cleric +1🛡) |
+| `attackLadder` | attack dice climb with objectives (Wizard: +2 at 5◆) |
+| `vsMinionAttack` | +attack dice when the **target is a minion** (Paladin, Barbarian) |
+| `vsMinionDefense` | +defense dice when the **attacker is a minion** ("minions do less"; BEAR form) |
+| `rangedAttack` / `rangedFrom` | +attack dice when attacking from **> rangedFrom** spaces (Ranger) |
+| `flanking` | +attack dice when the **target is pinned by another piece on your side** (Hunter, Thief) |
+| `lowLifeAttack` | +attack dice while the attacker is at **≤ half life** (Barbarian) |
+| `pierce` | attacker **ignores that many of the defender's shields** (Wizard, Thief) |
+| `riposte` | if the **defender blocks every skull**, it deals that many wounds back (Paladin, TURTLE) |
+| `auraAllyDefense` | a living ally beside the defender lends **+defense dice** (Paladin) |
+| `hexOnHit` | anything this attacker hits gets **−attack dice until end of turn** (Enchantress) |
 | `healOnMinionKill` | attacker regains life when its strike **destroys a minion** (Barbarian) |
-| `ignoreCoverAttack` | attacks ignore walls for line of sight — shown by the board inspector (Thief) |
+| `ignoreCoverAttack` | attacks **ignore walls** for line of sight — drawn by the inspector (Thief) |
 
-These auto-apply in the exchange and show up in the combat readout and on the
-hero sheet (a row of perk chips under the ⚔/🛡 line). Barriers count as minions
-for the vs-minion bonuses (martial heroes smash them); the clone does not.
+These auto-apply in the exchange and show as perk chips on the hero sheet + notes
+in the combat readout. Barriers count as minions for the vs-minion bonuses
+(martial heroes smash them); the clone does not. The length of each dice pool is
+floored at 0, so a hex can't drive it negative. Flanking/aura read piece
+positions from the synced state; **wall-based cover is deliberately not wired**
+(the reducer doesn't see the board's walls — that stays a manual/table call).
 
 ---
 

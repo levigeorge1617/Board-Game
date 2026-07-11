@@ -26,6 +26,11 @@
     const combatantOf = (s, id) => (s.seats || []).find(x => x.id === id) || (s.minions || []).find(x => x.id === id) || null;
     // combat die faces: 1-3 = skull ☠, 4-5 = shield 🛡, 6 = blank
     const FORM_COMBAT = { BEAR: [1, 1], TURTLE: [0, 2], CHEETAH: [0, -1], DEER: [0, -1] };
+    // Extra combat perks a Druid form grants on top of its attack/defense deltas:
+    // BEAR shrugs off minions, TURTLE's shell bites back.
+    const FORM_PERKS = { BEAR: { vsMinionDefense: 1 }, TURTLE: { riposte: 1 }, CHEETAH: {}, DEER: {} };
+    const formPerk = (ent, key) => (ent && FORM_PERKS[ent.form] && FORM_PERKS[ent.form][key]) || 0;
+    const sideOfEnt = e => e.kind === 'hero' ? 'hero' : e.kind === 'monster' ? 'monster' : (e.side || 'monster');
     // A dice-tray/readout color key for a combatant (hero color name, else 'monster').
     function colorKeyOf(ent) { return ent && ent.kind === 'hero' ? ent.color : 'monster'; }
 
@@ -433,10 +438,27 @@
                 const dist = (atk.x != null && def.x != null) ? Math.max(Math.abs(atk.x - def.x), Math.abs(atk.y - def.y)) : 1;
                 const defIsMinion = def.kind === 'minion' && !def.clone;   // real minions + barriers, not the clone
                 const atkIsMinion = atk.kind === 'minion' && !atk.clone;
-                let ctxAtkDice = 0, ctxDefDice = 0; const ctxAtk = [];
+                let ctxAtkDice = 0, ctxDefDice = 0; const ctxAtk = [], ctxDef = [];
+                const adj1 = (p, q) => p.x != null && q.x != null && Math.max(Math.abs(p.x - q.x), Math.abs(p.y - q.y)) === 1;
+                const allPieces = () => (s.seats || []).concat(s.minions || []);
                 if (defIsMinion && ra.vsMinionAttack) { ctxAtkDice += ra.vsMinionAttack; ctxAtk.push(`+${ra.vsMinionAttack}⚔ vs minion`); }
                 if (ra.rangedAttack && dist > (ra.rangedFrom || 1)) { ctxAtkDice += ra.rangedAttack; ctxAtk.push(`+${ra.rangedAttack}⚔ from range`); }
-                if (atkIsMinion && rd.vsMinionDefense) ctxDefDice += rd.vsMinionDefense;
+                // flanking: the target is pinned by another piece on the attacker's side
+                if (ra.flanking && allPieces().some(o => o.id !== atk.id && o.id !== def.id && !o.dead && sideOfEnt(o) === sideOfEnt(atk) && adj1(o, def))) {
+                    ctxAtkDice += ra.flanking; ctxAtk.push(`+${ra.flanking}⚔ flanking`);
+                }
+                // bloodlust: attacker fights harder at half life or less (Barbarian)
+                if (ra.lowLifeAttack && atk.kind === 'hero' && (atk.hp || 0) <= Math.ceil((atk.maxHp || atk.hp || 1) / 2)) {
+                    ctxAtkDice += ra.lowLifeAttack; ctxAtk.push(`+${ra.lowLifeAttack}⚔ bloodlust`);
+                }
+                // minions hit heroes for less (vs-minion defense) + BEAR form
+                if (atkIsMinion) ctxDefDice += (rd.vsMinionDefense || 0) + formPerk(def, 'vsMinionDefense');
+                // guardian aura: a living ally standing next to the defender lends defense (Paladin)
+                if (def.kind === 'hero') {
+                    let aura = 0;
+                    (s.seats || []).forEach(o => { if (o.kind === 'hero' && o.id !== def.id && !o.dead && adj1(o, def)) { const oc = (charSheetOf(o, data) || {}).combat || {}; aura = Math.max(aura, oc.auraAllyDefense || 0); } });
+                    if (aura) { ctxDefDice += aura; ctxDef.push(`+${aura}🛡 guarded`); }
+                }
                 const roll = () => 1 + Math.floor(Math.random() * 6);
                 const skulls = f => f.filter(v => v <= 3).length;   // faces 1-3 = ☠
                 const shields = f => f.filter(v => v >= 4 && v <= 5).length; // 4-5 = 🛡
@@ -447,14 +469,21 @@
                 // Both sides roll their own pool: attacker rolls Attack dice, defender
                 // rolls Defense dice. EACH side's skulls wound the OTHER; each side's
                 // shields block the other's skulls. Damage flows both ways.
-                const atkFaces = Array.from({ length: Math.max(0, ac.attack + ctxAtkDice) + (a.bonusAttack || 0) + sum(atkMods, 'attackDice') }, roll);
-                const defFaces = Array.from({ length: Math.max(0, dc.defense + ctxDefDice) + (a.bonusDefense || 0) + sum(defMods, 'defenseDice') }, roll);
+                // length guarded ≥0 so a debuff (e.g. Enchantress hex → −attack dice) can't underflow
+                const atkFaces = Array.from({ length: Math.max(0, ac.attack + ctxAtkDice + (a.bonusAttack || 0) + sum(atkMods, 'attackDice')) }, roll);
+                const defFaces = Array.from({ length: Math.max(0, dc.defense + ctxDefDice + (a.bonusDefense || 0) + sum(defMods, 'defenseDice')) }, roll);
                 const atkSkulls = skulls(atkFaces) + ac.baseAttack + sum(atkMods, 'skull');   // hits the attacker deals
                 const atkShields = shields(atkFaces) + ac.baseShield; // blocks the attacker has
                 const defSkulls = skulls(defFaces) + dc.baseAttack;   // hits the defender deals back
                 const defShields = shields(defFaces) + dc.baseShield + sum(defMods, 'shield'); // blocks the defender has
-                const woundsToDef = Math.max(0, atkSkulls - defShields);
-                const woundsToAtk = Math.max(0, defSkulls - atkShields);
+                // pierce: the attacker ignores that many of the defender's shields
+                const pierce = ra.pierce || 0;
+                if (pierce) ctxAtk.push(`pierce ${pierce}`);
+                const woundsToDef = Math.max(0, atkSkulls - Math.max(0, defShields - pierce));
+                let woundsToAtk = Math.max(0, defSkulls - atkShields);
+                // riposte: if the defender blocked EVERY skull thrown at it, its guard bites back
+                const riposte = (rd.riposte || 0) + formPerk(def, 'riposte');
+                if (riposte && atkSkulls > 0 && woundsToDef === 0) { woundsToAtk += riposte; ctxDef.push(`riposte ${riposte}`); }
 
                 // Apply wounds to a fighter: the monster can't be killed (heroes shove
                 // it back instead); heroes/minions lose HP → gravestone/removal.
@@ -482,11 +511,18 @@
                 atk.mods = (atk.mods || []).filter(m => !(m.duration === 'once' && modAffectsAttack(m)));
                 def.mods = (def.mods || []).filter(m => !(m.duration === 'once' && modAffectsDefense(m)));
 
+                // hex-on-hit: the attacker saps the target's attack for the turn (Enchantress)
+                const defAlive = !def.dead && (def.kind !== 'minion' || (s.minions || []).some(m => m.id === def.id));
+                if (ra.hexOnHit && defAlive) {
+                    addMod(s, def.id, { source: (atk.label || 'hero') + ' hex', attackDice: -ra.hexOnHit, scope: 'attack', duration: 'turn' });
+                    ctxAtk.push(`hex −${ra.hexOnHit}⚔`);
+                }
+
                 s.lastCombat = {
                     attackerId: atk.id, defenderId: def.id, atkFaces, defFaces,
                     atkKey: colorKeyOf(atk), defKey: colorKeyOf(def),
                     atkSkulls, atkShields, defSkulls, defShields,
-                    modsAtk: atkMods.map(describeMod).concat(ctxAtk), modsDef: defMods.map(describeMod),
+                    modsAtk: atkMods.map(describeMod).concat(ctxAtk), modsDef: defMods.map(describeMod).concat(ctxDef),
                     woundsToDef, woundsToAtk, repelDef, repelAtk, ts: Date.now(),
                 };
                 const dmgOut = (target, wounds, repel) => target.kind === 'monster'

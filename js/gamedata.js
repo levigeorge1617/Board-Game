@@ -5,7 +5,7 @@ window.GAME_DATA = {
     {
       "id": "paladin",
       "name": "Paladin",
-      "abilities": "The Wall — heavy defense (🛡3) and always blocks 1 hit (+1🛡 base). Rolls +1 attack die against minions.\n\n2☼: Give an ally +1 to their next roll (you lose 1 life).\n3☼: Draw an extra card.\n\nEnd your turn next to an ally to regain 2 life.\n\nEscape: Flee like any hero — roll Defense; shields block AND scramble you 1 space each. Break line of sight to be safe.",
+      "abilities": "Guardian — the party's wall. 🛡3 and always blocks 1 hit (+1🛡 base). While you stand next to an ally, that ally rolls +1 defense die (you soak the blows). If you block EVERY skull thrown at you, your guard bites back for 1 (riposte). +1 attack die vs minions.\n\n2☼: Give an ally +1 to their next roll (lose 1 life).\n3☼: Draw an extra card.\nEnd your turn beside an ally to regain 2 life.\n\nEscape: Flee like any hero — roll Defense; shields block AND scramble you 1 space each.",
       "objectiveAbilities": "2,5,6◇: Draw a card.\n4◆: Gain a ֍ bonus die.\n7◆: Gain a ☼ bonus die.\n7◆: Allies 1 space away get +1 to their rolls.\n\n5◆ (6☼): Teleport next to any living ally (lose 2 life).",
       "color": "RED",
       "pair": "red",
@@ -25,13 +25,15 @@ window.GAME_DATA = {
         "defense": 3,
         "reach": 1,
         "baseShield": 1,
-        "vsMinionAttack": 1
+        "vsMinionAttack": 1,
+        "auraAllyDefense": 1,
+        "riposte": 1
       }
     },
     {
       "id": "barbarian",
       "name": "Barbarian",
-      "abilities": "Cleave — high attack (⚔4). +1 attack die against minions, and regain 2 life whenever your strike destroys a minion.\n\n4☼: On your next move, destroy every minion you end adjacent to along the way.\n\nEscape: Flee like any hero — roll Defense; shields block and scramble. If caught in a building, leave through a door for -2 life.",
+      "abilities": "Bloodlust — the angrier, the deadlier. At half life or less you roll +2 attack dice. +1 attack die vs minions, and regain 2 life whenever your strike destroys a minion — a wounded Barbarian is a rampage.\n\n4☼: On your next move, destroy every minion you end adjacent to along the way.\n\nEscape: Flee like any hero — roll Defense; shields block and scramble. Caught in a building, leave through a door for -2 life.",
       "objectiveAbilities": "2,5,6◇: Draw a card.\n4◆: Gain a ֍ bonus die.\n7◆: Gain a ☼ bonus die.\n\n5◆ (3☼): Haul every minion 6+ spaces away next to you and fight them (spend extra ☼ to reach farther).",
       "color": "RED",
       "pair": "red",
@@ -51,13 +53,14 @@ window.GAME_DATA = {
         "defense": 2,
         "reach": 1,
         "vsMinionAttack": 1,
-        "healOnMinionKill": 2
+        "healOnMinionKill": 2,
+        "lowLifeAttack": 2
       }
     },
     {
       "id": "hunter",
       "name": "Hunter",
-      "abilities": "Marksman — reach 2 (strikes 2 spaces away).\n\n3☼: Summon your pet (🐾 button) — a hero-side piece (⚔1 / 🛡1 / ❤3). 2☼: your pet takes an action. The pet shares your movement rolls (not bonus dice) and flies over obstacles (not walls). It is DESTROYED if it ever fights the monster itself.\n\nEscape: Flee like any hero — roll Defense; your reach keeps you clear.",
+      "abilities": "Pack tactics — reach 2, and +1 attack die whenever your target is pinned by an ally or your pet. Flank, then fire.\n\n3☼: Summon your pet (🐾 button) — a hero-side piece (⚔1 / 🛡1 / ❤3). 2☼: your pet takes an action. The pet shares your movement rolls (not bonus dice), flies over obstacles (not walls), and is DESTROYED if it ever fights the monster itself. Use it to pin targets for your shots.\n\nEscape: Flee like any hero — your reach keeps you clear.",
       "objectiveAbilities": "2,5,6◇: Draw a card.\n4◆: Gain a ֍ bonus die.\n7◆: Gain a ☼ bonus die.\n\n5◆ (6☼): Summon a second pet.",
       "color": "YELLOW",
       "pair": "yellow",
@@ -75,13 +78,14 @@ window.GAME_DATA = {
       "combat": {
         "attack": 3,
         "defense": 1,
-        "reach": 2
+        "reach": 2,
+        "flanking": 1
       }
     },
     {
       "id": "scout",
       "name": "Scout",
-      "abilities": "Evasive — once each turn you may Flee even on 0 shields: you still take the hit but ALWAYS slip to safety (out of line of sight/reach).\n\n1☼: +2 to your movement roll.\n5֍: spend a movement roll as an action.\n\nEscape: your Flee never fails to move you (see Evasive) — the best escape artist in the party.",
+      "abilities": "Recon — sees far (sight 8) and is never truly cornered. Once each turn you may Flee even on 0 shields: you take the hit but ALWAYS slip out of sight/reach.\n\n1☼: +2 to your movement roll.\n5֍: spend a movement roll as an action.\n\nEscape: your Flee never fails to move you — the party's escape artist.",
       "objectiveAbilities": "2,5,6◇: Draw a card.\n4◆: Gain a ֍ bonus die.\n7◆: Gain a ☼ bonus die.\n\n5◆ (4☼): Dash to any wall in line of sight, then end your turn.",
       "color": "YELLOW",
       "pair": "yellow",
@@ -94,7 +98,8 @@ window.GAME_DATA = {
         "m2": null,
         "ba": 6,
         "bm": 12,
-        "life": 5
+        "life": 5,
+        "sight": 8
       },
       "combat": {
         "attack": 2,
@@ -105,8 +110,8 @@ window.GAME_DATA = {
     {
       "id": "wizard",
       "name": "Wizard",
-      "abilities": "Glass cannon — frail in a fistfight (⚔1 / 🛡1 / ❤4); win through spell cards, not blows.\n\n2☼: Reroll any of your dice this turn.\n4☼: Draw an extra card.\nYou may discard a card to draw another.\n\nEscape: Flee like any hero — you're fragile, so break line of sight fast.",
-      "objectiveAbilities": "2,5,6◇: Draw a card.\n3◇: Relocate 1 door.\n5◇: Relocate 1 door.\n4◆: Gain a ֍ bonus die.\n7◆: Gain a ☼ bonus die.\n\n5◆ (6☼): Trade places with any object on the board.",
+      "abilities": "Arcane artillery — frail (❤4) but casts at reach 2, and your bolts PIERCE 1 (ignore one of the target's shields — armor won't save them). Your power grows: at 5 objectives your attack is +2 dice.\n\n2☼: Reroll any of your dice this turn.\n4☼: Draw an extra card.\nYou may discard a card to draw another.\n\nEscape: Flee like any hero — you're fragile, so break line of sight fast.",
+      "objectiveAbilities": "2,5,6◇: Draw a card.\n3◇: Relocate 1 door.\n5◇: Relocate 1 door.\n4◆: Gain a ֍ bonus die.\n5◆: Spell power +2 attack dice (permanent).\n7◆: Gain a ☼ bonus die.\n\n5◆ (6☼): Trade places with any object on the board.",
       "color": "BLUE",
       "pair": "blue",
       "cardFace": "front",
@@ -123,13 +128,20 @@ window.GAME_DATA = {
       "combat": {
         "attack": 1,
         "defense": 1,
-        "reach": 1
+        "reach": 2,
+        "pierce": 1,
+        "attackLadder": [
+          {
+            "at": 5,
+            "attack": 3
+          }
+        ]
       }
     },
     {
       "id": "enchantress",
       "name": "Enchantress",
-      "abilities": "Controller — bends the board, not fists (⚔1 / 🛡1).\n\n4☼: Walk through a wall.\n5☼: Move a monster or an ally 1 space.\nYou may discard a card to draw another.\n\nEscape: Flee like any hero — roll Defense, then reposition out of sight.",
+      "abilities": "Hexweaver — every enemy you strike is HEXED: −1 attack die until the end of the turn. Hit the monster or a minion to blunt it for your allies.\n\n4☼: Walk through a wall.\n5☼: Move a monster or an ally 1 space.\nYou may discard a card to draw another.\n\nEscape: Flee like any hero — roll Defense, then reposition out of sight.",
       "objectiveAbilities": "2,5,6◇: Draw a card.\n4◆: Gain a ֍ bonus die.\n7◆: Gain a ☼ bonus die.\n\n4◆ (6☼): Play any ally's card on any hero.\n5◆ (7☼): Use an action anywhere on the board.",
       "color": "BLUE",
       "pair": "blue",
@@ -147,13 +159,14 @@ window.GAME_DATA = {
       "combat": {
         "attack": 1,
         "defense": 1,
-        "reach": 1
+        "reach": 1,
+        "hexOnHit": 1
       }
     },
     {
       "id": "thief",
       "name": "Thief",
-      "abilities": "Assassin — high attack (⚔4); your attacks IGNORE WALLS — you strike through cover and your line of sight isn't blocked by walls. Moves diagonally (GREEN).\n\n1☼ + 2֍: Use an action 2 spaces away.\n5☼: Use an ally hero's card.\n\nEscape: Flee like any hero — and slip through a wall to break line of sight instantly.",
+      "abilities": "Backstab — high attack (⚔4) that IGNORES WALLS (strike through cover; your line of sight isn't blocked by walls) and PIERCES 1 (ignore a shield). +1 attack die when the target is flanked by an ally or pet. Moves diagonally (GREEN). A glass dagger: ⚔4 but 🛡1 / ❤5.\n\n1☼ + 2֍: Use an action 2 spaces away.\n5☼: Use an ally hero's card.\n\nEscape: Flee like any hero — slip through a wall to break line of sight instantly.",
       "objectiveAbilities": "2,5,6◇: Draw a card.\n4◆: Gain a ֍ bonus die.\n7◆: Gain a ☼ bonus die.\n\n5◆ (6☼): Cannot be targeted or seen until your next turn.",
       "color": "GREEN",
       "pair": "green",
@@ -172,13 +185,15 @@ window.GAME_DATA = {
         "attack": 4,
         "defense": 1,
         "reach": 1,
-        "ignoreCoverAttack": true
+        "ignoreCoverAttack": true,
+        "pierce": 1,
+        "flanking": 1
       }
     },
     {
       "id": "ranger",
       "name": "Ranger",
-      "abilities": "Sharpshooter — reach 3, and +1 attack die when you strike from 2+ spaces away. Moves diagonally (GREEN).\n\n2☼: Deal 2 damage to a minion in line of sight within reach.\n3☼ + 4֍: Move an objective 1 space.\n\nEscape: Flee like any hero — your range means you're rarely cornered.",
+      "abilities": "Sharpshooter — reach 3, and +1 attack die when you strike from 2+ spaces away. Stay back and pick them off. Moves diagonally (GREEN).\n\n2☼: Deal 2 damage to a minion in line of sight within reach.\n3☼ + 4֍: Move an objective 1 space.\n\nEscape: Flee like any hero — your range means you're rarely cornered.",
       "objectiveAbilities": "2,5,6◇: Draw a card.\n4◆: Gain a ֍ bonus die.\n7◆: Gain a ☼ bonus die.\n\n5◆ (4☼): Reroll any of your movement dice.",
       "color": "GREEN",
       "pair": "green",
@@ -204,7 +219,7 @@ window.GAME_DATA = {
     {
       "id": "druid",
       "name": "Druid",
-      "abilities": "Shapeshifter — 3☼: Transform (persists until you change again; may be re-cast several times per turn). 4☼: Transform an ally for this turn.\n\nBEAR: +1⚔ / +1🛡 (bruiser).\nTURTLE: +2🛡 (shell).\nCHEETAH: -1🛡, but +2 to movement rolls (fast, fragile).\nDEER: -1🛡; for 1☼ restore 2 life to any hero (fragile healer).\n\nEscape: Flee like any hero — BEAR/TURTLE flee best (more shields).",
+      "abilities": "Shapeshifter — 3☼: Transform (persists until you change again; may be re-cast several times per turn). 4☼: Transform an ally for this turn.\n\nBEAR: +1⚔ / +1🛡, and take 1 less die from minions.\nTURTLE: +2🛡, and its shell RIPOSTES 1 (block everything → bite back for 1).\nCHEETAH: -1🛡, but +2 to movement rolls (fast, fragile).\nDEER: -1🛡; for 1☼ restore 2 life to any hero (fragile healer).\n\nEscape: Flee like any hero — BEAR/TURTLE flee best (more shields).",
       "objectiveAbilities": "2,5,6◇: Draw a card.\n4◆: Gain a ֍ bonus die.\n7◆: Gain a ☼ bonus die.\n\n5◆ (3☼): Draw an extra card.",
       "color": "PURPLE",
       "pair": "purple",
@@ -228,7 +243,7 @@ window.GAME_DATA = {
     {
       "id": "cleric",
       "name": "Cleric",
-      "abilities": "Healer — solid defense (🛡3), weak attack (⚔1).\n\n4☼: Restore 3 life to any living hero.\n12☼: Revive any hero to half health (ends both heroes' turns).\nBoth your dice count as actions OR movement.\n\nEscape: Flee like any hero — lean on your high defense to block and slip away.",
+      "abilities": "Blessed guardian — 🛡3 and always blocks 1 hit (+1🛡 base): very hard to put down.\n\n4☼: Restore 3 life to any living hero.\n12☼: Revive any hero to half health (ends both heroes' turns).\nBoth your dice count as actions OR movement.\n\nEscape: Flee like any hero — lean on your defense to block and slip away.",
       "objectiveAbilities": "2,5,6◇: Draw a card.\n4◆: Gain a ֍ bonus die.\n7◆: Gain a ☼ bonus die.\n\n5◆ (3☼): Give an ally +2 to a roll (you lose 2 life).",
       "color": "PURPLE",
       "pair": "purple",
@@ -246,7 +261,8 @@ window.GAME_DATA = {
       "combat": {
         "attack": 1,
         "defense": 3,
-        "reach": 1
+        "reach": 1,
+        "baseShield": 1
       }
     }
   ],
