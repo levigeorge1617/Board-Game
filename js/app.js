@@ -20,7 +20,8 @@ class AppController {
         this.activeLibraryItem = null;
         this.selectedTokenForMenu = null;
         this.inspectPieceId = null;   // piece whose range/LoS overlay is shown
-        
+        this.pathTargetCell = null;   // second-pick empty cell → shortest-path step count
+
         this.activeTemplate = null;
         this.currentMouseCell = { x: 0, y: 0 };
         this.selectStartCell = null;
@@ -340,9 +341,18 @@ class AppController {
                 // right-click a game piece → toggle its range / line-of-sight overlay
                 if (this.appMode === 'play' && this.play) {
                     const pid = this.play.pieceAt(cellX, cellY);
-                    if (pid) { this.inspectPieceId = (this.inspectPieceId === pid) ? null : pid; this.hideHPPopover(); this.renderer.draw(); return; }
+                    if (pid) {
+                        if (this.inspectPieceId === pid) this.clearInspect();
+                        else { this.inspectPieceId = pid; this.pathTargetCell = null; }
+                        this.hideHPPopover(); this.renderer.draw(); return;
+                    }
                 }
                 const targetToken = this.board.tokens.find(t => t.x === cellX && t.y === cellY);
+                // with a piece inspected, right-clicking an EMPTY cell measures the
+                // shortest path (step count) from that piece to the cell
+                if (this.appMode === 'play' && this.inspectPieceId && !targetToken) {
+                    this.setPathTarget(cellX, cellY); this.hideHPPopover(); return;
+                }
                 if (this.appMode === 'play' && targetToken) {
                     this.showHPPopover(targetToken, mouseX, mouseY);
                 } else {
@@ -399,7 +409,7 @@ class AppController {
                     this.hideHPPopover();
                 } else {
                     this.hideHPPopover();
-                    this.inspectPieceId = null;   // clicking empty board clears the range/LoS overlay
+                    this.clearInspect();   // clicking empty board clears the range/LoS + path overlay
                 }
             }
             this.renderer.draw(this.currentTool === 'stamp' ? this.activeTemplate : null, cellX, cellY, this.selectionBox);
@@ -520,7 +530,16 @@ class AppController {
             else {
                 const token = this.board.tokens.find(tk => tk.x === g.cellX && tk.y === g.cellY);
                 if (token) { this._touch.mode = 'token'; this.draggedToken = token; this.board.saveHistory(); }
-                else { this._touch.mode = 'pan'; this._touch.start = { ...g, panX: this.renderer.panX, panY: this.renderer.panY }; }
+                else {
+                    this._touch.mode = 'pan'; this._touch.start = { ...g, panX: this.renderer.panX, panY: this.renderer.panY };
+                    // touch-and-hold an empty cell while inspecting → path-distance count
+                    if (this.inspectPieceId) {
+                        this._touch.longPressed = false;
+                        this._touch.holdTimer = setTimeout(() => {
+                            this.setPathTarget(g.cellX, g.cellY); this._touch.longPressed = true;
+                        }, 450);
+                    }
+                }
             }
             this.hideHPPopover();
             e.preventDefault();
@@ -603,6 +622,17 @@ class AppController {
         } else if (rx >= -32 && rx < 0 && ry >= 0 && ry < this.board.rows * size) {
             const row = Math.floor(ry / size); this.highlightedRow = (this.highlightedRow === row) ? null : row; this.renderer.draw();
         }
+    }
+
+    // Clear the range/LoS inspector AND its path-distance second-pick together.
+    clearInspect() { this.inspectPieceId = null; this.pathTargetCell = null; }
+    // Set (or toggle off) the shortest-path target cell — only meaningful while a
+    // piece is being inspected. Same cell twice clears it.
+    setPathTarget(x, y) {
+        if (!this.inspectPieceId) return;
+        const t = this.pathTargetCell;
+        this.pathTargetCell = (t && t.x === x && t.y === y) ? null : { x, y };
+        this.renderer.draw();
     }
 
     handleUndo() { this.board.undo(); this.hideHPPopover(); this.renderer.draw(); }

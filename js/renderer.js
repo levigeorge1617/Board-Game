@@ -189,6 +189,20 @@ class Renderer {
         const FORM_ART = { DEER: 'players/druid1.jpg', BEAR: 'players/druid2.jpg', TURTLE: 'players/druid3.jpg', CHEETAH: 'players/druid4.jpg' };
         const colorOf = (typeof PH_COLOR !== 'undefined') ? PH_COLOR : {};
 
+        // origin marker: while a piece is held, ring where it came from so it can be
+        // put back if the move is cancelled.
+        if (drag && drag.sx != null && (drag.x !== drag.sx || drag.y !== drag.sy)) {
+            const ox = drag.sx * size + size / 2, oy = drag.sy * size + size / 2, r = size * 0.4;
+            ctx.save();
+            ctx.setLineDash([5, 4]); ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(224,168,0,0.9)';
+            ctx.beginPath(); ctx.arc(ox, oy, r, 0, Math.PI * 2); ctx.stroke();
+            ctx.setLineDash([]); ctx.fillStyle = 'rgba(224,168,0,0.12)';
+            ctx.beginPath(); ctx.arc(ox, oy, r, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = 'rgba(224,168,0,0.95)'; ctx.font = `${size * 0.3}px sans-serif`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('↩', ox, oy);
+            ctx.restore();
+        }
+
         gs.state.seats.forEach(seat => {
             if (seat.x == null || seat.y == null) return;
             let px = seat.x, py = seat.y;
@@ -243,14 +257,44 @@ class Renderer {
             if (m.x == null || m.y == null) return;
             let px = m.x, py = m.y;
             if (drag && drag.seatId === m.id) { px = drag.x; py = drag.y; }
-            const cx = px * size + size / 2, cy = py * size + size / 2, r = size * 0.34;
+            const cx = px * size + size / 2, cy = py * size + size / 2;
+
+            if (m.barrier) {   // Ghathag's obstacle: a gray blocking block, not a fighter
+                const bw = size * 0.86, bh = size * 0.86;
+                ctx.save();
+                ctx.fillStyle = '#6b6f74'; ctx.strokeStyle = '#3a3d41'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.roundRect(cx - bw / 2, cy - bh / 2, bw, bh, 4); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#4a4e52'; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(cx - bw / 2, cy); ctx.lineTo(cx + bw / 2, cy);
+                ctx.moveTo(cx, cy - bh / 2); ctx.lineTo(cx, cy + bh / 2); ctx.stroke();
+                this.badge(ctx, cx + bw * 0.42, cy - bh * 0.42, size, m.hp, '#111', '#c8552f', '#fff');
+                ctx.restore();
+                return;
+            }
+
+            const r = size * (m.clone ? 0.42 : 0.34);
             ctx.save();
             ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
             ctx.fillStyle = m.color || '#9b2d2d'; ctx.fill();
-            ctx.lineWidth = 2.5; ctx.strokeStyle = '#3a0d0d'; ctx.stroke();
-            ctx.fillStyle = '#f2e6e6'; ctx.font = `${size * 0.34}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText('☠', cx, cy - size * 0.02);
-            this.badge(ctx, cx + r * 0.7, cy + r * 0.7, size, m.hp, '#111', '#9b2d2d', '#fff');
+            if (m.clone) {   // render the clone with the monster's art, ringed to read as a copy
+                const ch = window.GAME_DATA && (window.GAME_DATA.monsters || []).find(x => x.id === m.characterId);
+                const img = ch && ch.art ? this.getImg(ch.art) : null;
+                if (img && img.complete && img.naturalWidth) {
+                    ctx.save(); ctx.clip();
+                    const sc = Math.max((r * 2) / img.naturalWidth, (r * 2) / img.naturalHeight);
+                    ctx.drawImage(img, cx - img.naturalWidth * sc / 2, cy - img.naturalHeight * sc / 2 - r * 0.15, img.naturalWidth * sc, img.naturalHeight * sc);
+                    ctx.restore();
+                }
+                ctx.lineWidth = 3; ctx.strokeStyle = '#ff6b6b'; ctx.setLineDash([4, 3]);
+                ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+                ctx.fillStyle = '#ffd7d7'; ctx.font = `${size * 0.18}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+                ctx.fillText('clone', cx, cy + r + 1);
+            } else {
+                ctx.lineWidth = 2.5; ctx.strokeStyle = '#3a0d0d'; ctx.stroke();
+                ctx.fillStyle = '#f2e6e6'; ctx.font = `${size * 0.34}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('☠', cx, cy - size * 0.02);
+                this.badge(ctx, cx + r * 0.7, cy + r * 0.7, size, m.hp, '#111', '#9b2d2d', '#fff');
+            }
             ctx.restore();
         });
     }
@@ -258,8 +302,9 @@ class Renderer {
     // Is line-of-sight from cell (x0,y0) to (x1,y1) blocked? A ray between the two
     // cell centers is traced. It is blocked by a wall OR a door edge (value >= 1),
     // or by any object/token or piece sitting in an intermediate cell.
-    losBlocked(x0, y0, x1, y1) {
+    losBlocked(x0, y0, x1, y1, ignoreCover) {
         if (x0 === x1 && y0 === y1) return false;
+        if (ignoreCover) return false;   // Maraurn'Zol's meteor burns through walls & objects
         const edges = this.state.edges;
         const blockEdge = (key, side) => { const e = edges[key]; return !!(e && e[side] >= 1); };  // wall(1) or door(2)
         const ax = x0 + 0.5, ay = y0 + 0.5, bx = x1 + 0.5, by = y1 + 0.5;
@@ -299,55 +344,167 @@ class Renderer {
         }
         return false;
     }
-    reachOf(ent) {
-        if (!ent) return 1;
-        if (ent.kind === 'minion') return ent.reach || 1;
-        const ch = window.app.play.gs.character(ent);
-        return (ch && ch.combat && ch.combat.reach) || 1;
+    // Resolve a piece's live SIGHT (how far it can see) and REACH (how far it can
+    // attack), both objective-scaled, via the shared reducer helpers.
+    inspectStats(ent) {
+        const play = window.app.play, data = window.GAME_DATA, GL = window.GameLogic;
+        const score = GL.scoreOf(play.gs.state), monChar = GL.monsterCharOf(play.gs.state, data);
+        const ch = GL.charSheetOf(ent, data);
+        return {
+            sight: GL.effectiveSight(ent, data, score),
+            reach: GL.effectiveReach(ent, data, score, monChar),
+            blast: GL.effectiveBlast(ent, data, score),
+            ignoreCover: !!(ch && ch.combat && ch.combat.ignoreCover),
+            diagonal: GL.canDiagonal(ent),
+        };
     }
+    reachOf(ent) { return ent ? this.inspectStats(ent).reach : 1; }
 
-    // Draw the attack-range cells + line-of-sight rays for the inspected piece.
+    // Draw the SIGHT area (what it can see) + REACH area (what it can attack) +
+    // line-of-sight rays with a distance label on every enemy — even out of sight.
+    // SEEN = within sight + clear line; IN RANGE = within reach + clear line.
     drawInspect(ctx, size) {
         const play = window.app.play;
         const ent = play.gs.combatant(window.app.inspectPieceId);
         if (!ent || ent.x == null || ent.dead) return;
-        const reach = this.reachOf(ent);
+        const { sight, reach, blast, ignoreCover, diagonal } = this.inspectStats(ent);
+        const GL = window.GameLogic;
         const cx = ent.x * size + size / 2, cy = ent.y * size + size / 2;
         const cols = this.state.cols, rows = this.state.rows;
+        const span = Math.max(sight, reach, blast);
 
         ctx.save();
-        // range cells within reach (Chebyshev), tinted by whether LoS is clear
-        for (let yy = Math.max(0, ent.y - reach); yy <= Math.min(rows - 1, ent.y + reach); yy++) {
-            for (let xx = Math.max(0, ent.x - reach); xx <= Math.min(cols - 1, ent.x + reach); xx++) {
+        // shade every cell by how the piece relates to it: in reach (attack) >
+        // in sight (seen) > (blast hazard for a meteor monster). LoS-blocked cells
+        // within sight are shown faint so cover reads at a glance.
+        for (let yy = Math.max(0, ent.y - span); yy <= Math.min(rows - 1, ent.y + span); yy++) {
+            for (let xx = Math.max(0, ent.x - span); xx <= Math.min(cols - 1, ent.x + span); xx++) {
                 if (xx === ent.x && yy === ent.y) continue;
-                const clear = !this.losBlocked(ent.x, ent.y, xx, yy);
-                ctx.fillStyle = clear ? 'rgba(70,198,166,0.20)' : 'rgba(120,130,140,0.12)';
-                ctx.fillRect(xx * size, yy * size, size, size);
+                const d = GL.stepDistance(ent.x, ent.y, xx, yy, diagonal);
+                const clear = !this.losBlocked(ent.x, ent.y, xx, yy, ignoreCover);
+                let fill = null;
+                if (clear && d <= reach) fill = 'rgba(224,90,60,0.30)';          // in range / can be hit
+                else if (clear && d <= sight) fill = 'rgba(224,168,0,0.16)';     // seen (not in range)
+                else if (d <= sight) fill = 'rgba(120,130,140,0.10)';           // in sight distance but cover blocks
+                if (fill) { ctx.fillStyle = fill; ctx.fillRect(xx * size, yy * size, size, size); }
             }
         }
-        // range boundary ring
-        ctx.strokeStyle = 'rgba(70,198,166,0.85)'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]);
-        ctx.strokeRect((ent.x - reach) * size, (ent.y - reach) * size, (reach * 2 + 1) * size, (reach * 2 + 1) * size);
-        ctx.setLineDash([]);
+        // meteor blast hazard ring around the piece (Maraurn'Zol)
+        if (blast > 0) {
+            ctx.strokeStyle = 'rgba(255,90,60,0.9)'; ctx.lineWidth = 2.5; ctx.setLineDash([3, 3]);
+            this.strokeDiamond(ctx, ent.x, ent.y, blast, size, diagonal); ctx.setLineDash([]);
+        }
+        // sight + reach boundary outlines (diamond for orthogonal pieces, box for GREEN)
+        ctx.strokeStyle = 'rgba(224,168,0,0.7)'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
+        this.strokeDiamond(ctx, ent.x, ent.y, sight, size, diagonal);
+        ctx.strokeStyle = 'rgba(224,90,60,0.9)'; ctx.setLineDash([]);
+        this.strokeDiamond(ctx, ent.x, ent.y, reach, size, diagonal);
 
-        // line-of-sight rays to every enemy on the board
+        // rays + distance badge to every enemy (seen/in-range/out-of-sight colored)
         (play.enemiesOf(ent) || []).forEach(e => {
             const ex = e.x * size + size / 2, ey = e.y * size + size / 2;
-            const blocked = this.losBlocked(ent.x, ent.y, e.x, e.y);
-            const dist = Math.max(Math.abs(ent.x - e.x), Math.abs(ent.y - e.y));
-            const inRange = dist <= reach;
+            const blocked = this.losBlocked(ent.x, ent.y, e.x, e.y, ignoreCover);
+            const d = GL.stepDistance(ent.x, ent.y, e.x, e.y, diagonal);
+            const inRange = !blocked && d <= reach;
+            const seen = !blocked && d <= sight;
+            let col = 'rgba(150,160,170,0.5)';                 // out of sight / behind cover
+            if (inRange) col = 'rgba(224,90,60,0.95)';
+            else if (seen) col = 'rgba(224,168,0,0.95)';
             ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ex, ey);
-            ctx.lineWidth = 2.5;
-            if (blocked) { ctx.strokeStyle = 'rgba(220,70,70,0.85)'; ctx.setLineDash([6, 5]); }
-            else { ctx.strokeStyle = inRange ? 'rgba(224,168,0,0.95)' : 'rgba(70,198,166,0.85)'; ctx.setLineDash([]); }
+            ctx.lineWidth = 2.5; ctx.strokeStyle = col; ctx.setLineDash(seen ? [] : [6, 5]);
             ctx.stroke(); ctx.setLineDash([]);
-            // mark a target you can actually hit (clear LoS + within reach)
-            if (!blocked && inRange) {
-                ctx.beginPath(); ctx.arc(ex, ey, size * 0.5, 0, Math.PI * 2);
-                ctx.strokeStyle = '#e0a800'; ctx.lineWidth = 3; ctx.stroke();
-            }
+            if (inRange) { ctx.beginPath(); ctx.arc(ex, ey, size * 0.5, 0, Math.PI * 2); ctx.strokeStyle = '#e05a3c'; ctx.lineWidth = 3; ctx.stroke(); }
+            // distance number on the enemy (top-left) — shows even when out of sight
+            const bg = inRange ? '#e05a3c' : (seen ? '#e0a800' : '#5b636b');
+            this.badge(ctx, ex - size * 0.42, ey - size * 0.42, size, d, '#0d0f11', bg, '#fff');
         });
+        // second-pick: shortest-path step count to a chosen empty cell
+        if (window.app.pathTargetCell) this.drawPathTo(ctx, size, ent);
         ctx.restore();
+    }
+
+    // ---- movement pathing (for the "count of spaces" second-pick) ---------
+    // A wall edge (value 1) blocks a step; a door (2) is passable. Orthogonal for
+    // everyone; the GREEN hero may also cut diagonally.
+    edgeOpen(x0, y0, x1, y1) {
+        const e = this.state.edges, w = (k, s) => e[k] && e[k][s] === 1;
+        if (x1 === x0 + 1) return !w(`${x1},${y0}`, 'left');
+        if (x1 === x0 - 1) return !w(`${x0},${y0}`, 'left');
+        if (y1 === y0 + 1) return !w(`${x0},${y1}`, 'top');
+        if (y1 === y0 - 1) return !w(`${x0},${y0}`, 'top');
+        return true;
+    }
+    movePassableStep(x, y, nx, ny) {
+        if (nx !== x && ny !== y)   // diagonal: pass if either L-route around the corner is wall-free
+            return (this.edgeOpen(x, y, nx, y) && this.edgeOpen(nx, y, nx, ny)) ||
+                   (this.edgeOpen(x, y, x, ny) && this.edgeOpen(x, ny, nx, ny));
+        return this.edgeOpen(x, y, nx, ny);
+    }
+    moveBlockedSet(sx, sy, tx, ty) {   // cells you can't walk through (pieces/tokens), minus origin/target
+        const gs = window.app.play.gs, set = new Set();
+        const add = (x, y) => { if (x == null || (x === sx && y === sy) || (x === tx && y === ty)) return; set.add(x + ',' + y); };
+        this.state.tokens.forEach(t => add(t.x, t.y));
+        gs.state.seats.forEach(s => { if (!s.dead) add(s.x, s.y); });
+        (gs.state.minions || []).forEach(m => add(m.x, m.y));
+        return set;
+    }
+    pathDistance(ent, tx, ty) {
+        const cols = this.state.cols, rows = this.state.rows, sx = ent.x, sy = ent.y;
+        if (sx === tx && sy === ty) return { dist: 0, path: [[sx, sy]] };
+        const diagonal = window.GameLogic.canDiagonal(ent);
+        const dirs = diagonal ? [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]] : [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        const blocked = this.moveBlockedSet(sx, sy, tx, ty), key = (x, y) => x + ',' + y;
+        const prev = {}, seen = new Set([key(sx, sy)]), q = [[sx, sy]];
+        let head = 0;
+        while (head < q.length) {
+            const [x, y] = q[head++];
+            for (const [dx, dy] of dirs) {
+                const nx = x + dx, ny = y + dy, k = key(nx, ny);
+                if (nx < 0 || ny < 0 || nx >= cols || ny >= rows || seen.has(k)) continue;
+                if (!this.movePassableStep(x, y, nx, ny)) continue;
+                if (blocked.has(k) && !(nx === tx && ny === ty)) continue;
+                seen.add(k); prev[k] = key(x, y);
+                if (nx === tx && ny === ty) {
+                    const path = []; let cur = k;
+                    while (cur) { path.push(cur.split(',').map(Number)); cur = prev[cur]; }
+                    return { dist: path.length - 1, path: path.reverse() };
+                }
+                q.push([nx, ny]);
+            }
+        }
+        return { dist: null, path: null };   // walled off / unreachable
+    }
+    drawPathTo(ctx, size, ent) {
+        const tc = window.app.pathTargetCell; if (!tc) return;
+        const { dist, path } = this.pathDistance(ent, tc.x, tc.y);
+        if (path && path.length > 1) {
+            ctx.save(); ctx.strokeStyle = 'rgba(0,204,255,0.85)'; ctx.lineWidth = 3; ctx.setLineDash([2, 5]); ctx.lineCap = 'round';
+            ctx.beginPath();
+            path.forEach(([x, y], i) => { const px = (x + 0.5) * size, py = (y + 0.5) * size; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
+            ctx.stroke(); ctx.restore();
+        }
+        const cx = (tc.x + 0.5) * size, cy = (tc.y + 0.5) * size;
+        ctx.save();
+        ctx.fillStyle = dist == null ? 'rgba(200,70,70,0.22)' : 'rgba(0,204,255,0.20)';
+        ctx.fillRect(tc.x * size, tc.y * size, size, size);
+        ctx.strokeStyle = dist == null ? '#c84646' : '#00ccff'; ctx.lineWidth = 2.5;
+        ctx.strokeRect(tc.x * size + 2, tc.y * size + 2, size - 4, size - 4);
+        const label = dist == null ? '✕' : String(dist);
+        ctx.font = `bold ${size * 0.5}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.lineWidth = 4; ctx.strokeStyle = '#04121a'; ctx.strokeText(label, cx, cy);
+        ctx.fillStyle = '#fff'; ctx.fillText(label, cx, cy);
+        ctx.restore();
+    }
+
+    // Outline the set of cells within `range` steps of (gx,gy): a box when
+    // diagonals are allowed (GREEN), otherwise a diamond (orthogonal steps).
+    strokeDiamond(ctx, gx, gy, range, size, diagonal) {
+        if (range <= 0) return;
+        const cx = (gx + 0.5) * size, cy = (gy + 0.5) * size, e = (range + 0.5) * size;
+        ctx.beginPath();
+        if (diagonal) { ctx.rect(cx - e, cy - e, e * 2, e * 2); }
+        else { ctx.moveTo(cx, cy - e); ctx.lineTo(cx + e, cy); ctx.lineTo(cx, cy + e); ctx.lineTo(cx - e, cy); ctx.closePath(); }
+        ctx.stroke();
     }
 
     badge(ctx, x, y, size, text, textColor, bg, ring) {

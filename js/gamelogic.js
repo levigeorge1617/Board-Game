@@ -28,17 +28,88 @@
     const FORM_COMBAT = { BEAR: [1, 1], TURTLE: [0, 2], CHEETAH: [0, -1], DEER: [0, -1] };
     // A dice-tray/readout color key for a combatant (hero color name, else 'monster').
     function colorKeyOf(ent) { return ent && ent.kind === 'hero' ? ent.color : 'monster'; }
-    function combatStats(ent, data) {
-        let c;
-        if (ent.kind === 'minion') c = { attack: ent.attack, defense: ent.defense, reach: ent.reach || 1, baseAttack: ent.baseAttack, baseShield: ent.baseShield };
-        else { const ch = (ent.kind === 'monster' ? data.monsters : data.heroes).find(x => x.id === ent.characterId); c = (ch && ch.combat) || {}; }
-        let attack = c.attack || 0, defense = c.defense || 0;
+
+    // ---- objective-scaled ("ladder") stats --------------------------------
+    // Several monster numbers GROW as heroes collect objectives. A ladder is
+    // [{ at, <key> }, …]; the effective value is the highest entry whose `at`
+    // threshold the current objective count has reached (never below `base`).
+    function ladderValue(base, ladder, score, key) {
+        let v = base || 0;
+        (ladder || []).forEach(step => { if ((score || 0) >= (step.at || 0)) v = Math.max(v, step[key] || 0); });
+        return v;
+    }
+    const scoreOf = s => (s && s.score && s.score.collected) || 0;
+    const monsterCharOf = (s, data) => { const seat = (s.seats || []).find(x => x.kind === 'monster'); return seat && (data.monsters || []).find(m => m.id === seat.characterId) || null; };
+    // Oblex auto-buffs its whole swarm off its own objective ladder — every minion
+    // gets these for free, no per-minion tweaking. { attack, reach } deltas.
+    function oblexMinionBonus(monChar, score) {
+        if (!monChar || monChar.id !== 'oblex') return { attack: 0, reach: 0 };
+        return {
+            attack: (score >= 4 ? 1 : 0) + (score >= 7 ? 1 : 0),   // 4◆ +1, 7◆ +1
+            reach: (score >= 6 ? 1 : 0),                            // 6◆ +1
+        };
+    }
+    // Effective SIGHT (how far a piece can SEE an enemy) and REACH (how far it can
+    // ATTACK), both objective-scaled. Sight ≥ reach. Heroes default to a fixed
+    // sight; minions see short unless Oblex extends their reach.
+    const DEFAULT_SIGHT = 6, MINION_SIGHT = 3;
+    // Resolve the character sheet a piece fights with (clone/monster → a monster,
+    // hero → a hero); plain minions have no sheet.
+    function charSheetOf(ent, data) {
+        if (!ent) return null;
+        if (ent.clone || ent.kind === 'monster') return (data.monsters || []).find(m => m.id === ent.characterId) || null;
+        if (ent.kind === 'hero') return (data.heroes || []).find(h => h.id === ent.characterId) || null;
+        return null;
+    }
+    function effectiveReach(ent, data, score, monChar) {
+        if (!ent) return 1;
+        const ch = charSheetOf(ent, data);
+        if (!ch) return Math.max(1, (ent.reach || 1) + oblexMinionBonus(monChar, score).reach);   // plain minion
+        const c = ch.combat || {};
+        return Math.max(1, ladderValue(c.reach || 1, c.reachLadder, score, 'reach'));
+    }
+    function effectiveSight(ent, data, score) {
+        if (!ent) return DEFAULT_SIGHT;
+        const ch = charSheetOf(ent, data);
+        if (!ch) return MINION_SIGHT;   // plain minion
+        const st = ch.stats || {};
+        return Math.max(1, ladderValue(st.sight || DEFAULT_SIGHT, st.sightLadder, score, 'sight'));
+    }
+    // Maraurn'Zol's meteor blast radius (0 = single cell) at the current score.
+    function effectiveBlast(ent, data, score) {
+        const ch = charSheetOf(ent, data);
+        return ch ? ladderValue(0, (ch.combat || {}).blastLadder, score, 'radius') : 0;
+    }
+
+    // A clone fights with the monster's own kit, not a minion's stat block.
+    const cloneChar = (ent, data) => ent.clone ? (data.monsters || []).find(m => m.id === ent.characterId) : null;
+    function combatStats(ent, data, score, monChar) {
+        let c, attack, defense;
+        const clc = cloneChar(ent, data);
+        if (clc) {
+            c = clc.combat || {};
+            attack = ladderValue(c.attack || 0, c.attackLadder, score, 'attack');
+            defense = c.defense || 0;
+        } else if (ent.kind === 'minion') {
+            const b = oblexMinionBonus(monChar, score || 0);
+            attack = (ent.attack || 0) + b.attack; defense = ent.defense || 0;
+            c = { reach: (ent.reach || 1) + b.reach, baseAttack: ent.baseAttack, baseShield: ent.baseShield };
+        } else {
+            const ch = (ent.kind === 'monster' ? data.monsters : data.heroes).find(x => x.id === ent.characterId);
+            c = (ch && ch.combat) || {};
+            // monster attack/reach can climb the objective ladder (e.g. Ghathag's
+            // permanent bruise, the Fog's growing reach)
+            attack = ladderValue(c.attack || 0, c.attackLadder, score, 'attack');
+            defense = c.defense || 0;
+        }
         if (ent.form && FORM_COMBAT[ent.form]) { attack += FORM_COMBAT[ent.form][0]; defense += FORM_COMBAT[ent.form][1]; }
+        // clones/monsters/heroes climb their reach ladder; plain minions use their (buffed) reach as-is
+        const reach = (ent.kind === 'minion' && !clc) ? (c.reach || 1) : ladderValue(c.reach || 1, c.reachLadder, score, 'reach');
         // baseAttack = flat skulls always dealt; baseShield = flat shields always blocked.
         // (ent.autoSkull/autoShield kept as per-instance one-shot augments from cards.)
         const baseAttack = (c.baseAttack || 0) + (ent.autoSkull || 0);
         const baseShield = (c.baseShield || 0) + (ent.autoShield || 0);
-        return { attack: Math.max(0, attack), defense: Math.max(0, defense), reach: c.reach || 1, baseAttack, baseShield };
+        return { attack: Math.max(0, attack), defense: Math.max(0, defense), reach: Math.max(1, reach), baseAttack, baseShield };
     }
     function pushAway(mon, from, n, cols, rows) {
         if (mon.x == null || from.x == null) return 0;
@@ -236,15 +307,34 @@
                 break;
             }
             case 'ADD_MINION': {
-                const n = (s.minions || []).length + 1;
+                const n = (s.minions || []).filter(m => !m.barrier && !m.clone).length + 1;
                 s.minions = s.minions || [];
                 const life = a.hp || (1 + Math.floor(Math.random() * 4));   // d4 health when spawned
+                const barrier = !!a.barrier;
                 s.minions.push({
-                    id: 'min-' + Date.now() + '-' + Math.floor(Math.random() * 1000), kind: 'minion', label: 'Minion ' + n,
-                    x: a.x, y: a.y, hp: life, maxHp: life, attack: a.attack || 2, defense: a.defense || 1, reach: a.reach || 1,
-                    baseAttack: a.baseAttack || 0, baseShield: a.baseShield || 0, color: a.color || '#9b2d2d',
+                    id: (barrier ? 'bar-' : 'min-') + Date.now() + '-' + Math.floor(Math.random() * 1000), kind: 'minion',
+                    barrier, label: a.label || (barrier ? 'Barrier' : 'Minion ' + n),
+                    x: a.x, y: a.y, hp: life, maxHp: life,
+                    attack: barrier ? 0 : (a.attack || 2), defense: a.defense || (barrier ? 0 : 1), reach: a.reach || 1,
+                    baseAttack: a.baseAttack || 0, baseShield: a.baseShield || 0, color: a.color || (barrier ? '#6b6f74' : '#9b2d2d'),
                 });
-                logEvent(s, null, `A minion was placed at ${cellName(a.x, a.y)} (❤${life})`);
+                logEvent(s, null, `${barrier ? 'A barrier' : 'A minion'} was placed at ${cellName(a.x, a.y)} (❤${life})`);
+                break;
+            }
+            case 'ADD_CLONE': {
+                // Maraurn'Zol's clone: a second monster piece. It lives in `minions`
+                // (so it moves/attacks like any piece) but carries the monster's
+                // characterId + combat and `clone:true`, so it can't be killed
+                // (heroes shove it back) and renders with her art.
+                const mon = (s.seats || []).find(x => x.kind === 'monster'); if (!mon) break;
+                s.minions = s.minions || [];
+                const n = (s.minions || []).filter(m => m.clone).length + 1;
+                s.minions.push({
+                    id: 'clone-' + Date.now() + '-' + Math.floor(Math.random() * 1000), kind: 'minion', clone: true,
+                    characterId: mon.characterId, label: (mon.label || 'Monster') + ' (clone' + (n > 1 ? ' ' + n : '') + ')',
+                    x: a.x != null ? a.x : mon.x, y: a.y != null ? a.y : mon.y, color: '#5c1020',
+                });
+                logEvent(s, null, `A clone of ${mon.label} appeared`);
                 break;
             }
             case 'REMOVE_MINION': { s.minions = (s.minions || []).filter(m => m.id !== a.id); break; }
@@ -303,9 +393,11 @@
                 const dieList = (a.dieList || []).slice();
                 mods.forEach(m => (m.dice || []).forEach(d => dieList.push({ key: d.key || 'mod', die: d.die, from: m.source })));
                 const rolls = dieList.filter(d => d.die).map(d => ({ key: d.key, die: d.die, value: 1 + Math.floor(Math.random() * d.die), from: d.from }));
-                const flat = mods.reduce((n, m) => n + (m.flat || 0), 0);
+                // a.flat = a caller-supplied flat bonus (e.g. the Fog's +2 to movement)
+                const flat = mods.reduce((n, m) => n + (m.flat || 0), 0) + (a.flat || 0);
                 const diceTotal = rolls.reduce((n, r) => n + r.value, 0);
                 const modsApplied = mods.map(m => ({ source: m.source, flat: m.flat || 0, dice: (m.dice || []).length }));
+                if (a.flat) modsApplied.push({ source: a.flatFrom || 'bonus', flat: a.flat, dice: 0 });
                 s.lastDice = { seatId: a.seatId, kind, rolls, flat, modsApplied, total: diceTotal + flat, ts: Date.now() };
                 // consume one-shot modifiers that just fired
                 if (ent) ent.mods = (ent.mods || []).filter(m => !(m.duration === 'once' && modAffectsRoll(m, kind)));
@@ -329,7 +421,8 @@
             case 'COMBAT': {
                 const atk = combatantOf(s, a.attackerId), def = combatantOf(s, a.defenderId);
                 if (!atk || !def || atk.id === def.id) break;
-                const ac = combatStats(atk, data), dc = combatStats(def, data);
+                const score = scoreOf(s), monChar = monsterCharOf(s, data);
+                const ac = combatStats(atk, data, score, monChar), dc = combatStats(def, data, score, monChar);
                 const roll = () => 1 + Math.floor(Math.random() * 6);
                 const skulls = f => f.filter(v => v <= 3).length;   // faces 1-3 = ☠
                 const shields = f => f.filter(v => v >= 4 && v <= 5).length; // 4-5 = 🛡
@@ -353,7 +446,8 @@
                 // it back instead); heroes/minions lose HP → gravestone/removal.
                 const applyWounds = (target, from, wounds) => {
                     if (wounds <= 0) return 0;
-                    if (target.kind === 'monster') return pushAway(target, from, wounds, a.cols, a.rows);
+                    // the monster — and Maraurn'Zol's clone — can't be killed; heroes shove them back
+                    if (target.kind === 'monster' || target.clone) return pushAway(target, from, wounds, a.cols, a.rows);
                     target.hp = Math.max(0, (target.hp || 0) - wounds);
                     if (target.hp <= 0 && !target.dead) die(s, target, data);
                     return 0;
@@ -394,5 +488,17 @@
         return s;
     }
 
-    g.GameLogic = { empty, newGame, apply, redactFor, seatOf, charOf, cardOf, shuffle };
+    // ---- one distance metric for the whole game ---------------------------
+    // Distance is counted in orthogonal STEPS (up/down/left/right). Diagonals cost
+    // two steps for everyone EXCEPT the GREEN hero, who may cut corners (one step).
+    // Sight, reach and movement all read from this, so "spaces away" means one thing.
+    function canDiagonal(ent) { return !!(ent && ent.kind === 'hero' && ent.color === 'GREEN'); }
+    function stepDistance(ax, ay, bx, by, diagonal) {
+        const dx = Math.abs(ax - bx), dy = Math.abs(ay - by);
+        return diagonal ? Math.max(dx, dy) : dx + dy;
+    }
+
+    g.GameLogic = { empty, newGame, apply, redactFor, seatOf, charOf, cardOf, shuffle,
+        effectiveReach, effectiveSight, effectiveBlast, charSheetOf, oblexMinionBonus, scoreOf, monsterCharOf, ladderValue,
+        canDiagonal, stepDistance };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

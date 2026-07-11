@@ -2,8 +2,8 @@
   {
     "id": "maraurnzol",
     "name": "Maraurn'Zol",
-    "abilities": "Movement — RAMPAGE (meteor). On her turn, roll the grid and crash her down on that square. EVERY hero in line of sight of where she lands takes her Strike. This is the meteor — it hurts, and it can hit several heroes at once.\n\nx◆: +1 Rampage (extra meteor) for every 4 objectives taken.\n2◆: Meteor blast radius 1 space (strike everyone within 1 of the impact too).\n4◆: Meteor blast radius 2 spaces.\n7◆: Meteor blast radius 3 spaces.\n\nHer Strike ignores all cover — it burns through objects and walls. Sight 6.\n\nAdvance: she may instead walk 1 space to reposition (no meteor, no bonus).\n\nEscape: a struck hero may Flee — roll Defense; shields block the hit and let you scramble 1 space each. Get out of line of sight to be safe.",
-    "objectiveAbilities": "6◇: Add a CLONE of Maraurn'Zol. The clone takes its own Rampage (meteor) right after her, using her current blast radius.\n\n9◇: Meteor Storm — immediately take one extra Rampage. Every hero not behind a full wall is struck.",
+    "abilities": "Movement — RAMPAGE (meteor). On her turn, roll the grid and crash her down on that square. EVERY hero in line of sight of where she lands takes her Strike — this is the meteor. Her Strike (meteor only) ignores all cover: it burns through objects and walls.\n\nx◆: +1 Rampage (extra meteor) for every 4 objectives taken.\n2◆: Meteor blast radius 1 (also Strike the ring around the impact).\n4◆: Meteor blast radius 2.\n7◆: Meteor blast radius 3.\n\nAdvance: instead of a meteor she may walk 1 space. From an Advance she makes only a NORMAL melee Strike — reach 1, needs clear line of sight, no cover-ignore and no blast. Sight 6.\n\nEscape: a struck hero may Flee — roll Defense; shields block the hit and scramble 1 space each. Get out of line of sight to be safe.",
+    "objectiveAbilities": "6◇: Add a CLONE of Maraurn'Zol (use the ✚ Clone button on her sheet). The clone takes its own Rampage after her with the same blast radius, and — like her — can't be killed, only shoved.\n\n9◇: Meteor Storm — take one extra Rampage; every hero not behind a full wall is Struck.",
     "element": "Fire",
     "art": "players/bad5.jpg",
     "stats": {
@@ -17,13 +17,18 @@
       "attack": 5,
       "defense": 0,
       "reach": 1,
-      "ignoreCover": true
+      "ignoreCover": true,
+      "blastLadder": [
+        { "at": 2, "radius": 1 },
+        { "at": 4, "radius": 2 },
+        { "at": 7, "radius": 3 }
+      ]
     }
   },
   {
     "id": "thefog",
     "name": "The Fog",
-    "abilities": "Movement — CREEP. The Fog never teleports. Roll its movement die (D20, +2) and slide it forward that many spaces, engulfing everything it rolls over. It creeps faster the deeper the game runs.\n\n1◆: Strike all heroes 1 space away.\n4◆: Reach 2 — strike heroes 2 spaces away.\n8◆: Reach 3 — strike heroes 3 spaces away.\n2◆: +D4 to movement rolls.\n4◆: +D4 to movement rolls.\n\nHeroes inside a building are SAFE — the Fog cannot strike them. Sight 6.\n\nEscape: do NOT try to shove it back (its reach outgrows the push and you stay pinned — a loop). Break line of sight or step into a building instead. The Fog is slow early; outrun it while you can.",
+    "abilities": "Movement — CREEP. The Fog never teleports. Roll its movement die (D20) — its own +2 is added for you — and slide it forward that many spaces, engulfing everything it rolls over. It creeps faster the deeper the game runs.\n\n1◆: Strike all heroes 1 space away.\n4◆: Reach 2 — strike heroes 2 spaces away.\n8◆: Reach 3 — strike heroes 3 spaces away.\n2◆: +D4 to movement rolls.\n4◆: +D4 to movement rolls.\n\nHeroes inside a building are SAFE — the Fog cannot strike them. Sight 6.\n\nEscape: do NOT try to shove it back (its reach outgrows the push and you stay pinned — a loop). Break line of sight or step into a building. The Fog is slow early; outrun it while you can.",
     "objectiveAbilities": "2◇: The Fog sees heroes through all objects — but still NOT through building walls.\n\n9◇: Suffocate — kill up to 2 heroes who are not inside a building.",
     "element": "Smoke",
     "art": "players/bad4.jpg",
@@ -32,20 +37,29 @@
       "movementDie": 20,
       "sight": 6,
       "moveStyle": "creep",
-      "rampageEvery": 0
+      "rampageEvery": 0,
+      "moveFlat": 2,
+      "moveDiceLadder": [
+        { "at": 2, "die": 4 },
+        { "at": 4, "die": 4 }
+      ]
     },
     "combat": {
-      "attack": 4,
+      "attack": 3,
       "defense": 0,
       "reach": 1,
-      "buildingsSafe": true
+      "buildingsSafe": true,
+      "reachLadder": [
+        { "at": 4, "reach": 2 },
+        { "at": 8, "reach": 3 }
+      ]
     }
   },
   {
     "id": "ghathag",
     "name": "Ghathag",
-    "abilities": "Movement — STALK. He steps forward in a straight line toward the nearest hero. He cannot enter buildings (cannot pass through doors). While stalking his sight drops to 1 — slip out of his lane and he loses your scent.\n\nx◆: +1 Stalk for every 4 objectives taken.\n2◆: Stalk 3 spaces.\n4◆: Stalk 3 more spaces.\n6◆: Stalk 3 more spaces.\n3◆: Place a 2-life, 2x1 barrier (blocks movement and line of sight).\n\nCharge: if he moved 3+ spaces this turn and reaches a hero, his Strike is +2 dice. Being cornered by Ghathag is deadly. Sight 4 (only 1 while stalking).\n\nEscape: a hero he reaches may Flee — roll Defense; shields block and scramble. Duck through a door; he can't follow you inside.",
-    "objectiveAbilities": "3◇: Place 2 barriers.\n4◆: Barriers have +2 life.\n5◇: Place 2 barriers.\n7◆: Barriers have +2 life.\n9◇: Turn every barrier into a minion (roll each for its health).",
+    "abilities": "Movement — STALK. Each turn he steps forward in a straight line toward the nearest hero. He cannot enter buildings (cannot pass through doors). While stalking his sight drops to 1 — slip out of his lane and he loses your scent.\n\nx◆: +1 Stalk for every 4 objectives taken.\n2◆: Stalk 3 spaces.\n4◆: Stalk 3 more spaces.\n6◆: Stalk 3 more spaces.\n3◆: Place a barrier (use the 🧱 Barrier button). Barriers block movement and line of sight.\n4◆: Ghathag is enraged — permanent +2 attack (his Strike becomes ⚔6). Being cornered by him is now deadly.\n\nSight 4 (only 1 while stalking).\n\nEscape: a hero he reaches may Flee — roll Defense; shields block and scramble. Duck through a door; he can't follow you inside.",
+    "objectiveAbilities": "3◇: Place 2 barriers.\n5◇: Place 2 barriers.\n4◆: Barriers placed now have +2 life.\n7◆: Barriers placed now have +2 more life.\n9◇: Turn every barrier into a minion (roll each for its health).",
     "element": "Claw",
     "art": "players/bad2.jpg",
     "stats": {
@@ -60,21 +74,23 @@
       "attack": 4,
       "defense": 2,
       "reach": 1,
-      "charge": 2
+      "attackLadder": [
+        { "at": 4, "attack": 6 }
+      ]
     }
   },
   {
     "id": "oblex",
     "name": "Oblex",
-    "abilities": "Movement — OOZE + SWAP. Oblex is weak on its own; its minions do the fighting. After it moves it may trade places with any minion (its teleport). It does NOT gain extra moves as objectives are taken.\n\n1◆: Summon minions equal to 1 + 1 per 3 objectives taken (roll each d4 for health).\n3◆: Or, instead of summoning, give +1 attack to one minion.\n5◆: All minions may move 2 spaces each turn.\n\nMinion baseline: ⚔2 / 🛡1 / ❤ d4. Summon them and move them BEFORE Oblex moves. Sight 4.\n\nEscape: a hero a minion reaches may Flee — roll Defense; shields block and scramble. Break line of sight from the swarm.",
-    "objectiveAbilities": "1◇: Summon 2 minions.\n3◇: Summon 3 minions.\n5◇: Summon 4 minions.\n4◆: Minion attack +1.\n6◆: Minion reach +1.\n7◆: Minion attack +1.\n9◇: Double the number of minions on the board.",
+    "abilities": "Movement — OOZE. Oblex moves with the GRID ROLL (roll the grid, slide it there) — random repositioning, not a controlled walk. After moving it may trade places with any minion (its real teleport). It does NOT gain extra moves as objectives are taken.\n\nUnlike a Rampage, an OOZE does NOT strike everyone in sight — Oblex is no bruiser. It only makes a weak normal Strike (⚔2) on a hero it lands next to; the danger is that it SWAPS a strong minion into your face instead.\n\n1◆: Summon minions equal to 1 + 1 per 3 objectives taken (roll each d4 for health).\n3◆: Or, instead of summoning, give +1 attack to one minion.\n5◆: All minions may move 2 spaces each turn.\n\nMinion baseline: ⚔2 / 🛡1 / ❤ d4. Its ladder buffs below apply to EVERY minion automatically. Sight 4.\n\nEscape: a hero a minion reaches may Flee — roll Defense; shields block and scramble. Break line of sight from the swarm.",
+    "objectiveAbilities": "1◇: Summon 2 minions.\n3◇: Summon 3 minions.\n5◇: Summon 4 minions.\n4◆: Every minion gets +1 attack (automatic).\n6◆: Every minion gets +1 reach (automatic).\n7◆: Every minion gets +1 attack (automatic).\n9◇: Double the number of minions on the board.",
     "element": "Flesh",
     "art": "players/bad3.jpg",
     "stats": {
       "monsterDie": 6,
       "movementDie": null,
       "sight": 4,
-      "moveStyle": "swap",
+      "moveStyle": "ooze",
       "rampageEvery": 0
     },
     "combat": {
@@ -86,7 +102,7 @@
   {
     "id": "wyhtthetrickster",
     "name": "Wyht, the Trickster",
-    "abilities": "Movement — BLINK. She flits around the board: roll the grid to blink her to a random square (a short Rampage), positioning for her tricks. She wins by disruption, not by blows.\n\nx◆: +1 Blink for every 3 objectives taken.\n2◆: Relocate any 1 objective to a space you choose.\n4◆: Every hero discards 1 card — or one hero of your choice discards 2.\n6◆: Draw 2 monster cards; one hero of your choice discards down to 4 cards.\n8◆: Swap the positions of two objectives, or add +1 to one objective's value.\n\nWyht draws an extra card whenever she draws. Sight 5.\n\nA Blink that passes a hero in line of sight lets her Strike that hero (small). They may Flee — roll Defense.",
+    "abilities": "Movement — BLINK. She flits around the board: roll the grid to blink her to a random square (a short Rampage), positioning for her tricks. She wins by disruption, not by blows.\n\nx◆: +1 Blink for every 3 objectives taken.\n2◆: Relocate any 1 objective to a space you choose.\n4◆: Every hero discards 1 card — or one hero of your choice discards 2.\n6◆: Draw 2 monster cards, OR one hero of your choice discards down to 4 cards.\n8◆: Swap the positions of two objectives, or add +1 to one objective's value.\n\nWyht draws an extra card whenever she draws. Sight 5.\n\nA Blink that passes a hero in line of sight lets her Strike that hero (weak, ⚔2). They may Flee — roll Defense.",
     "objectiveAbilities": "1◇: Add 1 objective to the board (this raises the heroes' goal).\n3◇: Randomly relocate ALL objectives.\n5◇: Add 1 objective to the board.\n10◇: Choose a hero — they die.",
     "element": "Mind",
     "art": "players/bad1.jpg",

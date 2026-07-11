@@ -133,13 +133,23 @@ If the monster enters a building that a hero is in, regardless of line of sight,
 
 
 
-Line of Sight: 
+Distance — how "spaces away" is counted:
 
-This is how many spaces from the monster in straight lines(excluding diagonals) the monster can "see" heroes. the space the monster occupies is zero. 
+Distance is counted in steps: up, down, left or right (never diagonally). A diagonal neighbour is therefore 2 steps away. The one exception is the GREEN hero, who may cut corners — for GREEN a diagonal counts as 1 step. Sight, reach and movement all use this same count, so "3 spaces away" always means the same thing.
 
-This is also how far heroes can "see". Objects and building walls block line of sight. 
+Sight vs Reach (two different numbers):
 
-Buildings, other heroes or pets, doors, gravestones, obstacles, and objectives block line of sight. 
+SIGHT is how far a piece can SEE an enemy — with a clear line between them. A hero within a monster's sight and clear line is SEEN. Being seen is what matters for a monster's line-of-sight Strike (its meteor/Rampage), and for a hero collecting an objective.
+
+REACH is how far a piece can ATTACK — it also needs a clear line. A target within reach and clear line is IN RANGE and can be Struck. Reach is never larger than sight, so anything IN RANGE is also SEEN, but something SEEN may be too far to hit.
+
+Some monsters grow their sight or reach as heroes collect objectives (the Fog's reach climbs 1 → 2 → 3). Maraurn'Zol's meteor Strike ignores cover, so walls and objects do not block what it can hit.
+
+Line of sight (the clear line):
+
+A clear line is blocked by building walls, doors, other heroes or pets, minions, barriers, obstacles, and objectives. GRAVESTONES do NOT block line of sight — you can see and shoot past a fallen ally. The looking piece's own space and the target's space never block.
+
+In the app: right-click (or touch-and-hold) a piece to light up its sight area (amber = seen), its reach area (red = in range), and a distance number on every enemy — even one standing beyond its sight. With a piece lit up, right-click / hold an empty square to print the shortest number of steps to walk there (routing around walls and pieces; ✕ if walled off).
 
  
 

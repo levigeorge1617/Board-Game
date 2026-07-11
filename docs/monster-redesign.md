@@ -201,8 +201,64 @@ The app mirrors all of this; it is a table aid, not a rules engine.
   monster being repelled, not killed (`docs/combat-redesign.md`).
 
 ### Not yet automated (deliberately — keep it a manual table aid)
-Meteor AoE tiles, clone/minion auto-spawn, Fog growth, barrier placement, and
-per-attack action-economy are **played by hand** using the ladder + move hint as
-the guide, exactly as the cardboard game would. A future pass could add reducer
-helpers (spawn a clone, place a barrier-minion, apply a Rampage line-Strike to
-all heroes in sight) if we want more automation.
+Meteor AoE tiles and per-attack action-economy are **played by hand** using the
+ladder + move hint + inspector as the guide, exactly as the cardboard game would.
+
+---
+
+## 8. Sight vs Reach — one distance, two ranges (v2)
+
+The board systems are unified around a single distance metric and two clearly
+separated ranges, so "seen" vs "in range" stops being muddled.
+
+**One distance.** Everything is counted in orthogonal STEPS (up/down/left/right).
+A diagonal is 2 steps — except the **GREEN hero**, who cuts corners (diagonal =
+1). Sight, reach and the movement/path count all read from this one metric
+(`GameLogic.stepDistance` / `canDiagonal`).
+
+**Two ranges.**
+- **SIGHT** — how far a piece can *see* an enemy (needs a clear line). Within
+  sight + clear line = **SEEN**. Drives a monster's Rampage/meteor line-Strike
+  and objective collection.
+- **REACH** — how far a piece can *attack* (needs a clear line). Within reach +
+  clear line = **IN RANGE**. Reach ≤ sight, so *in range ⊂ seen*.
+
+Both are **objective-scaled** through the same ladder mechanism as everything
+else (`effectiveSight` / `effectiveReach`), so the Fog's reach visibly climbs
+1 → 2 → 3, Ghathag's Strike climbs to ⚔6, etc. — and the board indicators redraw
+to match the live objective count. Maraurn'Zol's meteor sets `ignoreCover`, so
+her sight/Strike passes through walls and objects.
+
+**Gravestones do not block line of sight** (fallen allies are see/shoot-through);
+walls, doors, pieces, minions, barriers and objectives still do.
+
+### The inspector (right-click / touch-hold a piece)
+- **Sight area** shaded amber (*seen*), **reach area** shaded red (*in range*),
+  outlined as a diamond for orthogonal pieces or a box for GREEN.
+- A **distance number on every enemy** — including ones beyond sight (a hero 6
+  away from a sight-5 monster shows "6" in grey), so range is never guessed.
+- **Meteor blast ring** drawn around Maraurn'Zol at her current radius.
+- **Second pick:** with a piece lit, right-click / hold an **empty** cell to
+  print the **shortest-path step count** to walk there (BFS routing around walls
+  and pieces; orthogonal, or diagonal for GREEN; ✕ if walled off).
+- **Held-piece origin** is ringed (↩) while you drag, so a cancelled move is easy
+  to put back.
+
+## 9. Per-monster fixes (v2)
+
+- **Ghathag** — charge is now a **permanent +2 attack** unlocked at 4◆ (⚔4→⚔6),
+  no "moved 3 spaces" check; a **stalk counter** shows in the move hint; a
+  **🧱 Place barrier** button drops a blocking barrier piece (HP 2, +2 at 4◆,
+  +2 at 7◆) that blocks movement and line of sight. *(Physical form: a 2×1
+  rotatable tile; in-app, place two adjacent barrier pieces for the 2×1.)*
+- **Oblex** — minion attack/reach buffs now apply **automatically** to the whole
+  swarm off the objective count (`oblexMinionBonus`, folded into combat). OOZE is
+  labelled as a **grid-roll move + minion swap**, and its weak strike (no sight
+  burst) is spelled out.
+- **Wyht** — 6◆ is now "**draw 2 monster cards, OR one hero discards down to 4**."
+- **The Fog** — attack **4 → 3**; its **+2 and D4 movement ladder are baked into
+  the move roll** (shown in the dice total); reach growth is live on the board.
+- **Maraurn'Zol** — a **✚ Add clone** button spawns a real second piece that
+  fights with her kit and can't be killed (only shoved); the **blast radius** and
+  her **cover-ignoring** sight are drawn by the inspector; Advance is defined as a
+  normal melee Strike (reach 1, needs line of sight, no blast/cover-ignore).

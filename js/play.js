@@ -344,11 +344,28 @@ class PlayController {
     }
     // action/move classification drives which modifiers apply to a roll
     kindOfKey(key) { return /^(m|bm|move)/.test(key || '') ? 'move' : 'action'; }
+    // Objective-scaled movement bonus baked into a monster's move roll (the Fog's
+    // own +2 and its D4 ladder). Returns extra dice + a flat add for the tray.
+    monsterMoveBonus(seat, ch, score) {
+        const st = (ch && seat.kind === 'monster' && ch.stats) || {};
+        const extra = (st.moveDiceLadder || []).filter(s => score >= (s.at || 0)).map(s => ({ key: 'bm', die: s.die }));
+        return { extra, flat: st.moveFlat || 0, from: ch && ch.name };
+    }
+    // Roll a set of dice for a seat, folding in a monster's built-in move bonus
+    // when the roll is a movement roll.
+    rollFor(seat, list, kind, score) {
+        let dieList = list.slice(), flat = 0, from = null;
+        if (kind === 'move' && seat.kind === 'monster') {
+            const mb = this.monsterMoveBonus(seat, this.gs.character(seat), score);
+            dieList = dieList.concat(mb.extra); flat = mb.flat; from = mb.from;
+        }
+        this.gs.rollDice(seat.id, dieList, kind, flat, from);
+    }
     wireDice(container, seat) {
         const dice = this.characterDice(seat, this.gs.character(seat));
         const score = (this.gs.state.score && this.gs.state.score.collected) || 0;
         container.querySelectorAll('.ph-die-btn:not(.locked)').forEach(b =>
-            b.onclick = () => this.gs.rollDice(seat.id, [{ key: b.dataset.key, die: Number(b.dataset.die) }], this.kindOfKey(b.dataset.key)));
+            b.onclick = () => { const kind = this.kindOfKey(b.dataset.key); this.rollFor(seat, [{ key: b.dataset.key, die: Number(b.dataset.die) }], kind, score); });
         container.querySelectorAll('.ph-dhead[data-grp]').forEach(b =>
             b.onclick = () => {
                 const grp = b.dataset.grp;
@@ -357,7 +374,7 @@ class PlayController {
                 // group's action/move button (BM at 4◆, BA at 7◆).
                 if (grp === 'a' && score >= 7) list = list.concat(dice.filter(d => d.key === 'ba'));
                 if (grp === 'm' && score >= 4) list = list.concat(dice.filter(d => d.key === 'bm'));
-                if (list.length) this.gs.rollDice(seat.id, list.map(d => ({ key: d.key, die: d.die })), grp === 'm' ? 'move' : 'action');
+                if (list.length) this.rollFor(seat, list.map(d => ({ key: d.key, die: d.die })), grp === 'm' ? 'move' : 'action', score);
             });
     }
 
@@ -644,7 +661,7 @@ class PlayController {
         const score = (this.gs.state.score && this.gs.state.score.collected) || 0;
         const gridBtn = seat.kind === 'monster'
             ? `<button id="ph-roll-grid" class="ph-btn ph-btn-go" style="width:100%;margin-bottom:8px;">Roll grid ▸ #/A</button>` +
-              this.monsterMoveHint(ch, score) : '';
+              this.monsterMoveHint(ch, score) + this.monsterActions(seat, ch, score) : '';
 
         pop.innerHTML =
             `<div class="ph-sheet" style="--c:${col}">` +
@@ -679,6 +696,7 @@ class PlayController {
         this.wireDice(pop, seat);
         const gb = pop.querySelector('#ph-roll-grid');
         if (gb) gb.onclick = () => this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows);
+        this.wireMonsterActions(pop, seat, score);
         const sel = pop.querySelector('.ph-cc-choose');
         if (sel) sel.onchange = (e) => this.gs.setSeatCharacter(seat.id, e.target.value);
 
@@ -842,12 +860,44 @@ class PlayController {
         if (style === 'rampage') txt = `🌠 <b>${1 + extra}</b> Rampage${1 + extra !== 1 ? 's' : ''} + 1 Advance — random grid moves strike everyone in sight`;
         else if (style === 'blink') txt = `✨ <b>${1 + extra}</b> Blink${1 + extra !== 1 ? 's' : ''} — flit to a random square, then work your tricks`;
         else if (style === 'creep') txt = `🌫️ Creep — roll the movement die and slide forward (never teleports)`;
-        else if (style === 'stalk') txt = `🐾 Stalk — step forward toward the nearest hero (sight drops to ${st.stalkSight || 1})`;
-        else if (style === 'swap') txt = `🫧 Ooze — move, then swap places with any minion`;
+        else if (style === 'stalk') txt = `🐾 <b>${1 + extra}</b> Stalk${1 + extra !== 1 ? 's' : ''} — step forward toward the nearest hero (sight drops to ${st.stalkSight || 1} while stalking)`;
+        else if (style === 'ooze') txt = `🫧 Ooze — move with the GRID ROLL, then swap places with any minion (weak strike, no sight burst)`;
         else txt = '';
         if (!txt) return '';
         const sight = st.sight ? ` · 👁 sight ${st.sight}` : '';
         return `<div class="ph-move-hint">${txt}${sight}</div>`;
+    }
+
+    // Per-monster board actions (spawn a clone, place a barrier). Rendered on the
+    // monster sheet; the piece appears next to the monster and is then dragged.
+    monsterActions(seat, ch, score) {
+        if (!ch) return '';
+        const id = ch.id, btns = [];
+        if (id === 'maraurnzol') btns.push(`<button class="ph-btn ph-mon-clone" style="width:100%;margin-bottom:6px;">✚ Add clone (6◇)</button>`);
+        if (id === 'ghathag') {
+            const hp = 2 + (score >= 4 ? 2 : 0) + (score >= 7 ? 2 : 0);
+            btns.push(`<button class="ph-btn ph-mon-barrier" style="width:100%;margin-bottom:6px;">🧱 Place barrier (❤${hp})</button>`);
+        }
+        return btns.join('');
+    }
+    wireMonsterActions(pop, seat, score) {
+        const mon = seat;
+        const near = () => {   // a free-ish cell next to the monster to drop the new piece
+            const cols = this.app.board.cols, rows = this.app.board.rows;
+            for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1]]) {
+                const x = (mon.x || 0) + dx, y = (mon.y || 0) + dy;
+                if (x >= 0 && y >= 0 && x < cols && y < rows) return { x, y };
+            }
+            return { x: mon.x || 0, y: mon.y || 0 };
+        };
+        const clone = pop.querySelector('.ph-mon-clone');
+        if (clone) clone.onclick = () => { const c = near(); this.gs.addClone(c.x, c.y); this.closePopover(); };
+        const bar = pop.querySelector('.ph-mon-barrier');
+        if (bar) bar.onclick = () => {
+            const hp = 2 + (score >= 4 ? 2 : 0) + (score >= 7 ? 2 : 0); const c = near();
+            this.gs.addMinion({ x: c.x, y: c.y, hp, barrier: true, label: 'Barrier' });
+            this.closePopover();
+        };
     }
 
     characterChooser(seat) {
