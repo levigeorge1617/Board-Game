@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Convert the headerless design CSVs into schema'd JSON for the designer tool."""
+"""Convert the headerless design CSVs into schema'd JSON for the designer tool.
+
+LEGACY / ONE-SHOT IMPORTER. data/*.json is now the source of truth for the app
+(hand-authored balance lives there — abilities, stats, combat). Running this
+again re-imports the OLD CSVs and will overwrite those edits. To refresh the
+embedded js/gamedata.js from the JSON without touching balance, run
+tools/embed.py instead.
+"""
 import csv, json, os, re
 
 ROOT = "/home/user/Board-Game"

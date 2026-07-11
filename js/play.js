@@ -641,8 +641,10 @@ class PlayController {
         const pop = document.getElementById('ph-pop');
         const col = PH_COLOR[seat.color] || '#888';
         const chooser = window.GAME_DATA ? this.characterChooser(seat) : '';
+        const score = (this.gs.state.score && this.gs.state.score.collected) || 0;
         const gridBtn = seat.kind === 'monster'
-            ? `<button id="ph-roll-grid" class="ph-btn ph-btn-go" style="width:100%;margin-bottom:8px;">Roll grid ▸ #/A</button>` : '';
+            ? `<button id="ph-roll-grid" class="ph-btn ph-btn-go" style="width:100%;margin-bottom:8px;">Roll grid ▸ #/A</button>` +
+              this.monsterMoveHint(ch, score) : '';
 
         pop.innerHTML =
             `<div class="ph-sheet" style="--c:${col}">` +
@@ -663,8 +665,8 @@ class PlayController {
                             this.pieceBlock(seat) +
                             this.combatBlock(seat) +
                             this.formsBlock(seat, ch) +
-                            (ch && ch.abilities ? `<div class="ph-cc-block"><h4>Abilities</h4><p>${fmt(ch.abilities)}</p></div>` : '') +
-                            (ch && ch.objectiveAbilities ? `<div class="ph-cc-block"><h4>Objective ${icon('◆/◇')}</h4><p>${fmt(ch.objectiveAbilities)}</p></div>` : '') +
+                            (ch && ch.abilities ? `<div class="ph-cc-block"><h4>Abilities</h4>${abilityLadder(ch.abilities, score)}</div>` : '') +
+                            (ch && ch.objectiveAbilities ? `<div class="ph-cc-block"><h4>Objective ${icon('◆/◇')} ladder <span class="ph-lad-score">${score}${GAME_ICONS.obj}</span></h4>${abilityLadder(ch.objectiveAbilities, score)}</div>` : '') +
                         `</div>` +
                     `</div>` +
                 `</div>` +
@@ -828,6 +830,26 @@ class PlayController {
         return `<div class="ph-cc-block"><h4>Druid forms</h4><div class="ph-forms">${btns}</div>${allyRow}</div>`;
     }
 
+    // A one-line reminder of HOW this monster moves + how many random moves the
+    // current objective count unlocks (the "two ways monsters move" system).
+    monsterMoveHint(ch, score) {
+        const st = (ch && ch.stats) || {};
+        const style = st.moveStyle;
+        if (!style) return '';
+        const every = st.rampageEvery || 0;
+        const extra = every ? Math.floor(score / every) : 0;
+        let txt;
+        if (style === 'rampage') txt = `🌠 <b>${1 + extra}</b> Rampage${1 + extra !== 1 ? 's' : ''} + 1 Advance — random grid moves strike everyone in sight`;
+        else if (style === 'blink') txt = `✨ <b>${1 + extra}</b> Blink${1 + extra !== 1 ? 's' : ''} — flit to a random square, then work your tricks`;
+        else if (style === 'creep') txt = `🌫️ Creep — roll the movement die and slide forward (never teleports)`;
+        else if (style === 'stalk') txt = `🐾 Stalk — step forward toward the nearest hero (sight drops to ${st.stalkSight || 1})`;
+        else if (style === 'swap') txt = `🫧 Ooze — move, then swap places with any minion`;
+        else txt = '';
+        if (!txt) return '';
+        const sight = st.sight ? ` · 👁 sight ${st.sight}` : '';
+        return `<div class="ph-move-hint">${txt}${sight}</div>`;
+    }
+
     characterChooser(seat) {
         const d = window.GAME_DATA; if (!d) return '';
         const list = seat.kind === 'monster' ? d.monsters : d.heroes.filter(h => h.color === seat.color);
@@ -895,6 +917,32 @@ function symbolize(html) {
 }
 function icon(s) { return symbolize(esc(s)); }
 function fmt(s) { return symbolize(esc(s).replace(/\n/g, '<br>')); }
+// Render an ability block as an objective LADDER: lines like "2◆: ...", "6◇: ..."
+// or "x◆: ..." become rows that light up once the live objective count reaches
+// their threshold (◆ = repeatable each turn, ◇ = one-time trigger). Every other
+// line is kept as a plain note so flavour/rules text still shows.
+function abilityLadder(text, score) {
+    score = score || 0;
+    const LINE = /^\s*(x|\d+(?:\s*,\s*\d+)*)\s*([◆◇])\s*:?\s*(.*)$/i;
+    const rows = String(text || '').split('\n').map(raw => {
+        const line = raw.trim();
+        if (!line) return '';
+        const m = line.match(LINE);
+        if (!m) return `<div class="ph-lad-note">${fmt(line)}</div>`;
+        const token = m[1], type = m[2], body = m[3];
+        const scaling = /^x$/i.test(token);
+        const nums = scaling ? [] : token.split(',').map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+        const need = nums.length ? Math.min(...nums) : 0;
+        const on = scaling || score >= need;
+        const cls = `ph-lad ${on ? 'on' : 'off'} ${type === '◇' ? 'once' : 'rep'}`;
+        const tip = scaling ? 'scales with objectives (each turn)'
+            : (type === '◇' ? `one-time trigger at ${token}` : `active each turn from ${token}`) + (on ? '' : ` — locked (need ${need})`);
+        return `<div class="${cls}" title="${esc(tip)}">` +
+            `<span class="ph-lad-th">${esc(scaling ? 'x' : token)}${icon(type)}${on ? '' : ' 🔒'}</span>` +
+            `<span class="ph-lad-body">${fmt(body)}</span></div>`;
+    }).join('');
+    return `<div class="ph-ladder">${rows}</div>`;
+}
 // compact label for a queued modifier chip
 function describeModShort(m) {
     const b = [];

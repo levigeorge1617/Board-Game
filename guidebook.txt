@@ -117,23 +117,21 @@ Anything that occupies a space on the board is considered an object. This includ
 
  
 
-Monster Movement: 
+Monster Movement:
 
-The player controlling the Monster picks a letter and the number is chosen randomly with the number dice. Move the Monster piece to the location picked/rolled.  
+A monster moves in TWO ways each turn, and they feel opposite on purpose.
 
-If the rolled dice lands on a number or letter that is not being used in the current board configuration (ie: Y or Z isn't used) then reroll the dice for a valid result. 
+1) RAMPAGE (the random move — this hurts): Roll the grid for a column + row and CRASH the monster down on that square (reroll any coordinate not in play; if it lands on a hero or pet, that hero dies and leaves a grave, and the monster takes any adjacent space). Then resolve line of sight: EVERY hero the monster can see (clear straight line, within its Sight) is Struck — see Combat. This is the dangerous move; getting caught in line of sight when a monster Rampages is how heroes get hurt.
 
-If the location that the monster is supposed to move to is occupied by another object, do the following: 
+2) ADVANCE (the walk — this is weak): Instead of crashing, the monster may walk using its movement die (or fixed steps) to reposition. It only Strikes a hero it ends next to, as a single normal exchange the hero can Flee. No line-of-sight burst.
 
-If it is a hero or pet object, they die and create their grave there, the monster may choose any adjacent space next to the grave. 
+The base turn is 1 Rampage + 1 Advance. A monster gains +1 extra Rampage for every few objectives the heroes have collected (see each monster's x-objective line) — so the monster grows more dangerous exactly as the heroes near their win.
 
-If it is any other object, move to any adjacent space that is available 
+Each monster has a signature move: some Rampage (crash), some Blink (short hops), some Creep (slide forward, never teleport — e.g. The Fog), some Stalk (step toward the nearest hero), some Swap with a minion. Read the monster's card.
 
-resolve line of sight for the monster. See Line of Sight below... 
+If the monster enters a building that a hero is in, regardless of line of sight, allow the hero to Flee (see Escaping).
 
-If the monster enters a building that a hero is in, regardless of line of sight, allow the hero to escape. 
 
- 
 
 Line of Sight: 
 
@@ -177,31 +175,29 @@ Minions should be moved BEFORE the monster's movement.
 
  
 
-Combat: 
+Combat:
 
-When a hero, monster, or minion enters attack range, combat begins. 
+Combat uses combat dice (each die: 3 skull, 2 shield, 1 blank). Every fighter has an Attack number (dice rolled when attacking) and a Defense number (dice rolled when defending).
 
-Whoever engages first, attacks first(unless the hero card says otherwise). 
+A deliberate attack COSTS 1 action☼ (the exception is a monster's Rampage line-of-sight Strike, which is free — it is the built-in danger of the random move). You need clear line of sight and to be within your reach to attack.
 
-The first attacker rolls an action dice☼(bonus dice are never used in combat), deal that much damage to the opponent. 
+One attack = ONE exchange, resolved once: both sides roll their pools together. The attacker's skulls, minus the defender's shields, are wounds to the defender; the defender's skulls, minus the attacker's shields, are wounds back to the attacker. No re-roll-until-death, no "who goes first."
 
-If the opponent lives, they roll their action dice☼ and deal that much damage(plus modifiers) to the original attacker. Repeat until someone dies or escapes. 
+Because attacks cost actions and are resolved on your own turn, combat can never loop forever — you simply run out of actions. To stop a fight, break line of sight (a wall, a corner, a building).
 
- 
+Heroes cannot kill a monster. Instead, each net skull a hero deals REPELS (pushes) the monster 1 space away — use this to make room. Minions and heroes can be killed normally (life reaches 0 -> gravestone).
 
- 
 
-Escaping: 
 
-Certain monsters or cards allow heroes to escape from an event or combat. 
+Escaping (Flee):
 
-If they succeed, they can move to the nearest space that is out of combat/line of sight. If there is more than one space, the hero can choose. 
+When a hero is Struck and would take damage, they may choose to Flee instead of Defend.
 
-If they fail, they take -5 to their total life and then move out of combat/line of sight. 
+Flee: roll your Defense pool. Shields still block hits as normal, AND each shield you roll lets you scramble 1 space toward cover. If you end up out of the attacker's line of sight or reach, you have escaped the fight. Rolling 0 shields means you took the hit and stayed put.
 
-If they are escaping while inside a building, on success or failure, they must move outside the building from any door and take –2 to their total life. 
+The reliable escape is positional: breaking line of sight (behind a wall, around a corner, or into a building) ends pursuit, because a monster can't attack a hero it can't see. Do not rely on shoving a monster back if its reach is large — you will still be in range (a loop). Break line of sight instead.
 
-If they are still in line of sight or in range at the door, they can move 1 space again until out of range or sight. 
+If you Flee from inside a building, leave through any door and take -2 to your total life. If you are still seen or in range at the door, keep moving 1 space until out of sight/range.
 
  
  

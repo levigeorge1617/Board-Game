@@ -311,6 +311,23 @@ textarea.dz-input { resize: vertical; line-height: 1.5; }
 .ph-cc-block { background: rgba(10,12,14,.74); border: 1px solid #2a2f33; border-radius: 8px; padding: 8px 11px; margin-top: 8px; }
 .ph-cc-block h4 { font-size: 10px; color: #00ccff; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
 .ph-cc-block p { font-size: 12px; line-height: 1.5; color: #dfe4e8; }
+.ph-lad-score { float: right; color: #e0a800; font-weight: 700; letter-spacing: 0; }
+
+/* objective ability ladder — rows light up as the live objective count crosses each threshold */
+.ph-ladder { display: flex; flex-direction: column; gap: 3px; }
+.ph-lad { display: flex; gap: 7px; align-items: flex-start; padding: 4px 6px; border-radius: 6px; border-left: 3px solid transparent; font-size: 12px; line-height: 1.4; }
+.ph-lad-th { flex: 0 0 auto; min-width: 30px; font-weight: 700; font-size: 11px; text-align: right; white-space: nowrap; }
+.ph-lad-body { color: #dfe4e8; }
+.ph-lad.on { background: rgba(46,160,110,.12); border-left-color: #2ea06e; }
+.ph-lad.on .ph-lad-th { color: #5fd6a0; }
+.ph-lad.on.once { background: rgba(224,168,0,.12); border-left-color: #e0a800; }
+.ph-lad.on.once .ph-lad-th { color: #ffcf4d; }
+.ph-lad.off { opacity: .42; }
+.ph-lad.off .ph-lad-th { color: #8a95a0; }
+.ph-lad.off .ph-lad-body { color: #9aa7b5; }
+.ph-lad-note { font-size: 11.5px; line-height: 1.45; color: #b9c2cb; padding: 3px 6px; font-style: italic; }
+.ph-move-hint { font-size: 11px; line-height: 1.4; color: #e6b3c0; background: rgba(92,16,32,.35); border: 1px solid #5c1020; border-radius: 7px; padding: 6px 9px; margin-bottom: 8px; }
+.ph-move-hint b { color: #ff9db0; }
 
 /* discard viewer */
 .ph-discard-view { background: #1b1d1f; border: 1px solid #363b40; border-radius: 12px; padding: 14px 16px; width: 82%; max-width: 920px; max-height: 82%; overflow: auto; }
