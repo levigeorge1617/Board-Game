@@ -367,11 +367,14 @@ class Renderer {
         const play = window.app.play;
         const ent = play.gs.combatant(window.app.inspectPieceId);
         if (!ent || ent.x == null || ent.dead) return;
-        const { sight, reach, blast, ignoreCover, diagonal } = this.inspectStats(ent);
-        const GL = window.GameLogic;
+        const { sight, reach, blast, ignoreCover } = this.inspectStats(ent);
+        const green = window.GameLogic.canDiagonal(ent);   // GREEN also moves diagonally
         const cx = ent.x * size + size / 2, cy = ent.y * size + size / 2;
         const cols = this.state.cols, rows = this.state.rows;
         const span = Math.max(sight, reach, blast);
+        // range/sight/reach are measured as a SQUARE (a space in any direction,
+        // diagonals included) — Chebyshev distance — for every piece.
+        const rangeDist = (x, y) => Math.max(Math.abs(ent.x - x), Math.abs(ent.y - y));
 
         ctx.save();
         // shade every cell by how the piece relates to it: in reach (attack) >
@@ -380,7 +383,7 @@ class Renderer {
         for (let yy = Math.max(0, ent.y - span); yy <= Math.min(rows - 1, ent.y + span); yy++) {
             for (let xx = Math.max(0, ent.x - span); xx <= Math.min(cols - 1, ent.x + span); xx++) {
                 if (xx === ent.x && yy === ent.y) continue;
-                const d = GL.stepDistance(ent.x, ent.y, xx, yy, diagonal);
+                const d = rangeDist(xx, yy);
                 const clear = !this.losBlocked(ent.x, ent.y, xx, yy, ignoreCover);
                 let fill = null;
                 if (clear && d <= reach) fill = 'rgba(224,90,60,0.30)';          // in range / can be hit
@@ -392,19 +395,20 @@ class Renderer {
         // meteor blast hazard ring around the piece (Maraurn'Zol)
         if (blast > 0) {
             ctx.strokeStyle = 'rgba(255,90,60,0.9)'; ctx.lineWidth = 2.5; ctx.setLineDash([3, 3]);
-            this.strokeDiamond(ctx, ent.x, ent.y, blast, size, diagonal); ctx.setLineDash([]);
+            this.strokeRange(ctx, ent.x, ent.y, blast, size, green); ctx.setLineDash([]);
         }
-        // sight + reach boundary outlines (diamond for orthogonal pieces, box for GREEN)
+        // sight + reach boundary outlines — a SQUARE for everyone; the GREEN piece
+        // also gets a diamond (its diagonal move) drawn over the square.
         ctx.strokeStyle = 'rgba(224,168,0,0.7)'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
-        this.strokeDiamond(ctx, ent.x, ent.y, sight, size, diagonal);
+        this.strokeRange(ctx, ent.x, ent.y, sight, size, green);
         ctx.strokeStyle = 'rgba(224,90,60,0.9)'; ctx.setLineDash([]);
-        this.strokeDiamond(ctx, ent.x, ent.y, reach, size, diagonal);
+        this.strokeRange(ctx, ent.x, ent.y, reach, size, green);
 
         // rays + distance badge to every enemy (seen/in-range/out-of-sight colored)
         (play.enemiesOf(ent) || []).forEach(e => {
             const ex = e.x * size + size / 2, ey = e.y * size + size / 2;
             const blocked = this.losBlocked(ent.x, ent.y, e.x, e.y, ignoreCover);
-            const d = GL.stepDistance(ent.x, ent.y, e.x, e.y, diagonal);
+            const d = rangeDist(e.x, e.y);
             const inRange = !blocked && d <= reach;
             const seen = !blocked && d <= sight;
             let col = 'rgba(150,160,170,0.5)';                 // out of sight / behind cover
@@ -496,15 +500,17 @@ class Renderer {
         ctx.restore();
     }
 
-    // Outline the set of cells within `range` steps of (gx,gy): a box when
-    // diagonals are allowed (GREEN), otherwise a diamond (orthogonal steps).
-    strokeDiamond(ctx, gx, gy, range, size, diagonal) {
+    // Outline the range as a SQUARE (a space in any direction). The GREEN piece,
+    // which also moves diagonally, additionally gets a diamond drawn over the box.
+    strokeRange(ctx, gx, gy, range, size, green) {
         if (range <= 0) return;
         const cx = (gx + 0.5) * size, cy = (gy + 0.5) * size, e = (range + 0.5) * size;
-        ctx.beginPath();
-        if (diagonal) { ctx.rect(cx - e, cy - e, e * 2, e * 2); }
-        else { ctx.moveTo(cx, cy - e); ctx.lineTo(cx + e, cy); ctx.lineTo(cx, cy + e); ctx.lineTo(cx - e, cy); ctx.closePath(); }
-        ctx.stroke();
+        ctx.beginPath(); ctx.rect(cx - e, cy - e, e * 2, e * 2); ctx.stroke();
+        if (green) {
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - e); ctx.lineTo(cx + e, cy); ctx.lineTo(cx, cy + e); ctx.lineTo(cx - e, cy); ctx.closePath();
+            ctx.stroke();
+        }
     }
 
     badge(ctx, x, y, size, text, textColor, bg, ring) {

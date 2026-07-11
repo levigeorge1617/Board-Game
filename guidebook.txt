@@ -135,7 +135,9 @@ If the monster enters a building that a hero is in, regardless of line of sight,
 
 Distance — how "spaces away" is counted:
 
-Distance is counted in steps: up, down, left or right (never diagonally). A diagonal neighbour is therefore 2 steps away. The one exception is the GREEN hero, who may cut corners — for GREEN a diagonal counts as 1 step. Sight, reach and movement all use this same count, so "3 spaces away" always means the same thing.
+RANGE (sight and reach) is a SQUARE: count a space in ANY direction, including diagonally, so a diagonal neighbour is 1 space away. A piece with reach 2 covers the 5x5 block around it. On the board its sight/reach outline is a square.
+
+MOVEMENT is counted differently — in straight orthogonal steps (up/down/left/right); reaching a diagonal square takes 2 steps. The GREEN hero is the exception: GREEN may step diagonally for 1, so GREEN moves like its range. On the board GREEN's outline is a square AND a diamond, marking that it can travel diagonally.
 
 Sight vs Reach (two different numbers):
 
