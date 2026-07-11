@@ -1,4 +1,4 @@
-// AUTO-GENERATED from data/*.json by tools/convert.py — do not hand-edit.
+// AUTO-GENERATED from data/*.json by tools/embed.py — do not hand-edit.
 // Embedded fallback so the app loads when opened directly (file://).
 window.GAME_DATA = {
   "heroes": [
@@ -397,60 +397,80 @@ window.GAME_DATA = {
     {
       "id": "maraurnzol",
       "name": "Maraurn'Zol",
-      "abilities": "x◆: Take an extra movement turn for every 4 objectives taken.\n2◆: Attack all heroes 1 space away.\n4◆: Attack all heroes 2 spaces away.\n7◆: Attack all heroes 3 spaces away.\nAttacking deals ☼ to heroes life total.\n\nMaraurn'Zol attacks around her through all objects. Allow heroes attacked to escape with a 2☼ or higher\n\nLine of sight is limited to 6 spaces.",
-      "objectiveAbilities": "6◇: Add a clone of Maraun'Zol. The clone takes it's turn after Maraun'Zol.\n\n9◇: Immediately take your turn. ALL random. No line of sight damage.",
-      "raw": [
-        "",
-        "6",
-        "x◆: Take an extra movement turn for every 4 objectives taken.\n2◆: Attack all heroes 1 space away.\n4◆: Attack all heroes 2 spaces away.\n7◆: Attack all heroes 3 spaces away.\nAttacking deals ☼ to heroes life total.\n\nMaraurn'Zol attacks around her through all objects. Allow heroes attacked to escape with a 2☼ or higher\n\nLine of sight is limited to 6 spaces.",
-        "1",
-        "",
-        "",
-        "MONSTER",
-        "6◇: Add a clone of Maraun'Zol. The clone takes it's turn after Maraun'Zol.\n\n9◇: Immediately take your turn. ALL random. No line of sight damage.",
-        "",
-        "",
-        "Fire",
-        "Maraurn'Zol",
-        "MONSTER"
-      ],
+      "abilities": "Movement — RAMPAGE (meteor). On her turn, roll the grid and crash her down on that square. EVERY hero in line of sight of where she lands takes her Strike. This is the meteor — it hurts, and it can hit several heroes at once.\n\nx◆: +1 Rampage (extra meteor) for every 4 objectives taken.\n2◆: Meteor blast radius 1 space (strike everyone within 1 of the impact too).\n4◆: Meteor blast radius 2 spaces.\n7◆: Meteor blast radius 3 spaces.\n\nHer Strike ignores all cover — it burns through objects and walls. Sight 6.\n\nAdvance: she may instead walk 1 space to reposition (no meteor, no bonus).\n\nEscape: a struck hero may Flee — roll Defense; shields block the hit and let you scramble 1 space each. Get out of line of sight to be safe.",
+      "objectiveAbilities": "6◇: Add a CLONE of Maraurn'Zol. The clone takes its own Rampage (meteor) right after her, using her current blast radius.\n\n9◇: Meteor Storm — immediately take one extra Rampage. Every hero not behind a full wall is struck.",
       "element": "Fire",
       "art": "players/bad5.jpg",
       "stats": {
         "monsterDie": 6,
-        "movementDie": null
+        "movementDie": null,
+        "sight": 6,
+        "moveStyle": "rampage",
+        "rampageEvery": 4
       },
       "combat": {
         "attack": 5,
         "defense": 0,
-        "reach": 1
+        "reach": 1,
+        "ignoreCover": true
       }
     },
     {
-      "id": "wyhtthetrickster",
-      "name": "Wyht, the Trickster",
-      "abilities": "x◆: Take an extra movement turn for every 3 objectives taken.\n4◆: Randomly relocate any objective.\n6◆: Make a hero discard a card (1st turn only)\n9◆: Make a hero discard a card (2nd turn only)\n\nWyht Draws an extra card when she draws cards.",
-      "objectiveAbilities": "1◇: Add 1 more objective. ALL random.\n\n6◇: Add 1 more objective. randomly\n\n10◇: Choose a hero, they die.",
-      "raw": [
-        "",
-        "6",
-        "x◆: Take an extra movement turn for every 3 objectives taken.\n4◆: Randomly relocate any objective.\n6◆: Make a hero discard a card (1st turn only)\n9◆: Make a hero discard a card (2nd turn only)\n\nWyht Draws an extra card when she draws cards.",
-        "",
-        "",
-        "",
-        "MONSTER",
-        "1◇: Add 1 more objective. ALL random.\n\n6◇: Add 1 more objective. randomly\n\n10◇: Choose a hero, they die.",
-        "",
-        "",
-        "Mind",
-        "Wyht, the Trickster",
-        ""
-      ],
-      "element": "Mind",
-      "art": "players/bad1.jpg",
+      "id": "thefog",
+      "name": "The Fog",
+      "abilities": "Movement — CREEP. The Fog never teleports. Roll its movement die (D20, +2) and slide it forward that many spaces, engulfing everything it rolls over. It creeps faster the deeper the game runs.\n\n1◆: Strike all heroes 1 space away.\n4◆: Reach 2 — strike heroes 2 spaces away.\n8◆: Reach 3 — strike heroes 3 spaces away.\n2◆: +D4 to movement rolls.\n4◆: +D4 to movement rolls.\n\nHeroes inside a building are SAFE — the Fog cannot strike them. Sight 6.\n\nEscape: do NOT try to shove it back (its reach outgrows the push and you stay pinned — a loop). Break line of sight or step into a building instead. The Fog is slow early; outrun it while you can.",
+      "objectiveAbilities": "2◇: The Fog sees heroes through all objects — but still NOT through building walls.\n\n9◇: Suffocate — kill up to 2 heroes who are not inside a building.",
+      "element": "Smoke",
+      "art": "players/bad4.jpg",
       "stats": {
         "monsterDie": 6,
-        "movementDie": null
+        "movementDie": 20,
+        "sight": 6,
+        "moveStyle": "creep",
+        "rampageEvery": 0
+      },
+      "combat": {
+        "attack": 4,
+        "defense": 0,
+        "reach": 1,
+        "buildingsSafe": true
+      }
+    },
+    {
+      "id": "ghathag",
+      "name": "Ghathag",
+      "abilities": "Movement — STALK. He steps forward in a straight line toward the nearest hero. He cannot enter buildings (cannot pass through doors). While stalking his sight drops to 1 — slip out of his lane and he loses your scent.\n\nx◆: +1 Stalk for every 4 objectives taken.\n2◆: Stalk 3 spaces.\n4◆: Stalk 3 more spaces.\n6◆: Stalk 3 more spaces.\n3◆: Place a 2-life, 2x1 barrier (blocks movement and line of sight).\n\nCharge: if he moved 3+ spaces this turn and reaches a hero, his Strike is +2 dice. Being cornered by Ghathag is deadly. Sight 4 (only 1 while stalking).\n\nEscape: a hero he reaches may Flee — roll Defense; shields block and scramble. Duck through a door; he can't follow you inside.",
+      "objectiveAbilities": "3◇: Place 2 barriers.\n4◆: Barriers have +2 life.\n5◇: Place 2 barriers.\n7◆: Barriers have +2 life.\n9◇: Turn every barrier into a minion (roll each for its health).",
+      "element": "Claw",
+      "art": "players/bad2.jpg",
+      "stats": {
+        "monsterDie": 6,
+        "movementDie": null,
+        "sight": 4,
+        "stalkSight": 1,
+        "moveStyle": "stalk",
+        "rampageEvery": 4
+      },
+      "combat": {
+        "attack": 4,
+        "defense": 2,
+        "reach": 1,
+        "charge": 2
+      }
+    },
+    {
+      "id": "oblex",
+      "name": "Oblex",
+      "abilities": "Movement — OOZE + SWAP. Oblex is weak on its own; its minions do the fighting. After it moves it may trade places with any minion (its teleport). It does NOT gain extra moves as objectives are taken.\n\n1◆: Summon minions equal to 1 + 1 per 3 objectives taken (roll each d4 for health).\n3◆: Or, instead of summoning, give +1 attack to one minion.\n5◆: All minions may move 2 spaces each turn.\n\nMinion baseline: ⚔2 / 🛡1 / ❤ d4. Summon them and move them BEFORE Oblex moves. Sight 4.\n\nEscape: a hero a minion reaches may Flee — roll Defense; shields block and scramble. Break line of sight from the swarm.",
+      "objectiveAbilities": "1◇: Summon 2 minions.\n3◇: Summon 3 minions.\n5◇: Summon 4 minions.\n4◆: Minion attack +1.\n6◆: Minion reach +1.\n7◆: Minion attack +1.\n9◇: Double the number of minions on the board.",
+      "element": "Flesh",
+      "art": "players/bad3.jpg",
+      "stats": {
+        "monsterDie": 6,
+        "movementDie": null,
+        "sight": 4,
+        "moveStyle": "swap",
+        "rampageEvery": 0
       },
       "combat": {
         "attack": 2,
@@ -459,94 +479,18 @@ window.GAME_DATA = {
       }
     },
     {
-      "id": "ghathag",
-      "name": "Ghathag",
-      "abilities": "x◆: Take an extra movement turn for every 4 objectives taken.\n2◆: Stalk 3 spaces.\n3◆:Place a 2 life 2x1 obstacle\n4◆: Stalk 3 more spaces.\n6◆: Stalk 3 more spaces.\n\nAllow heroes to escape with a 2☼ or higher if seen while moving.\nGhathag can not enter doors.\n\nLine of Sight is limited to 4 spaces, and 1 when Stalking.",
-      "objectiveAbilities": "3◇: Place 2 obstacles\n\n4◆: Obstacles have +2 life.\n\n5◇: Place 2 obstacles.\n\n7◆: Obstacles have +2 life.\n\n9◇: Turn all obstacles into a minion(Roll each)",
-      "raw": [
-        "",
-        "6",
-        "x◆: Take an extra movement turn for every 4 objectives taken.\n2◆: Stalk 3 spaces.\n3◆:Place a 2 life 2x1 obstacle\n4◆: Stalk 3 more spaces.\n6◆: Stalk 3 more spaces.\n\nAllow heroes to escape with a 2☼ or higher if seen while moving.\nGhathag can not enter doors.\n\nLine of Sight is limited to 4 spaces, and 1 when Stalking.",
-        "",
-        "",
-        "",
-        "MONSTER",
-        "3◇: Place 2 obstacles\n\n4◆: Obstacles have +2 life.\n\n5◇: Place 2 obstacles.\n\n7◆: Obstacles have +2 life.\n\n9◇: Turn all obstacles into a minion(Roll each)",
-        "",
-        "",
-        "Claw",
-        "Ghathag",
-        ""
-      ],
-      "element": "Claw",
-      "art": "players/bad2.jpg",
+      "id": "wyhtthetrickster",
+      "name": "Wyht, the Trickster",
+      "abilities": "Movement — BLINK. She flits around the board: roll the grid to blink her to a random square (a short Rampage), positioning for her tricks. She wins by disruption, not by blows.\n\nx◆: +1 Blink for every 3 objectives taken.\n2◆: Relocate any 1 objective to a space you choose.\n4◆: Every hero discards 1 card — or one hero of your choice discards 2.\n6◆: Draw 2 monster cards; one hero of your choice discards down to 4 cards.\n8◆: Swap the positions of two objectives, or add +1 to one objective's value.\n\nWyht draws an extra card whenever she draws. Sight 5.\n\nA Blink that passes a hero in line of sight lets her Strike that hero (small). They may Flee — roll Defense.",
+      "objectiveAbilities": "1◇: Add 1 objective to the board (this raises the heroes' goal).\n3◇: Randomly relocate ALL objectives.\n5◇: Add 1 objective to the board.\n10◇: Choose a hero — they die.",
+      "element": "Mind",
+      "art": "players/bad1.jpg",
       "stats": {
         "monsterDie": 6,
-        "movementDie": null
-      },
-      "combat": {
-        "attack": 4,
-        "defense": 2,
-        "reach": 1
-      }
-    },
-    {
-      "id": "thefog",
-      "name": "The Fog",
-      "abilities": "1◆: Attack all heroes 1 space away.\n4◆: Attack all heroes 2 spaces away.\n8◆: Attack all heroes 3 spaces away.\nAttacking deals ☼ to heroes life total.\n\nThe Fog moves with a D20 instead of randomly. add +2 to movement rolls.\n\nIf a hero is attacked inside a building. Allow heroes to escape with a 2☼ or higher.\n\nLine of sight is limited to 6 spaces.",
-      "objectiveAbilities": "2◆:Can see heroes through all objects.\n\n2◆: Add a D4 to movement rolls.\n\n4◆: Add a D4 to movement rolls.\n\n9◇: Kill up to any 2 heroes that are not in a building.",
-      "raw": [
-        "",
-        "6",
-        "1◆: Attack all heroes 1 space away.\n4◆: Attack all heroes 2 spaces away.\n8◆: Attack all heroes 3 spaces away.\nAttacking deals ☼ to heroes life total.\n\nThe Fog moves with a D20 instead of randomly. add +2 to movement rolls.\n\nIf a hero is attacked inside a building. Allow heroes to escape with a 2☼ or higher.\n\nLine of sight is limited to 6 spaces.",
-        "",
-        "4",
-        "4",
-        "MONSTER",
-        "2◆:Can see heroes through all objects.\n\n2◆: Add a D4 to movement rolls.\n\n4◆: Add a D4 to movement rolls.\n\n9◇: Kill up to any 2 heroes that are not in a building.",
-        "20",
-        "",
-        "Smoke",
-        "The Fog",
-        ""
-      ],
-      "element": "Smoke",
-      "art": "players/bad4.jpg",
-      "stats": {
-        "monsterDie": 6,
-        "movementDie": 20
-      },
-      "combat": {
-        "attack": 4,
-        "defense": 0,
-        "reach": 2
-      }
-    },
-    {
-      "id": "oblex",
-      "name": "Oblex",
-      "abilities": "1◆: Summon X/2◆ minions (round up)....\n3◆: Or give +1 to a minion\n5◆: All Minions can move 2 spaces each turn.\n\nOblex does not move extra times per objective collected.\n\nOblex can trade places with any minion after moving. Allow heroes seen to escape with a 3☼ or higher.",
-      "objectiveAbilities": "1◇: Summon 2 minions.\n3◇: Summon 3 minions.\n\n4◆: minion combat is +1\n6◆: minion range is +1\n\n5◇: Summon 4 minions.\n7◆: minion combat is +1\n\n9◇: Double the number of minions.",
-      "raw": [
-        "6",
-        "",
-        "1◆: Summon X/2◆ minions (round up)....\n3◆: Or give +1 to a minion\n5◆: All Minions can move 2 spaces each turn.\n\nOblex does not move extra times per objective collected.\n\nOblex can trade places with any minion after moving. Allow heroes seen to escape with a 3☼ or higher.",
-        "",
-        "",
-        "",
-        "MONSTER",
-        "1◇: Summon 2 minions.\n3◇: Summon 3 minions.\n\n4◆: minion combat is +1\n6◆: minion range is +1\n\n5◇: Summon 4 minions.\n7◆: minion combat is +1\n\n9◇: Double the number of minions.",
-        "",
-        "",
-        "Flesh",
-        "Oblex",
-        ""
-      ],
-      "element": "Flesh",
-      "art": "players/bad3.jpg",
-      "stats": {
-        "monsterDie": 6,
-        "movementDie": null
+        "movementDie": null,
+        "sight": 5,
+        "moveStyle": "blink",
+        "rampageEvery": 3
       },
       "combat": {
         "attack": 2,
