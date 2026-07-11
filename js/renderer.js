@@ -289,6 +289,13 @@ class Renderer {
                 ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
                 ctx.fillStyle = '#ffd7d7'; ctx.font = `${size * 0.18}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
                 ctx.fillText('clone', cx, cy + r + 1);
+            } else if (m.pet) {   // a hero-side pet: gold, paw glyph, name below
+                ctx.lineWidth = 2.5; ctx.strokeStyle = '#7a5c10'; ctx.stroke();
+                ctx.fillStyle = '#3a2e08'; ctx.font = `${size * 0.32}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('🐾', cx, cy);
+                this.badge(ctx, cx + r * 0.7, cy + r * 0.7, size, m.hp, '#111', '#d9a520', '#fff');
+                ctx.fillStyle = '#e8ecef'; ctx.font = `${size * 0.18}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+                ctx.shadowColor = '#000'; ctx.shadowBlur = 3; ctx.fillText(m.label || 'Pet', cx, cy + r + 1);
             } else {
                 ctx.lineWidth = 2.5; ctx.strokeStyle = '#3a0d0d'; ctx.stroke();
                 ctx.fillStyle = '#f2e6e6'; ctx.font = `${size * 0.34}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -354,7 +361,7 @@ class Renderer {
             sight: GL.effectiveSight(ent, data, score),
             reach: GL.effectiveReach(ent, data, score, monChar),
             blast: GL.effectiveBlast(ent, data, score),
-            ignoreCover: !!(ch && ch.combat && ch.combat.ignoreCover),
+            ignoreCover: !!(ch && ch.combat && (ch.combat.ignoreCover || ch.combat.ignoreCoverAttack)),
             diagonal: GL.canDiagonal(ent),
         };
     }

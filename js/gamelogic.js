@@ -42,8 +42,10 @@
     const monsterCharOf = (s, data) => { const seat = (s.seats || []).find(x => x.kind === 'monster'); return seat && (data.monsters || []).find(m => m.id === seat.characterId) || null; };
     // Oblex auto-buffs its whole swarm off its own objective ladder — every minion
     // gets these for free, no per-minion tweaking. { attack, reach } deltas.
-    function oblexMinionBonus(monChar, score) {
-        if (!monChar || monChar.id !== 'oblex') return { attack: 0, reach: 0 };
+    // Only Oblex's OWN swarm is buffable — not a hero's pet, a barrier, or a clone.
+    const oblexBuffable = ent => ent && ent.kind === 'minion' && !ent.clone && !ent.pet && !ent.barrier && ent.side !== 'hero';
+    function oblexMinionBonus(monChar, score, ent) {
+        if (!monChar || monChar.id !== 'oblex' || (ent && !oblexBuffable(ent))) return { attack: 0, reach: 0 };
         return {
             attack: (score >= 4 ? 1 : 0) + (score >= 7 ? 1 : 0),   // 4◆ +1, 7◆ +1
             reach: (score >= 6 ? 1 : 0),                            // 6◆ +1
@@ -64,7 +66,7 @@
     function effectiveReach(ent, data, score, monChar) {
         if (!ent) return 1;
         const ch = charSheetOf(ent, data);
-        if (!ch) return Math.max(1, (ent.reach || 1) + oblexMinionBonus(monChar, score).reach);   // plain minion
+        if (!ch) return Math.max(1, (ent.reach || 1) + oblexMinionBonus(monChar, score, ent).reach);   // plain minion
         const c = ch.combat || {};
         return Math.max(1, ladderValue(c.reach || 1, c.reachLadder, score, 'reach'));
     }
@@ -91,7 +93,7 @@
             attack = ladderValue(c.attack || 0, c.attackLadder, score, 'attack');
             defense = c.defense || 0;
         } else if (ent.kind === 'minion') {
-            const b = oblexMinionBonus(monChar, score || 0);
+            const b = oblexMinionBonus(monChar, score || 0, ent);
             attack = (ent.attack || 0) + b.attack; defense = ent.defense || 0;
             c = { reach: (ent.reach || 1) + b.reach, baseAttack: ent.baseAttack, baseShield: ent.baseShield };
         } else {
@@ -310,15 +312,16 @@
                 const n = (s.minions || []).filter(m => !m.barrier && !m.clone).length + 1;
                 s.minions = s.minions || [];
                 const life = a.hp || (1 + Math.floor(Math.random() * 4));   // d4 health when spawned
-                const barrier = !!a.barrier;
+                const barrier = !!a.barrier, pet = !!a.pet, side = a.side === 'hero' ? 'hero' : 'monster';
                 s.minions.push({
-                    id: (barrier ? 'bar-' : 'min-') + Date.now() + '-' + Math.floor(Math.random() * 1000), kind: 'minion',
-                    barrier, label: a.label || (barrier ? 'Barrier' : 'Minion ' + n),
+                    id: (barrier ? 'bar-' : pet ? 'pet-' : 'min-') + Date.now() + '-' + Math.floor(Math.random() * 1000), kind: 'minion',
+                    barrier, pet, side, label: a.label || (barrier ? 'Barrier' : pet ? 'Pet' : 'Minion ' + n),
                     x: a.x, y: a.y, hp: life, maxHp: life,
                     attack: barrier ? 0 : (a.attack || 2), defense: a.defense || (barrier ? 0 : 1), reach: a.reach || 1,
-                    baseAttack: a.baseAttack || 0, baseShield: a.baseShield || 0, color: a.color || (barrier ? '#6b6f74' : '#9b2d2d'),
+                    baseAttack: a.baseAttack || 0, baseShield: a.baseShield || 0,
+                    color: a.color || (barrier ? '#6b6f74' : pet ? '#d9a520' : '#9b2d2d'),
                 });
-                logEvent(s, null, `${barrier ? 'A barrier' : 'A minion'} was placed at ${cellName(a.x, a.y)} (❤${life})`);
+                logEvent(s, null, `${barrier ? 'A barrier' : pet ? 'A pet' : 'A minion'} was placed at ${cellName(a.x, a.y)} (❤${life})`);
                 break;
             }
             case 'ADD_CLONE': {
@@ -423,6 +426,17 @@
                 if (!atk || !def || atk.id === def.id) break;
                 const score = scoreOf(s), monChar = monsterCharOf(s, data);
                 const ac = combatStats(atk, data, score, monChar), dc = combatStats(def, data, score, monChar);
+                // contextual combat bonuses read off the raw character sheet: extra
+                // attack dice vs a minion / from range, extra defense vs a minion.
+                const rawCombatOf = e => { const ch = charSheetOf(e, data); return (ch && ch.combat) || {}; };
+                const ra = rawCombatOf(atk), rd = rawCombatOf(def);
+                const dist = (atk.x != null && def.x != null) ? Math.max(Math.abs(atk.x - def.x), Math.abs(atk.y - def.y)) : 1;
+                const defIsMinion = def.kind === 'minion' && !def.clone;   // real minions + barriers, not the clone
+                const atkIsMinion = atk.kind === 'minion' && !atk.clone;
+                let ctxAtkDice = 0, ctxDefDice = 0; const ctxAtk = [];
+                if (defIsMinion && ra.vsMinionAttack) { ctxAtkDice += ra.vsMinionAttack; ctxAtk.push(`+${ra.vsMinionAttack}⚔ vs minion`); }
+                if (ra.rangedAttack && dist > (ra.rangedFrom || 1)) { ctxAtkDice += ra.rangedAttack; ctxAtk.push(`+${ra.rangedAttack}⚔ from range`); }
+                if (atkIsMinion && rd.vsMinionDefense) ctxDefDice += rd.vsMinionDefense;
                 const roll = () => 1 + Math.floor(Math.random() * 6);
                 const skulls = f => f.filter(v => v <= 3).length;   // faces 1-3 = ☠
                 const shields = f => f.filter(v => v >= 4 && v <= 5).length; // 4-5 = 🛡
@@ -433,8 +447,8 @@
                 // Both sides roll their own pool: attacker rolls Attack dice, defender
                 // rolls Defense dice. EACH side's skulls wound the OTHER; each side's
                 // shields block the other's skulls. Damage flows both ways.
-                const atkFaces = Array.from({ length: Math.max(0, ac.attack) + (a.bonusAttack || 0) + sum(atkMods, 'attackDice') }, roll);
-                const defFaces = Array.from({ length: Math.max(0, dc.defense) + (a.bonusDefense || 0) + sum(defMods, 'defenseDice') }, roll);
+                const atkFaces = Array.from({ length: Math.max(0, ac.attack + ctxAtkDice) + (a.bonusAttack || 0) + sum(atkMods, 'attackDice') }, roll);
+                const defFaces = Array.from({ length: Math.max(0, dc.defense + ctxDefDice) + (a.bonusDefense || 0) + sum(defMods, 'defenseDice') }, roll);
                 const atkSkulls = skulls(atkFaces) + ac.baseAttack + sum(atkMods, 'skull');   // hits the attacker deals
                 const atkShields = shields(atkFaces) + ac.baseShield; // blocks the attacker has
                 const defSkulls = skulls(defFaces) + dc.baseAttack;   // hits the defender deals back
@@ -455,6 +469,15 @@
                 const repelDef = applyWounds(def, atk, woundsToDef);
                 const repelAtk = applyWounds(atk, def, woundsToAtk);
 
+                // heal-on-minion-kill (Barbarian): the attacker regains life when its
+                // strike destroys a minion (and it survived the exchange).
+                if (defIsMinion && !(s.minions || []).some(m => m.id === def.id) &&
+                    atk.kind === 'hero' && !atk.dead && (atk.hp || 0) > 0 && ra.healOnMinionKill) {
+                    const max = atk.maxHp || atk.hp || 0;
+                    atk.hp = Math.min(max, (atk.hp || 0) + ra.healOnMinionKill);
+                    logEvent(s, atk.id, `regained ${ra.healOnMinionKill} life from the kill (${atk.hp}/${max})`);
+                }
+
                 // consume one-shot combat modifiers that just fired
                 atk.mods = (atk.mods || []).filter(m => !(m.duration === 'once' && modAffectsAttack(m)));
                 def.mods = (def.mods || []).filter(m => !(m.duration === 'once' && modAffectsDefense(m)));
@@ -463,7 +486,7 @@
                     attackerId: atk.id, defenderId: def.id, atkFaces, defFaces,
                     atkKey: colorKeyOf(atk), defKey: colorKeyOf(def),
                     atkSkulls, atkShields, defSkulls, defShields,
-                    modsAtk: atkMods.map(describeMod), modsDef: defMods.map(describeMod),
+                    modsAtk: atkMods.map(describeMod).concat(ctxAtk), modsDef: defMods.map(describeMod),
                     woundsToDef, woundsToAtk, repelDef, repelAtk, ts: Date.now(),
                 };
                 const dmgOut = (target, wounds, repel) => target.kind === 'monster'

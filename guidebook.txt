@@ -183,9 +183,15 @@ Minions are placed on board randomly. To summon a minion the monster rolls the m
 
 The monster uses an action dice☼ to move the minions. This can be divided between multiple minions. On the hero's turn, minions line of sight is one space away in all directions(excluding diagonals). On the monster's turn, minions can be moved to engage a hero for combat.  
 
-Minions should be moved BEFORE the monster's movement. 
+Minions should be moved BEFORE the monster's movement.
 
- 
+
+
+Pets (Hunter):
+
+The Hunter may summon a pet — a hero-side piece (Attack 1 / Defense 1 / 3 life). A pet fights the monster's side (its minions, barriers and clones) and can be attacked by them. It shares the Hunter's movement rolls (not bonus dice) and flies over obstacles (but not walls). A pet is destroyed if it ever fights the MONSTER itself — keep it on minions. The monster's minion buffs (Oblex) never apply to a pet.
+
+
 
 Combat:
 

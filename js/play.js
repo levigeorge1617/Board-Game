@@ -679,6 +679,7 @@ class PlayController {
                             this.attackTargetBtn(seat) +
                             this.losBtn() +
                             gridBtn +
+                            this.heroActions(seat, ch) +
                             this.pieceBlock(seat) +
                             this.combatBlock(seat) +
                             this.formsBlock(seat, ch) +
@@ -697,6 +698,7 @@ class PlayController {
         const gb = pop.querySelector('#ph-roll-grid');
         if (gb) gb.onclick = () => this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows);
         this.wireMonsterActions(pop, seat, score);
+        this.wireHeroActions(pop, seat);
         const sel = pop.querySelector('.ph-cc-choose');
         if (sel) sel.onchange = (e) => this.gs.setSeatCharacter(seat.id, e.target.value);
 
@@ -743,13 +745,14 @@ class PlayController {
         if (b) b.onclick = () => { this.app.inspectPieceId = id; this.closePopover(); this.app.renderer.draw(); };
     }
 
-    // enemies = the opposing side (heroes vs monster+minions), placed & alive
+    // Which side a piece fights on: heroes + their pets vs the monster + its
+    // minions/clones/barriers.
+    sideOf(ent) { return ent.kind === 'hero' ? 'hero' : ent.kind === 'monster' ? 'monster' : (ent.side || 'monster'); }
+    // enemies = every placed, living piece on the opposing side
     enemiesOf(ent) {
-        const heroSide = ent.kind === 'hero';
-        const list = heroSide
-            ? this.gs.state.seats.filter(o => o.kind === 'monster').concat(this.gs.state.minions || [])
-            : this.gs.state.seats.filter(o => o.kind === 'hero');
-        return list.filter(o => o.x != null && !o.dead);
+        const mine = this.sideOf(ent);
+        return this.gs.state.seats.concat(this.gs.state.minions || [])
+            .filter(o => o.id !== ent.id && o.x != null && !o.dead && this.sideOf(o) !== mine);
     }
     attackRow(ent) {
         const enemies = this.enemiesOf(ent);
@@ -764,8 +767,15 @@ class PlayController {
         const c = (ch && ch.combat) || {};
         const reachNote = c.reach > 1 ? ` · reach ${c.reach}` : '';
         const base = (c.baseAttack ? ` · +${c.baseAttack}☠` : '') + (c.baseShield ? ` · +${c.baseShield}🛡` : '');
+        const perks = [];
+        if (c.vsMinionAttack) perks.push(`+${c.vsMinionAttack}⚔ vs minions`);
+        if (c.vsMinionDefense) perks.push(`+${c.vsMinionDefense}🛡 vs minions`);
+        if (c.rangedAttack) perks.push(`+${c.rangedAttack}⚔ from ${(c.rangedFrom || 1) + 1}+ away`);
+        if (c.healOnMinionKill) perks.push(`heal ${c.healOnMinionKill} on a minion kill`);
+        if (c.ignoreCover || c.ignoreCoverAttack) perks.push(`attacks ignore walls`);
+        const perkRow = perks.length ? `<div class="ph-cc-perks">${perks.map(p => `<span class="ph-perk">${symbolize(esc(p))}</span>`).join('')}</div>` : '';
         return `<div class="ph-cc-block"><h4>Combat — ⚔ ${c.attack || 0} / 🛡 ${c.defense || 0}${symbolize(base)}${reachNote}</h4>` +
-            this.attackRow(seat) +
+            perkRow + this.attackRow(seat) +
             `<div class="ph-muted" style="font-size:10px;margin-top:4px;">Both sides roll — your skulls wound the target, their skulls wound you; shields block. Damage applies automatically.</div></div>`;
     }
     dist(a, b) { return (a.x == null || b.x == null) ? '?' : Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)); }
@@ -880,22 +890,37 @@ class PlayController {
         }
         return btns.join('');
     }
+    // A free-ish cell next to a piece, to drop a spawned piece (clone/barrier/pet).
+    nearCell(ent) {
+        const cols = this.app.board.cols, rows = this.app.board.rows;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1]]) {
+            const x = (ent.x || 0) + dx, y = (ent.y || 0) + dy;
+            if (x >= 0 && y >= 0 && x < cols && y < rows) return { x, y };
+        }
+        return { x: ent.x || 0, y: ent.y || 0 };
+    }
     wireMonsterActions(pop, seat, score) {
-        const mon = seat;
-        const near = () => {   // a free-ish cell next to the monster to drop the new piece
-            const cols = this.app.board.cols, rows = this.app.board.rows;
-            for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1]]) {
-                const x = (mon.x || 0) + dx, y = (mon.y || 0) + dy;
-                if (x >= 0 && y >= 0 && x < cols && y < rows) return { x, y };
-            }
-            return { x: mon.x || 0, y: mon.y || 0 };
-        };
         const clone = pop.querySelector('.ph-mon-clone');
-        if (clone) clone.onclick = () => { const c = near(); this.gs.addClone(c.x, c.y); this.closePopover(); };
+        if (clone) clone.onclick = () => { const c = this.nearCell(seat); this.gs.addClone(c.x, c.y); this.closePopover(); };
         const bar = pop.querySelector('.ph-mon-barrier');
         if (bar) bar.onclick = () => {
-            const hp = 2 + (score >= 4 ? 2 : 0) + (score >= 7 ? 2 : 0); const c = near();
+            const hp = 2 + (score >= 4 ? 2 : 0) + (score >= 7 ? 2 : 0); const c = this.nearCell(seat);
             this.gs.addMinion({ x: c.x, y: c.y, hp, barrier: true, label: 'Barrier' });
+            this.closePopover();
+        };
+    }
+
+    // Per-hero board actions (Hunter's pet). Rendered on the hero sheet.
+    heroActions(seat, ch) {
+        if (!ch || seat.kind !== 'hero' || ch.id !== 'hunter') return '';
+        const pets = (this.gs.state.minions || []).filter(m => m.pet).length;
+        return `<button class="ph-btn ph-hero-pet" style="width:100%;margin-bottom:6px;">🐾 Summon pet${pets ? ` (${pets} out)` : ''}</button>`;
+    }
+    wireHeroActions(pop, seat) {
+        const pet = pop.querySelector('.ph-hero-pet');
+        if (pet) pet.onclick = () => {
+            const c = this.nearCell(seat);
+            this.gs.addMinion({ x: c.x, y: c.y, side: 'hero', pet: true, attack: 1, defense: 1, hp: 3, label: seat.label + "'s pet" });
             this.closePopover();
         };
     }
