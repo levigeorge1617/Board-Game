@@ -102,7 +102,7 @@ class UIManager {
 
     switchSystemMode(mode) {
         this.app.appMode = mode;
-        this.app.inspectPieceId = null;   // drop any range/LoS overlay when changing modes
+        if (this.app.clearInspect) this.app.clearInspect(); else this.app.inspectPieceId = null;   // drop range/LoS + path overlay when changing modes
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
 
         const isDesigner = (mode === 'designer');
