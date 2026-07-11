@@ -211,10 +211,11 @@ ladder + move hint + inspector as the guide, exactly as the cardboard game would
 The board systems are unified around a single distance metric and two clearly
 separated ranges, so "seen" vs "in range" stops being muddled.
 
-**One distance.** Everything is counted in orthogonal STEPS (up/down/left/right).
-A diagonal is 2 steps — except the **GREEN hero**, who cuts corners (diagonal =
-1). Sight, reach and the movement/path count all read from this one metric
-(`GameLogic.stepDistance` / `canDiagonal`).
+**Range is a square; movement is steps.** Sight and reach are measured as a
+**square** — a space in *any* direction (diagonals included, Chebyshev), so
+reach 2 = the 5×5 block. **Movement** is counted in orthogonal **steps**
+(diagonal = 2), except the **GREEN hero**, who steps diagonally for 1 — so GREEN
+moves like its range. (`GameLogic.canDiagonal` drives the movement/path metric.)
 
 **Two ranges.**
 - **SIGHT** — how far a piece can *see* an enemy (needs a clear line). Within
@@ -234,7 +235,8 @@ walls, doors, pieces, minions, barriers and objectives still do.
 
 ### The inspector (right-click / touch-hold a piece)
 - **Sight area** shaded amber (*seen*), **reach area** shaded red (*in range*),
-  outlined as a diamond for orthogonal pieces or a box for GREEN.
+  outlined as a **square** for every piece; the **GREEN** hero also gets a
+  **diamond** over the square, marking its diagonal movement.
 - A **distance number on every enemy** — including ones beyond sight (a hero 6
   away from a sight-5 monster shows "6" in grey), so range is never guessed.
 - **Meteor blast ring** drawn around Maraurn'Zol at her current radius.
