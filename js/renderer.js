@@ -358,7 +358,7 @@ class Renderer {
         const score = GL.scoreOf(play.gs.state), monChar = GL.monsterCharOf(play.gs.state, data);
         const ch = GL.charSheetOf(ent, data);
         return {
-            sight: GL.effectiveSight(ent, data, score),
+            sight: GL.effectiveSight(ent, data, score, monChar),
             reach: GL.effectiveReach(ent, data, score, monChar),
             blast: GL.effectiveBlast(ent, data, score),
             ignoreCover: !!(ch && ch.combat && (ch.combat.ignoreCover || ch.combat.ignoreCoverAttack)),

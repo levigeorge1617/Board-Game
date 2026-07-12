@@ -59,7 +59,7 @@
     // Effective SIGHT (how far a piece can SEE an enemy) and REACH (how far it can
     // ATTACK), both objective-scaled. Sight ≥ reach. Heroes default to a fixed
     // sight; minions see short unless Oblex extends their reach.
-    const DEFAULT_SIGHT = 6, MINION_SIGHT = 3;
+    const DEFAULT_SIGHT = 6;
     // Resolve the character sheet a piece fights with (clone/monster → a monster,
     // hero → a hero); plain minions have no sheet.
     function charSheetOf(ent, data) {
@@ -75,10 +75,10 @@
         const c = ch.combat || {};
         return Math.max(1, ladderValue(c.reach || 1, c.reachLadder, score, 'reach'));
     }
-    function effectiveSight(ent, data, score) {
+    function effectiveSight(ent, data, score, monChar) {
         if (!ent) return DEFAULT_SIGHT;
         const ch = charSheetOf(ent, data);
-        if (!ch) return MINION_SIGHT;   // plain minion
+        if (!ch) return effectiveReach(ent, data, score, monChar);   // a minion sees only as far as it reaches
         const st = ch.stats || {};
         return Math.max(1, ladderValue(st.sight || DEFAULT_SIGHT, st.sightLadder, score, 'sight'));
     }

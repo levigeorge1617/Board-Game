@@ -529,7 +529,12 @@ window.GAME_DATA = {
       "timing": "draw",
       "copies": 5,
       "cost": "0",
-      "text": "The monster's next turn movement can kill heroes diagonally\n\nAll other monster rules still apply",
+      "text": "The monster's next Strike this turn rolls +2 attack dice (its blow lands harder).",
+      "effect": {
+        "attackDice": 2,
+        "scope": "attack",
+        "duration": "turn"
+      },
       "art": "cards/diaginal.png",
       "raw": [
         "260",
@@ -637,7 +642,7 @@ window.GAME_DATA = {
       "timing": "draw",
       "copies": 8,
       "cost": "X☼",
-      "text": "Move a monster or minion X spaces.\n\nMovement can be divided between multiple minions and the monster.\n\nIf the monster is able to attack a hero by moving this way, allow the hero to escape by rolling a 3 action or higher",
+      "text": "Move a monster or minion X spaces.\n\nMovement can be divided between multiple minions and the monster.\n\nIf this move lets the monster or a minion Strike a hero, that hero may Flee (roll Defense) as normal.",
       "art": "cards/move.png",
       "raw": [
         "132",
@@ -745,7 +750,7 @@ window.GAME_DATA = {
       "timing": "hand",
       "copies": 8,
       "cost": "3☼",
-      "text": "Revive a hero who died.\n\nSet the hero's health to their max -5\n\nThe revived hero can not use their action dice this turn, but can use movement dice.",
+      "text": "Revive a hero who died.\n\nSet the revived hero's health to 4 (same as a normal revive).\n\nThe revived hero can not use their action dice this turn, but can use movement dice.",
       "art": "cards/revive.png",
       "raw": [
         "286",
