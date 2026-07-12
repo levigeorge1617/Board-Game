@@ -274,13 +274,12 @@ class PlayController {
         const ch = this.gs.character(seat);
         let html = `<div class="ph-side-seat" style="--c:${PH_COLOR[seat.color] || '#888'}">${esc(seat.label)}</div>`;
         html += this.diceBar(seat, ch, false);
-        if (seat.kind === 'monster') html += `<button id="ph-side-grid" class="ph-btn ph-btn-go" style="width:100%;margin-top:6px;">Roll grid ▸ #/A</button>`;
+        if (seat.kind === 'monster') html += this.monsterMoveHint(ch, (this.gs.state.score && this.gs.state.score.collected) || 0) + this.gridControlHtml(seat, ch);
         html += this.modsBar(seat);
         wrap.innerHTML = html;
         this.wireDice(wrap, seat);
         this.wireMods(wrap, seat);
-        const g = document.getElementById('ph-side-grid');
-        if (g) g.onclick = () => this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows);
+        this.wireGridControl(wrap, seat);
     }
 
     // Active roll/combat modifiers queued on a fighter (from played cards, etc.).
@@ -311,10 +310,11 @@ class PlayController {
         const base = (st.baseAttack ? ` · +${st.baseAttack}☠` : '') + (st.baseShield ? ` · +${st.baseShield}🛡` : '');
         wrap.innerHTML =
             `<div class="ph-side-seat" style="--c:${PH_COLOR[seat.color] || '#888'}">⚔ ${st.attack} / 🛡 ${st.defense}${symbolize(base)} · reach ${st.reach}</div>` +
-            this.attackRow(seat) +
+            this.strikeToggleHtml(seat) + this.attackRow(seat) +
             `<div class="ph-muted" style="font-size:10px;margin-top:5px;">Both sides roll; skulls beat shields. You strike back only if the attacker is within your reach.</div>`;
+        this.wireStrikeToggle(wrap);
         const go = wrap.querySelector('.ph-atk-go');
-        if (go) go.onclick = () => { const t = wrap.querySelector('.ph-atk-target'); if (t && t.value) this.gs.attack(seat.id, t.value, this.app.board.cols, this.app.board.rows); };
+        if (go) go.onclick = () => { const t = wrap.querySelector('.ph-atk-target'); if (t && t.value) this.attackWith(seat.id, t.value); };
     }
 
     // ---- dice bar (shared by sidebar + character sheet) -------------------
@@ -662,8 +662,7 @@ class PlayController {
         const chooser = window.GAME_DATA ? this.characterChooser(seat) : '';
         const score = (this.gs.state.score && this.gs.state.score.collected) || 0;
         const gridBtn = seat.kind === 'monster'
-            ? `<button id="ph-roll-grid" class="ph-btn ph-btn-go" style="width:100%;margin-bottom:8px;">Roll grid ▸ #/A</button>` +
-              this.monsterMoveHint(ch, score) + this.monsterActions(seat, ch, score) : '';
+            ? this.monsterMoveHint(ch, score) + this.gridControlHtml(seat, ch) + this.monsterActions(seat, ch, score) : '';
 
         pop.innerHTML =
             `<div class="ph-sheet" style="--c:${col}">` +
@@ -697,8 +696,8 @@ class PlayController {
         this.wireAttackTarget(pop, seat.id);
         this.wireLosBtn(pop, seat.id);
         this.wireDice(pop, seat);
-        const gb = pop.querySelector('#ph-roll-grid');
-        if (gb) gb.onclick = () => this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows);
+        this.wireGridControl(pop, seat);
+        this.wireStrikeToggle(pop);
         this.wireMonsterActions(pop, seat, score);
         this.wireHeroActions(pop, seat);
         const sel = pop.querySelector('.ph-cc-choose');
@@ -721,7 +720,7 @@ class PlayController {
         });
         on('.ph-atk-go', () => {
             const target = pop.querySelector('.ph-atk-target');
-            if (target && target.value) this.gs.attack(seat.id, target.value, this.app.board.cols, this.app.board.rows);
+            if (target && target.value) this.attackWith(seat.id, target.value);
         });
     }
 
@@ -738,7 +737,7 @@ class PlayController {
     }
     wireAttackTarget(pop, targetId) {
         const btn = pop.querySelector('.ph-attack-target');
-        if (btn) btn.onclick = () => { this.gs.attack(this.gs.mySeatId, targetId, this.app.board.cols, this.app.board.rows); this.closePopover(); };
+        if (btn) btn.onclick = () => { this.attackWith(this.gs.mySeatId, targetId); this.closePopover(); };
     }
     // Button (in a piece sheet) that shows this piece's range + line of sight on the board.
     losBtn() { return `<button class="ph-btn ph-los-btn" style="width:100%;margin-bottom:8px;">👁 Show range / line of sight</button>`; }
@@ -780,7 +779,7 @@ class PlayController {
         }
         const perkRow = perks.length ? `<div class="ph-cc-perks">${perks.map(p => `<span class="ph-perk">${symbolize(esc(p))}</span>`).join('')}</div>` : '';
         return `<div class="ph-cc-block"><h4>Combat — ⚔ ${st.attack} / 🛡 ${st.defense}${symbolize(base)} · reach ${st.reach}</h4>` +
-            perkRow + this.attackRow(seat) +
+            perkRow + this.strikeToggleHtml(seat) + this.attackRow(seat) +
             `<div class="ph-muted" style="font-size:10px;margin-top:4px;">Both sides roll; skulls beat shields to wound. You only strike back if the attacker is within your reach.</div></div>`;
     }
     // Effective combat stats (base + Druid form + ladders) via the shared reducer.
@@ -832,7 +831,7 @@ class PlayController {
         pop.querySelectorAll('.ph-stat-up').forEach(b => b.onclick = () => this.gs.adjustMinion(m.id, b.dataset.stat, 1));
         pop.querySelector('.ph-min-remove').onclick = () => { this.gs.removeMinion(m.id); this.closePopover(); };
         const go = pop.querySelector('.ph-atk-go');
-        if (go) go.onclick = () => { const t = pop.querySelector('.ph-atk-target'); if (t && t.value) this.gs.attack(m.id, t.value, this.app.board.cols, this.app.board.rows); };
+        if (go) go.onclick = () => { const t = pop.querySelector('.ph-atk-target'); if (t && t.value) this.attackWith(m.id, t.value); };
     }
 
     pieceBlock(seat) {
@@ -869,24 +868,69 @@ class PlayController {
         return `<div class="ph-cc-block"><h4>Druid forms</h4><div class="ph-forms">${btns}</div>${allyRow}</div>`;
     }
 
-    // A one-line reminder of HOW this monster moves + how many random moves the
-    // current objective count unlocks (the "two ways monsters move" system).
+    // A one-line reminder of this monster's turn budget at the current objective
+    // count: how many grid-roll attacks (and their sight/axis) and how many moves
+    // (and their reach) it gets — the levers that make monsters feel different.
     monsterMoveHint(ch, score) {
+        const st = (ch && ch.stats) || {}, c = (ch && ch.combat) || {};
+        const grids = (st.gridRolls || 0) + (st.gridRollsEvery ? Math.floor(score / st.gridRollsEvery) : 0);
+        const moves = (st.moves || 0) + (st.movesEvery ? Math.floor(score / st.movesEvery) : 0);
+        const reach = window.GameLogic.ladderValue(c.reach || 1, c.reachLadder, score, 'reach');
+        const bits = [];
+        if (grids > 0) {
+            const axis = { x: 'you pick the column', y: 'you pick the row', choose: 'pick either axis' }[st.gridAxis] || 'fully random';
+            bits.push(`🎲 <b>${grids}</b> grid roll${grids !== 1 ? 's' : ''} (sight ${st.sight || 6}, ${axis})`);
+        }
+        if (moves > 0) bits.push(`👣 <b>${moves}</b> move${moves !== 1 ? 's' : ''} (reach ${reach}${st.movementDie ? `, D${st.movementDie}` : ''})`);
+        return bits.length ? `<div class="ph-move-hint">${bits.join(' · ')}</div>` : '';
+    }
+    // Grid-roll control: monsters that roll fully random get a plain button;
+    // axis-choosers get a value input for the axis they control (the other rolls).
+    gridControlHtml(seat, ch) {
         const st = (ch && ch.stats) || {};
-        const style = st.moveStyle;
-        if (!style) return '';
-        const every = st.rampageEvery || 0;
-        const extra = every ? Math.floor(score / every) : 0;
-        let txt;
-        if (style === 'rampage') txt = `🌠 <b>${1 + extra}</b> Rampage${1 + extra !== 1 ? 's' : ''} + 1 Advance — random grid moves strike everyone in sight`;
-        else if (style === 'blink') txt = `✨ <b>${1 + extra}</b> Blink${1 + extra !== 1 ? 's' : ''} — flit to a random square, then work your tricks`;
-        else if (style === 'creep') txt = `🌫️ Creep — roll the movement die and slide forward (never teleports)`;
-        else if (style === 'stalk') txt = `🐾 <b>${1 + extra}</b> Stalk${1 + extra !== 1 ? 's' : ''} — step forward toward the nearest hero (sight drops to ${st.stalkSight || 1} while stalking)`;
-        else if (style === 'ooze') txt = `🫧 Ooze — move with the GRID ROLL, then swap places with any minion (weak strike, no sight burst)`;
-        else txt = '';
-        if (!txt) return '';
-        const sight = st.sight ? ` · 👁 sight ${st.sight}` : '';
-        return `<div class="ph-move-hint">${txt}${sight}</div>`;
+        if ((st.gridRolls || 0) <= 0) return '';   // no grid roll (The Fog / Ghathag)
+        const axis = st.gridAxis;
+        if (!axis || axis === 'random')
+            return `<button class="ph-btn ph-btn-go ph-grid-rand" style="width:100%;margin:6px 0 8px;">🎲 Roll grid ▸ random</button>`;
+        const chooseAxis = axis === 'choose';
+        const axisCtl = chooseAxis
+            ? `<select class="ph-grid-axis"><option value="x">Column</option><option value="y">Row</option></select>`
+            : `<input type="hidden" class="ph-grid-axis" value="${axis}">`;
+        const label = chooseAxis ? 'Pick an axis + value; the other is rolled'
+            : (axis === 'x' ? 'You pick the Column; the Row is rolled' : 'You pick the Row; the Column is rolled');
+        return `<div class="ph-grid-ctl"><div class="ph-muted" style="font-size:10px;margin-bottom:3px;">🎲 ${label}</div>` +
+            `<div class="ph-atk-row">${axisCtl}<input class="ph-grid-val" type="number" min="1" value="1" style="width:54px">` +
+            `<button class="ph-btn ph-btn-go ph-grid-go">Roll grid</button></div></div>`;
+    }
+    wireGridControl(container, seat) {
+        const rnd = container.querySelector('.ph-grid-rand');
+        if (rnd) rnd.onclick = () => this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows);
+        const go = container.querySelector('.ph-grid-go');
+        if (go) go.onclick = () => {
+            const axisEl = container.querySelector('.ph-grid-axis'), valEl = container.querySelector('.ph-grid-val');
+            const axis = axisEl ? axisEl.value : 'x';
+            const val = parseInt(valEl && valEl.value, 10) || 1;
+            this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows, axis, val);
+        };
+    }
+    // Monster strike-type toggle (grid-roll attack vs the weaker/other move attack).
+    strikeToggleHtml(seat) {
+        const ch = this.gs.character(seat), c = (ch && ch.combat) || {};
+        if (seat.kind !== 'monster' || c.moveAttack == null) return '';
+        const via = this.strikeVia || 'grid', st = this.effectiveCombat(seat);
+        return `<div class="ph-strike-row"><span class="ph-muted" style="font-size:10px">Strike as:</span> ` +
+            `<button class="ph-strike${via === 'grid' ? ' on' : ''}" data-via="grid">Grid ⚔${st.attack}</button>` +
+            `<button class="ph-strike${via === 'move' ? ' on' : ''}" data-via="move">Move ⚔${c.moveAttack}</button></div>`;
+    }
+    wireStrikeToggle(container) {
+        container.querySelectorAll('.ph-strike').forEach(b => b.onclick = () => { this.strikeVia = b.dataset.via; this.render(); });
+    }
+    // Resolve an attack, tagging the monster's engagement (grid vs move) so the
+    // right attack value is used.
+    attackWith(attackerId, defenderId) {
+        const a = this.gs.combatant(attackerId);
+        const via = (a && (a.kind === 'monster' || a.clone)) ? (this.strikeVia || 'grid') : undefined;
+        this.gs.attack(attackerId, defenderId, this.app.board.cols, this.app.board.rows, via);
     }
 
     // Per-monster board actions (spawn a clone, place a barrier). Rendered on the

@@ -2,22 +2,26 @@
   {
     "id": "maraurnzol",
     "name": "Maraurn'Zol",
-    "abilities": "Movement — RAMPAGE (meteor). On her turn, roll the grid and crash her down on that square. EVERY hero in line of sight of where she lands takes her Strike — this is the meteor. Her Strike (meteor only) ignores all cover: it burns through objects and walls.\n\nx◆: +1 Rampage (extra meteor) for every 4 objectives taken.\n2◆: Meteor blast radius 1 (also Strike the ring around the impact).\n4◆: Meteor blast radius 2.\n7◆: Meteor blast radius 3.\n\nAdvance: instead of a meteor she may walk 1 space. From an Advance she makes only a NORMAL melee Strike — reach 1, needs clear line of sight, no cover-ignore and no blast. Sight 6.\n\nEscape: a struck hero may Flee — roll Defense; shields block the hit and scramble 1 space each. Get out of line of sight to be safe.",
-    "objectiveAbilities": "6◇: Add a CLONE of Maraurn'Zol (use the ✚ Clone button on her sheet). The clone takes its own Rampage after her with the same blast radius, and — like her — can't be killed, only shoved.\n\n9◇: Meteor Storm — take one extra Rampage; every hero not behind a full wall is Struck.",
+    "abilities": "A glass cannon that strikes from anywhere. On a GRID ROLL (both axes random — she can't aim) she lands and hits EVERY hero within her large sight (7), hard (⚔5) and THROUGH walls and objects. Her reach also applies to the grid roll, so she hits everyone within her blast radius of the landing too.\n\nx◆: +1 grid roll for every 4 objectives.\n2◆: Blast radius 1.\n4◆: Blast radius 2.\n7◆: Blast radius 3.\n\nIf she MOVES instead, she makes only a weak melee strike (⚔2, reach 1). Easy to shove back (🛡0) — the only safety is out of her sight.",
+    "objectiveAbilities": "6◇: Add a copy of Maraurn'Zol (✚ Clone button). It takes its own grid-roll attack after her, with the same blast radius, and can't be killed — only shoved.\n\n9◇: Take one extra grid-roll attack; every hero not behind a full wall is hit.",
     "element": "Fire",
     "art": "players/bad5.jpg",
     "stats": {
       "monsterDie": 6,
       "movementDie": null,
-      "sight": 6,
-      "moveStyle": "rampage",
-      "rampageEvery": 4
+      "sight": 7,
+      "gridAxis": "random",
+      "gridRolls": 1,
+      "gridRollsEvery": 4,
+      "moves": 1
     },
     "combat": {
       "attack": 5,
+      "moveAttack": 2,
       "defense": 0,
       "reach": 1,
       "ignoreCover": true,
+      "reachAppliesToGrid": true,
       "blastLadder": [
         { "at": 2, "radius": 1 },
         { "at": 4, "radius": 2 },
@@ -28,16 +32,17 @@
   {
     "id": "thefog",
     "name": "The Fog",
-    "abilities": "Movement — CREEP. The Fog never teleports. Roll its movement die (D20) — its own +2 is added for you — and slide it forward that many spaces, engulfing everything it rolls over. It creeps faster the deeper the game runs.\n\n1◆: Strike all heroes 1 space away.\n4◆: Reach 2 — strike heroes 2 spaces away.\n8◆: Reach 3 — strike heroes 3 spaces away.\n2◆: +D4 to movement rolls.\n4◆: +D4 to movement rolls.\n\nHeroes inside a building are SAFE — the Fog cannot strike them. Sight 6.\n\nEscape: do NOT try to shove it back (its reach outgrows the push and you stay pinned — a loop). Break line of sight or step into a building. The Fog is slow early; outrun it while you can.",
-    "objectiveAbilities": "2◇: The Fog sees heroes through all objects — but still NOT through building walls.\n\n9◇: Suffocate — kill up to 2 heroes who are not inside a building.",
+    "abilities": "It has NO grid roll — it never teleports. It rolls its big movement die (D20, +2, and faster later) and slides forward, striking every hero within reach as it rolls over them. Its reach grows 1 → 2 → 3, so once it out-reaches you it can't be pushed back — break line of sight or get indoors.\n\n1◆: Reach 1 (strike 1 away).\n4◆: Reach 2.\n8◆: Reach 3.\n2◆: +D4 to movement rolls.\n4◆: +D4 to movement rolls.\n\nHeroes inside a building are SAFE. Sight 6.",
+    "objectiveAbilities": "2◇: The Fog sees heroes through all objects — but still NOT through building walls.\n\n9◇: Kill up to 2 heroes who are not inside a building.",
     "element": "Smoke",
     "art": "players/bad4.jpg",
     "stats": {
       "monsterDie": 6,
       "movementDie": 20,
       "sight": 6,
-      "moveStyle": "creep",
-      "rampageEvery": 0,
+      "gridAxis": null,
+      "gridRolls": 0,
+      "moves": 1,
       "moveFlat": 2,
       "moveDiceLadder": [
         { "at": 2, "die": 4 },
@@ -58,7 +63,7 @@
   {
     "id": "ghathag",
     "name": "Ghathag",
-    "abilities": "Movement — STALK. Each turn he steps forward in a straight line toward the nearest hero. He cannot enter buildings (cannot pass through doors). While stalking his sight drops to 1 — slip out of his lane and he loses your scent.\n\nx◆: +1 Stalk for every 4 objectives taken.\n2◆: Stalk 3 spaces.\n4◆: Stalk 3 more spaces.\n6◆: Stalk 3 more spaces.\n3◆: Place a barrier (use the 🧱 Barrier button). Barriers block movement and line of sight.\n4◆: Ghathag is enraged — permanent +2 attack (his Strike becomes ⚔6). Being cornered by him is now deadly.\n\nSight 4 (only 1 while stalking).\n\nEscape: a hero he reaches may Flee — roll Defense; shields block and scramble. Duck through a door; he can't follow you inside.",
+    "abilities": "A stalker with NO grid roll — each move he steps toward the nearest hero and strikes at reach 1, hitting hard (⚔4, ⚔6 once enraged) and shrugging off pushes (🛡2, hard to shove). Sight 4, but only 1 while stalking — slip out of his lane and he loses you. He cannot enter buildings.\n\nx◆: +1 move for every 4 objectives.\n2◆: Step 3 spaces.\n4◆: Step 3 more.\n6◆: Step 3 more.\n3◆: Place a barrier (🧱 button) — blocks movement and line of sight.\n4◆: Enraged — permanent +2 attack (⚔6).",
     "objectiveAbilities": "3◇: Place 2 barriers.\n5◇: Place 2 barriers.\n4◆: Barriers placed now have +2 life.\n7◆: Barriers placed now have +2 more life.\n9◇: Turn every barrier into a minion (roll each for its health).",
     "element": "Claw",
     "art": "players/bad2.jpg",
@@ -67,8 +72,10 @@
       "movementDie": null,
       "sight": 4,
       "stalkSight": 1,
-      "moveStyle": "stalk",
-      "rampageEvery": 4
+      "gridAxis": null,
+      "gridRolls": 0,
+      "moves": 1,
+      "movesEvery": 4
     },
     "combat": {
       "attack": 4,
@@ -82,7 +89,7 @@
   {
     "id": "oblex",
     "name": "Oblex",
-    "abilities": "Movement — OOZE. Oblex moves with the GRID ROLL (roll the grid, slide it there) — random repositioning, not a controlled walk. After moving it may trade places with any minion (its real teleport). It does NOT gain extra moves as objectives are taken.\n\nUnlike a Rampage, an OOZE does NOT strike everyone in sight — Oblex is no bruiser. It only makes a weak normal Strike (⚔2) on a hero it lands next to; the danger is that it SWAPS a strong minion into your face instead.\n\n1◆: Summon minions equal to 1 + 1 per 3 objectives taken (roll each d4 for health).\n3◆: Or, instead of summoning, give +1 attack to one minion.\n5◆: All minions may move 2 spaces each turn.\n\nMinion baseline: ⚔2 / 🛡1 / ❤ d4. Its ladder buffs below apply to EVERY minion automatically. Sight 4.\n\nEscape: a hero a minion reaches may Flee — roll Defense; shields block and scramble. Break line of sight from the swarm.",
+    "abilities": "Weak itself — its minions do the fighting. On a GRID ROLL it controls the COLUMN and rolls the row, then may swap places with any minion. It gets no extra grid rolls. Its own strike is weak (⚔2, sight 4); the danger is the swarm it drops in your face, and it is hard to slip away from (flee +1).\n\n1◆: Summon 1 + 1 per 3 objectives (roll each d4 for health).\n3◆: Or give +1 attack to one minion.\n5◆: All minions may move 2 spaces each turn.\n\nMinion baseline ⚔2 / 🛡1 / ❤ d4; the ladder buffs below apply to every minion automatically.",
     "objectiveAbilities": "1◇: Summon 2 minions.\n3◇: Summon 3 minions.\n5◇: Summon 4 minions.\n4◆: Every minion gets +1 attack (automatic).\n6◆: Every minion gets +1 reach (automatic).\n7◆: Every minion gets +1 attack (automatic).\n9◇: Double the number of minions on the board.",
     "element": "Flesh",
     "art": "players/bad3.jpg",
@@ -90,8 +97,10 @@
       "monsterDie": 6,
       "movementDie": null,
       "sight": 4,
-      "moveStyle": "ooze",
-      "rampageEvery": 0
+      "gridAxis": "x",
+      "gridRolls": 1,
+      "gridRollsEvery": 0,
+      "moves": 1
     },
     "combat": {
       "attack": 2,
@@ -103,16 +112,18 @@
   {
     "id": "wyhtthetrickster",
     "name": "Wyht, the Trickster",
-    "abilities": "Movement — BLINK. She flits around the board: roll the grid to blink her to a random square (a short Rampage), positioning for her tricks. She wins by disruption, not by blows.\n\nx◆: +1 Blink for every 3 objectives taken.\n2◆: Relocate any 1 objective to a space you choose.\n4◆: Every hero discards 1 card — or one hero of your choice discards 2.\n6◆: Draw 2 monster cards, OR one hero of your choice discards down to 4 cards.\n8◆: Swap the positions of two objectives, or add +1 to one objective's value.\n\nWyht draws an extra card whenever she draws. Sight 5.\n\nA Blink that passes a hero in line of sight lets her Strike that hero (weak, ⚔2). They may Flee — roll Defense.",
-    "objectiveAbilities": "1◇: Add 1 objective to the board (this raises the heroes' goal).\n3◇: Randomly relocate ALL objectives.\n5◇: Add 1 objective to the board.\n10◇: Choose a hero — they die.",
+    "abilities": "A trickster who wins by disruption, not damage. On a GRID ROLL she CHOOSES a row or a column and rolls the other, blinking into position; a hero she passes in her sight (5) takes a weak hit (⚔2). She is easy to slip away from (flee -1).\n\nx◆: +1 grid roll for every 3 objectives.\n2◆: Relocate any 1 objective to a space you choose.\n4◆: Every hero discards 1 card — or one hero of your choice discards 2.\n6◆: Draw 2 monster cards, OR one hero of your choice discards down to 4 cards.\n8◆: Swap the positions of two objectives, or add +1 to one objective's value.\n\nWyht draws an extra card whenever she draws.",
+    "objectiveAbilities": "1◇: Add 1 objective to the board (raises the heroes' goal).\n3◇: Randomly relocate ALL objectives.\n5◇: Add 1 objective to the board.\n10◇: Choose a hero — they die.",
     "element": "Mind",
     "art": "players/bad1.jpg",
     "stats": {
       "monsterDie": 6,
       "movementDie": null,
       "sight": 5,
-      "moveStyle": "blink",
-      "rampageEvery": 3
+      "gridAxis": "choose",
+      "gridRolls": 1,
+      "gridRollsEvery": 3,
+      "moves": 1
     },
     "combat": {
       "attack": 2,

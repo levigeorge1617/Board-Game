@@ -333,6 +333,11 @@ textarea.dz-input { resize: vertical; line-height: 1.5; }
 .ph-flee { font-size: 11px; margin-top: 4px; padding: 3px 7px; border-radius: 6px; font-weight: 600; }
 .ph-flee.can { background: rgba(46,160,110,.16); border: 1px solid #2ea06e; color: #7fe0b0; }
 .ph-flee.cant { background: rgba(150,90,60,.14); border: 1px solid #7a4a2c; color: #e0b090; }
+.ph-grid-ctl { margin: 6px 0 8px; }
+.ph-grid-ctl .ph-grid-axis, .ph-grid-ctl .ph-grid-val { background: #10202a; border: 1px solid #1c5066; color: #cfe8f2; border-radius: 6px; padding: 4px 6px; }
+.ph-strike-row { display: flex; align-items: center; gap: 5px; margin: 4px 0 6px; flex-wrap: wrap; }
+.ph-strike { font-size: 11px; background: rgba(92,16,32,.3); border: 1px solid #5c1020; color: #e6b3c0; border-radius: 6px; padding: 3px 8px; cursor: pointer; }
+.ph-strike.on { background: #5c1020; color: #fff; border-color: #ff9db0; }
 
 /* discard viewer */
 .ph-discard-view { background: #1b1d1f; border: 1px solid #363b40; border-radius: 12px; padding: 14px 16px; width: 82%; max-width: 920px; max-height: 82%; overflow: auto; }

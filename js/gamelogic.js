@@ -87,12 +87,17 @@
 
     // A clone fights with the monster's own kit, not a minion's stat block.
     const cloneChar = (ent, data) => ent.clone ? (data.monsters || []).find(m => m.id === ent.characterId) : null;
-    function combatStats(ent, data, score, monChar) {
+    // `via` = how a monster engaged: 'grid' (a grid-roll strike) or 'move' (moved
+    // into reach). A monster may have a different moveAttack (some hit hard on the
+    // grid, weaker when moving, or vice versa). Heroes ignore `via`.
+    function combatStats(ent, data, score, monChar, via) {
         let c, attack, defense;
+        const monAttack = () => (via === 'move' && c.moveAttack != null)
+            ? c.moveAttack : ladderValue(c.attack || 0, c.attackLadder, score, 'attack');
         const clc = cloneChar(ent, data);
         if (clc) {
             c = clc.combat || {};
-            attack = ladderValue(c.attack || 0, c.attackLadder, score, 'attack');
+            attack = monAttack();
             defense = c.defense || 0;
         } else if (ent.kind === 'minion') {
             const b = oblexMinionBonus(monChar, score || 0, ent);
@@ -103,7 +108,7 @@
             c = (ch && ch.combat) || {};
             // monster attack/reach can climb the objective ladder (e.g. Ghathag's
             // permanent bruise, the Fog's growing reach)
-            attack = ladderValue(c.attack || 0, c.attackLadder, score, 'attack');
+            attack = monAttack();
             defense = c.defense || 0;
         }
         if (ent.form && FORM_COMBAT[ent.form]) { attack += FORM_COMBAT[ent.form][0]; defense += FORM_COMBAT[ent.form][1]; }
@@ -417,17 +422,24 @@
                 break;
             }
             case 'ROLL_GRID': {
-                const col = 1 + Math.floor(Math.random() * Math.max(1, a.cols || 1));
-                const row = String.fromCharCode(65 + Math.floor(Math.random() * Math.max(1, a.rows || 1)));
-                s.lastGrid = { col, row, ts: Date.now() };
-                logEvent(s, a.seatId || 'seat-monster', `rolled grid target ${col}-${row}`);
+                // The monster may CHOOSE one axis and roll the other (axis 'x' = it
+                // picked the column, 'y' = it picked the row); otherwise both random.
+                const rndCol = () => 1 + Math.floor(Math.random() * Math.max(1, a.cols || 1));
+                const rndRow = () => String.fromCharCode(65 + Math.floor(Math.random() * Math.max(1, a.rows || 1)));
+                let col, row;
+                if (a.axis === 'x' && a.value) { col = a.value; row = rndRow(); }
+                else if (a.axis === 'y' && a.value) { row = String.fromCharCode(64 + a.value); col = rndCol(); }
+                else { col = rndCol(); row = rndRow(); }
+                s.lastGrid = { col, row, axis: a.axis || 'random', ts: Date.now() };
+                const how = a.axis === 'x' ? `chose col ${col}, rolled row` : a.axis === 'y' ? `chose row ${row}, rolled col` : 'both random';
+                logEvent(s, a.seatId || 'seat-monster', `grid roll (${how}) → ${col}-${row}`);
                 break;
             }
             case 'COMBAT': {
                 const atk = combatantOf(s, a.attackerId), def = combatantOf(s, a.defenderId);
                 if (!atk || !def || atk.id === def.id) break;
                 const score = scoreOf(s), monChar = monsterCharOf(s, data);
-                const ac = combatStats(atk, data, score, monChar), dc = combatStats(def, data, score, monChar);
+                const ac = combatStats(atk, data, score, monChar, a.via), dc = combatStats(def, data, score, monChar);
                 const rawCombatOf = e => { const ch = charSheetOf(e, data); return (ch && ch.combat) || {}; };
                 const ra = rawCombatOf(atk), rd = rawCombatOf(def);
                 const dist = (atk.x != null && def.x != null) ? Math.max(Math.abs(atk.x - def.x), Math.abs(atk.y - def.y)) : 1;
