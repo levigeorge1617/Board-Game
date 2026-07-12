@@ -64,7 +64,7 @@ These dice CAN ONLY be used for the bonus they apply to, (IE: bonus movement֍ d
 
 They can't be used for combat or setting a Gravestone.
 
-Bonus dice UNLOCK as the team collects objectives: the bonus movement֍ die at 4 objectives, and the bonus action☼ die at 7. Each hero's ◆ ladder lists this ("4◆: Gain a ֍ bonus die", "7◆: Gain a ☼ bonus die").
+As the team collects objectives, EVERY hero gains the same rewards (this is why the hero cards no longer list them — it is a universal rule): an extra card is drawn at 2, 5 and 6 total objectives; the bonus movement֍ die unlocks at 4; and the bonus action☼ die unlocks at 7. Each hero's card only lists what is UNIQUE to that hero.
 
  
 
@@ -119,39 +119,34 @@ Anything that occupies a space on the board is considered an object. This includ
 
  
 
-Monster Movement:
+Monster's turn:
 
-Each monster moves by its OWN signature move each turn (read its card) — they are not all alike. There are two families:
+Draw a card to start the turn, then take any of these actions, in any order (some more than once — read the monster's card):
 
-RANDOM-GRID movers (Maraurn'Zol RAMPAGE / Wyht BLINK / Oblex OOZE): roll the grid for a column + row and place the monster on that square (reroll a coordinate not in play; landing on a hero or pet kills it and leaves a grave, then take any adjacent space). A crash like this is the dangerous move — a Rampaging Maraurn'Zol Strikes EVERY hero in her line of sight where she lands (her meteor). Getting caught in sight of a random landing is how heroes get hurt.
+- Play monster cards.
+- GRID-ROLL ATTACK: roll the grid to drop the monster on a random square, then Strike every hero it now SEES (within its sight, along a clear line). This is the monster's dangerous ranged attack. When you roll the grid, the monster CHOOSES one axis — a row or a column — and the other is rolled at random; some monsters roll BOTH at random (see their card).
+- MOVE and attack: slide or step the monster across the board; if it ends with a hero within its REACH, it may Strike that hero. (Some monsters also apply their reach to a grid-roll landing.)
+- Use its abilities (summon minions, place barriers, buffs, and so on).
 
-STEADY movers (The Fog CREEPS with its movement die; Ghathag STALKS forward in a straight line): they slide or step across the board and only Strike a hero they end next to — a single exchange the hero may Flee. No line-of-sight burst.
+Grid-roll attacks reach as far as the monster's SIGHT; move attacks reach as far as its REACH — both use the same combat (below). Monsters grow stronger as objectives are collected: more grid rolls, more moves, or bigger sight/reach (see each monster's x◆ line).
 
-Monsters grow more dangerous as the heroes near their win: most gain EXTRA moves as objectives are collected (see each monster's x◆ line) — more meteors, more stalks, more blinks.
-
-If the monster enters a building that a hero is in, regardless of line of sight, allow that hero to Flee (see Escaping).
+If a grid roll or a move lands the monster on a hero or pet, that piece dies and leaves a grave; the monster takes any adjacent space. If the monster enters a building a hero is in, that hero may Flee.
 
 
 
-Distance — how "spaces away" is counted:
+Reach & Sight — how far pieces attack and see:
 
-RANGE (sight and reach) is a SQUARE: count a space in ANY direction, including diagonally, so a diagonal neighbour is 1 space away. A piece with reach 2 covers the 5x5 block around it. On the board its sight/reach outline is a square.
+REACH is how far a piece can ATTACK. It is counted as a SQUARE — a space in ANY direction, diagonals included — so a diagonal neighbour is 1 away and reach 2 covers the 5x5 block around the piece. Every fighter has a reach (1 for most; the Ranger reaches 3). Reach is a balance lever: a fighter you out-reach can't hit you back (see Combat).
 
-MOVEMENT is counted differently — in straight orthogonal steps (up/down/left/right); reaching a diagonal square takes 2 steps. The GREEN hero is the exception: GREEN may step diagonally for 1, so GREEN moves like its range. On the board GREEN's outline is a square AND a diamond, marking that it can travel diagonally.
+Heroes attack anything within their reach — a hero's own line of sight does NOT matter. Only the MONSTER uses SIGHT: how far it can SEE heroes along a clear line, for its grid-roll attacks. Some monsters grow their sight or reach as objectives are collected.
 
-Sight vs Reach (two different numbers):
+MOVEMENT is counted differently — in straight steps (up/down/left/right); a diagonal takes 2 steps. The GREEN hero is the exception: GREEN steps diagonally for 1. On the board GREEN's outline shows a square and a diamond.
 
-SIGHT is how far a piece can SEE an enemy — with a clear line between them. A hero within a monster's sight and clear line is SEEN. Being seen is what matters for a monster's line-of-sight Strike (its meteor/Rampage), and for a hero collecting an objective.
+Line of sight (a clear line — for the monster's sight):
 
-REACH is how far a piece can ATTACK — it also needs a clear line. A target within reach and clear line is IN RANGE and can be Struck. Reach is never larger than sight, so anything IN RANGE is also SEEN, but something SEEN may be too far to hit.
+A clear line is blocked by building walls, doors, heroes, pets, minions, barriers, and objectives. GRAVESTONES do NOT block it, and the looking piece's own space and the target's space never block. A few monsters ignore cover — their sight passes through walls and objects.
 
-Some monsters grow their sight or reach as heroes collect objectives (the Fog's reach climbs 1 → 2 → 3). Maraurn'Zol's meteor Strike ignores cover, so walls and objects do not block what it can hit.
-
-Line of sight (the clear line):
-
-A clear line is blocked by building walls, doors, other heroes or pets, minions, barriers, obstacles, and objectives. GRAVESTONES do NOT block line of sight — you can see and shoot past a fallen ally. The looking piece's own space and the target's space never block.
-
-In the app: right-click (or touch-and-hold) a piece to light up its sight area (amber = seen), its reach area (red = in range), and a distance number on every enemy — even one standing beyond its sight. With a piece lit up, right-click / hold an empty square to print the shortest number of steps to walk there (routing around walls and pieces; ✕ if walled off).
+In the app: right-click (or touch-and-hold) a piece to light up its reach (red) — and, for a monster, its sight (amber) — with a distance number on every enemy. With a piece lit, right-click / hold an empty square to print the shortest steps to walk there (✕ if walled off).
 
  
 
@@ -195,27 +190,31 @@ The Hunter may summon a pet — a hero-side piece (Attack 1 / Defense 1 / 3 life
 
 Combat:
 
-Combat uses combat dice (each die: 3 skull, 2 shield, 1 blank). Every fighter has an Attack number (dice rolled when attacking) and a Defense number (dice rolled when defending).
+Everyone — hero, monster, minion, pet — has an ATTACK number and a DEFENSE number of combat dice (each die: 3 skull ☠, 2 shield 🛡, 1 blank). Effects and modifier dice (from cards or abilities) may already sit on a fighter, or be applied.
 
-A deliberate attack COSTS 1 action☼ (the exception is a monster's Rampage line-of-sight Strike, which is free — it is the built-in danger of the random move). You need clear line of sight and to be within your reach to attack — unless an ability says otherwise (the Thief strikes through walls).
+A hero's deliberate attack COSTS 1 action☼ and needs the target within the hero's REACH (heroes ignore line of sight). A monster attacks by grid roll (using its sight) or by moving into reach — see the Monster's turn.
 
-One attack = ONE exchange, resolved once: both sides roll their pools together. The attacker's skulls, minus the defender's shields, are wounds to the defender; the defender's skulls, minus the attacker's shields, are wounds back to the attacker. No re-roll-until-death, no "who goes first."
+One attack is ONE exchange, resolved together:
 
-Because attacks cost actions and are resolved on your own turn, combat can never loop forever — you simply run out of actions. To stop a fight, break line of sight (a wall, a corner, a building).
+1. Each side rolls its dice — the attacker its Attack, the defender its Defense — plus any modifier dice, and adds any flat base skulls/shields.
+2. Tally each side's skulls and shields.
+3. If a side's skulls beat the opponent's shields, the difference is dealt: a hero, minion or pet loses that much life; a MONSTER is REPELLED (pushed) that many spaces — heroes cannot kill a monster, only shove it.
+4. REACH GATES THE COUNTER: the defender deals its skulls back ONLY if the attacker is within the defender's reach. A melee fighter struck from range can't hit back; a long-reach attacker (the Ranger, a wide-reach monster) strikes safely. A monster whose reach has grown past yours can't be pushed away — break line of sight or Flee instead.
 
-Heroes cannot kill a monster. Instead, each net skull a hero deals REPELS (pushes) the monster 1 space away — use this to make room. Minions and heroes can be killed normally (life reaches 0 -> gravestone).
+No re-roll-until-death, no "who goes first." Attacks cost actions and resolve on your own turn, so combat can't loop. To end a fight, break away — a wall, a corner, a building, or a Flee.
 
 
 
 Escaping (Flee):
 
-When a hero is Struck and would take damage, they may choose to Flee instead of Defend.
+Whenever a hero is Struck, its Defense roll does double duty: the shields block hits AND, if there are enough of them, let the hero flee. Each combat has a FLEE THRESHOLD — the shields needed to escape — and the app shows it on every roll.
 
-Flee: roll your Defense pool. Shields still block hits as normal, AND each shield you roll lets you scramble 1 space toward cover. If you end up out of the attacker's line of sight or reach, you have escaped the fight. Rolling 0 shields means you took the hit and stayed put.
+The threshold starts at 2 shields and shifts with:
+- the HERO — the Scout and Thief are nimble and flee on 1 fewer shield; heavy heroes (Paladin, Barbarian, Cleric) need 1 more,
+- the MONSTER — some are harder to escape (Oblex's swarm, +1) or easier (Wyht, -1),
+- the CIRCUMSTANCE — a building is a safe haven (flee into one freely); leaving one costs -2 life at the door.
 
-The reliable escape is positional: breaking line of sight (behind a wall, around a corner, or into a building) ends pursuit, because a monster can't attack a hero it can't see. Do not rely on shoving a monster back if its reach is large — you will still be in range (a loop). Break line of sight instead.
-
-If you Flee from inside a building, leave through any door and take -2 to your total life. If you are still seen or in range at the door, keep moving 1 space until out of sight/range.
+If your Defense roll shows at least the threshold in shields, you may move out of the attacker's reach and line and end the fight. The most reliable escape is still positional: get behind a wall or into a building so the monster can't see or reach you.
 
  
  

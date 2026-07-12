@@ -357,11 +357,15 @@ class Renderer {
         const play = window.app.play, data = window.GAME_DATA, GL = window.GameLogic;
         const score = GL.scoreOf(play.gs.state), monChar = GL.monsterCharOf(play.gs.state, data);
         const ch = GL.charSheetOf(ent, data);
+        const reach = GL.effectiveReach(ent, data, score, monChar);
+        // Only the MONSTER's sight/line-of-sight matter (for its grid-roll attacks).
+        // A hero just has reach — no sight limit, and walls don't gate its strikes.
+        const isHero = ent.kind === 'hero';
         return {
-            sight: GL.effectiveSight(ent, data, score, monChar),
-            reach: GL.effectiveReach(ent, data, score, monChar),
+            sight: isHero ? reach : GL.effectiveSight(ent, data, score, monChar),
+            reach,
             blast: GL.effectiveBlast(ent, data, score),
-            ignoreCover: !!(ch && ch.combat && (ch.combat.ignoreCover || ch.combat.ignoreCoverAttack)),
+            ignoreCover: isHero || !!(ch && ch.combat && ch.combat.ignoreCover),
             diagonal: GL.canDiagonal(ent),
         };
     }

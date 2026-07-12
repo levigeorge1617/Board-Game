@@ -330,6 +330,9 @@ textarea.dz-input { resize: vertical; line-height: 1.5; }
 .ph-move-hint b { color: #ff9db0; }
 .ph-cc-perks { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 6px; }
 .ph-perk { font-size: 10px; background: rgba(0,204,255,.1); border: 1px solid #1c5066; color: #9fe0f2; border-radius: 6px; padding: 2px 6px; }
+.ph-flee { font-size: 11px; margin-top: 4px; padding: 3px 7px; border-radius: 6px; font-weight: 600; }
+.ph-flee.can { background: rgba(46,160,110,.16); border: 1px solid #2ea06e; color: #7fe0b0; }
+.ph-flee.cant { background: rgba(150,90,60,.14); border: 1px solid #7a4a2c; color: #e0b090; }
 
 /* discard viewer */
 .ph-discard-view { background: #1b1d1f; border: 1px solid #363b40; border-radius: 12px; padding: 14px 16px; width: 82%; max-width: 920px; max-height: 82%; overflow: auto; }

@@ -96,7 +96,8 @@
     "combat": {
       "attack": 2,
       "defense": 0,
-      "reach": 1
+      "reach": 1,
+      "fleeMod": 1
     }
   },
   {
@@ -116,7 +117,8 @@
     "combat": {
       "attack": 2,
       "defense": 0,
-      "reach": 1
+      "reach": 1,
+      "fleeMod": -1
     }
   }
 ]

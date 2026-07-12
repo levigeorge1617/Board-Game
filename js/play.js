@@ -307,13 +307,12 @@ class PlayController {
         const wrap = document.getElementById('ph-sec-combat'); if (!wrap) return;
         const seat = this.gs.seat(this.gs.mySeatId);
         if (!seat) { wrap.innerHTML = '<p class="ph-side-hint">Pick your seat to attack.</p>'; return; }
-        const ch = this.gs.character(seat);
-        const c = (ch && ch.combat) || {};
-        const base = (c.baseAttack ? ` · +${c.baseAttack}☠` : '') + (c.baseShield ? ` · +${c.baseShield}🛡` : '');
+        const st = this.effectiveCombat(seat);
+        const base = (st.baseAttack ? ` · +${st.baseAttack}☠` : '') + (st.baseShield ? ` · +${st.baseShield}🛡` : '');
         wrap.innerHTML =
-            `<div class="ph-side-seat" style="--c:${PH_COLOR[seat.color] || '#888'}">⚔ ${c.attack || 0} / 🛡 ${c.defense || 0}${symbolize(base)}</div>` +
+            `<div class="ph-side-seat" style="--c:${PH_COLOR[seat.color] || '#888'}">⚔ ${st.attack} / 🛡 ${st.defense}${symbolize(base)} · reach ${st.reach}</div>` +
             this.attackRow(seat) +
-            `<div class="ph-muted" style="font-size:10px;margin-top:5px;">Both sides roll: your skulls wound the target, their skulls wound you — shields block.</div>`;
+            `<div class="ph-muted" style="font-size:10px;margin-top:5px;">Both sides roll; skulls beat shields. You strike back only if the attacker is within your reach.</div>`;
         const go = wrap.querySelector('.ph-atk-go');
         if (go) go.onclick = () => { const t = wrap.querySelector('.ph-atk-target'); if (t && t.value) this.gs.attack(seat.id, t.value, this.app.board.cols, this.app.board.rows); };
     }
@@ -611,6 +610,9 @@ class PlayController {
                 `<span class="ph-cb-vs">vs</span>` +
                 side(def ? def.label : 'Defender', dc, lastCombat.defSkulls, lastCombat.defShields, dmgTxt(atk, lastCombat.woundsToAtk, lastCombat.repelAtk)) +
                 `</div>`;
+            const f = lastCombat.flee;
+            if (f) html += `<div class="ph-flee ${f.can ? 'can' : 'cant'}">🏃 Flee: rolled ${f.shields}🛡 / need ${f.threshold} — ${f.can ? 'MAY FLEE' : 'cannot flee'}</div>`;
+            if ((lastCombat.modsDef || []).some(m => /out of reach/.test(m))) html += `<div class="ph-flee cant">attacker out of reach — no blow back</div>`;
         }
         el.innerHTML = html || '<div class="ph-side-hint">Rolls show here.</div>';
     }
@@ -765,24 +767,27 @@ class PlayController {
     combatBlock(seat) {
         const ch = this.gs.character(seat);
         const c = (ch && ch.combat) || {};
-        const reachNote = c.reach > 1 ? ` · reach ${c.reach}` : '';
-        const base = (c.baseAttack ? ` · +${c.baseAttack}☠` : '') + (c.baseShield ? ` · +${c.baseShield}🛡` : '');
+        const st = this.effectiveCombat(seat);   // includes Druid form deltas
+        const base = (st.baseAttack ? ` · +${st.baseAttack}☠` : '') + (st.baseShield ? ` · +${st.baseShield}🛡` : '');
         const perks = [];
-        if (c.vsMinionAttack) perks.push(`+${c.vsMinionAttack}⚔ vs minions`);
-        if (c.vsMinionDefense) perks.push(`+${c.vsMinionDefense}🛡 vs minions`);
         if (c.rangedAttack) perks.push(`+${c.rangedAttack}⚔ from ${(c.rangedFrom || 1) + 1}+ away`);
-        if (c.flanking) perks.push(`+${c.flanking}⚔ flanking`);
-        if (c.lowLifeAttack) perks.push(`+${c.lowLifeAttack}⚔ at half life`);
-        if (c.pierce) perks.push(`pierce ${c.pierce}`);
-        if (c.riposte) perks.push(`riposte ${c.riposte}`);
-        if (c.healOnMinionKill) perks.push(`heal ${c.healOnMinionKill} on a minion kill`);
-        if (c.auraAllyDefense) perks.push(`allies +${c.auraAllyDefense}🛡 beside you`);
-        if (c.hexOnHit) perks.push(`hex −${c.hexOnHit}⚔ on hit`);
-        if (c.ignoreCover || c.ignoreCoverAttack) perks.push(`attacks ignore walls`);
+        if (c.fleeMod) perks.push(c.fleeMod < 0 ? `Flees easily (−${-c.fleeMod} shield)` : `Hard to Flee (+${c.fleeMod} shield)`);
+        // Druid form: show the roll bonuses/penalties the form applies
+        const FD = window.GameLogic.FORM_COMBAT;
+        if (seat.form && FD && FD[seat.form]) {
+            const [da, dd] = FD[seat.form];
+            perks.unshift(`${seat.form}: ${da >= 0 ? '+' : ''}${da}⚔ / ${dd >= 0 ? '+' : ''}${dd}🛡`);
+        }
         const perkRow = perks.length ? `<div class="ph-cc-perks">${perks.map(p => `<span class="ph-perk">${symbolize(esc(p))}</span>`).join('')}</div>` : '';
-        return `<div class="ph-cc-block"><h4>Combat — ⚔ ${c.attack || 0} / 🛡 ${c.defense || 0}${symbolize(base)}${reachNote}</h4>` +
+        return `<div class="ph-cc-block"><h4>Combat — ⚔ ${st.attack} / 🛡 ${st.defense}${symbolize(base)} · reach ${st.reach}</h4>` +
             perkRow + this.attackRow(seat) +
-            `<div class="ph-muted" style="font-size:10px;margin-top:4px;">Both sides roll — your skulls wound the target, their skulls wound you; shields block. Damage applies automatically.</div></div>`;
+            `<div class="ph-muted" style="font-size:10px;margin-top:4px;">Both sides roll; skulls beat shields to wound. You only strike back if the attacker is within your reach.</div></div>`;
+    }
+    // Effective combat stats (base + Druid form + ladders) via the shared reducer.
+    effectiveCombat(ent) {
+        const data = window.GAME_DATA, GL = window.GameLogic;
+        const score = (this.gs.state.score && this.gs.state.score.collected) || 0;
+        return GL.combatStats(ent, data, score, GL.monsterCharOf(this.gs.state, data));
     }
     dist(a, b) { return (a.x == null || b.x == null) ? '?' : Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)); }
 

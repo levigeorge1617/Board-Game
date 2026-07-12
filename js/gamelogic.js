@@ -25,12 +25,8 @@
     // A "combatant" is a seat (hero/monster) OR a minion — both can move and fight.
     const combatantOf = (s, id) => (s.seats || []).find(x => x.id === id) || (s.minions || []).find(x => x.id === id) || null;
     // combat die faces: 1-3 = skull ☠, 4-5 = shield 🛡, 6 = blank
+    // Druid form → [attack dice delta, defense dice delta] applied to the pool.
     const FORM_COMBAT = { BEAR: [1, 1], TURTLE: [0, 2], CHEETAH: [0, -1], DEER: [0, -1] };
-    // Extra combat perks a Druid form grants on top of its attack/defense deltas:
-    // BEAR shrugs off minions, TURTLE's shell bites back.
-    const FORM_PERKS = { BEAR: { vsMinionDefense: 1 }, TURTLE: { riposte: 1 }, CHEETAH: {}, DEER: {} };
-    const formPerk = (ent, key) => (ent && FORM_PERKS[ent.form] && FORM_PERKS[ent.form][key]) || 0;
-    const sideOfEnt = e => e.kind === 'hero' ? 'hero' : e.kind === 'monster' ? 'monster' : (e.side || 'monster');
     // A dice-tray/readout color key for a combatant (hero color name, else 'monster').
     function colorKeyOf(ent) { return ent && ent.kind === 'hero' ? ent.color : 'monster'; }
 
@@ -60,6 +56,7 @@
     // ATTACK), both objective-scaled. Sight ≥ reach. Heroes default to a fixed
     // sight; minions see short unless Oblex extends their reach.
     const DEFAULT_SIGHT = 6;
+    const FLEE_BASE = 2;   // shields a hero must roll to flee, before hero/monster modifiers
     // Resolve the character sheet a piece fights with (clone/monster → a monster,
     // hero → a hero); plain minions have no sheet.
     function charSheetOf(ent, data) {
@@ -431,59 +428,38 @@
                 if (!atk || !def || atk.id === def.id) break;
                 const score = scoreOf(s), monChar = monsterCharOf(s, data);
                 const ac = combatStats(atk, data, score, monChar), dc = combatStats(def, data, score, monChar);
-                // contextual combat bonuses read off the raw character sheet: extra
-                // attack dice vs a minion / from range, extra defense vs a minion.
                 const rawCombatOf = e => { const ch = charSheetOf(e, data); return (ch && ch.combat) || {}; };
                 const ra = rawCombatOf(atk), rd = rawCombatOf(def);
                 const dist = (atk.x != null && def.x != null) ? Math.max(Math.abs(atk.x - def.x), Math.abs(atk.y - def.y)) : 1;
-                const defIsMinion = def.kind === 'minion' && !def.clone;   // real minions + barriers, not the clone
-                const atkIsMinion = atk.kind === 'minion' && !atk.clone;
-                let ctxAtkDice = 0, ctxDefDice = 0; const ctxAtk = [], ctxDef = [];
-                const adj1 = (p, q) => p.x != null && q.x != null && Math.max(Math.abs(p.x - q.x), Math.abs(p.y - q.y)) === 1;
-                const allPieces = () => (s.seats || []).concat(s.minions || []);
-                if (defIsMinion && ra.vsMinionAttack) { ctxAtkDice += ra.vsMinionAttack; ctxAtk.push(`+${ra.vsMinionAttack}⚔ vs minion`); }
+                // The one contextual bonus: rangedAttack gives +dice when striking from
+                // beyond reach 1 (the Ranger's reward for keeping his distance).
+                let ctxAtkDice = 0; const ctxAtk = [], ctxDef = [];
                 if (ra.rangedAttack && dist > (ra.rangedFrom || 1)) { ctxAtkDice += ra.rangedAttack; ctxAtk.push(`+${ra.rangedAttack}⚔ from range`); }
-                // flanking: the target is pinned by another piece on the attacker's side
-                if (ra.flanking && allPieces().some(o => o.id !== atk.id && o.id !== def.id && !o.dead && sideOfEnt(o) === sideOfEnt(atk) && adj1(o, def))) {
-                    ctxAtkDice += ra.flanking; ctxAtk.push(`+${ra.flanking}⚔ flanking`);
-                }
-                // bloodlust: attacker fights harder at half life or less (Barbarian)
-                if (ra.lowLifeAttack && atk.kind === 'hero' && (atk.hp || 0) <= Math.ceil((atk.maxHp || atk.hp || 1) / 2)) {
-                    ctxAtkDice += ra.lowLifeAttack; ctxAtk.push(`+${ra.lowLifeAttack}⚔ bloodlust`);
-                }
-                // minions hit heroes for less (vs-minion defense) + BEAR form
-                if (atkIsMinion) ctxDefDice += (rd.vsMinionDefense || 0) + formPerk(def, 'vsMinionDefense');
-                // guardian aura: a living ally standing next to the defender lends defense (Paladin)
-                if (def.kind === 'hero') {
-                    let aura = 0;
-                    (s.seats || []).forEach(o => { if (o.kind === 'hero' && o.id !== def.id && !o.dead && adj1(o, def)) { const oc = (charSheetOf(o, data) || {}).combat || {}; aura = Math.max(aura, oc.auraAllyDefense || 0); } });
-                    if (aura) { ctxDefDice += aura; ctxDef.push(`+${aura}🛡 guarded`); }
-                }
+
                 const roll = () => 1 + Math.floor(Math.random() * 6);
                 const skulls = f => f.filter(v => v <= 3).length;   // faces 1-3 = ☠
                 const shields = f => f.filter(v => v >= 4 && v <= 5).length; // 4-5 = 🛡
-                // combat modifiers held on each fighter (extra pool dice + flat skulls/shields)
+                // effects already on each fighter (extra pool dice + flat skulls/shields, e.g. from cards)
                 const atkMods = (atk.mods || []).filter(modAffectsAttack);
                 const defMods = (def.mods || []).filter(modAffectsDefense);
                 const sum = (list, k) => list.reduce((n, m) => n + (m[k] || 0), 0);
-                // Both sides roll their own pool: attacker rolls Attack dice, defender
-                // rolls Defense dice. EACH side's skulls wound the OTHER; each side's
-                // shields block the other's skulls. Damage flows both ways.
-                // length guarded ≥0 so a debuff (e.g. Enchantress hex → −attack dice) can't underflow
+                // Uniform combat: each side rolls its Attack / Defense dice (+ any
+                // modifier dice), adds flat base skulls/shields, then tallies skulls
+                // against the opponent's shields. Pool length floored at 0.
                 const atkFaces = Array.from({ length: Math.max(0, ac.attack + ctxAtkDice + (a.bonusAttack || 0) + sum(atkMods, 'attackDice')) }, roll);
-                const defFaces = Array.from({ length: Math.max(0, dc.defense + ctxDefDice + (a.bonusDefense || 0) + sum(defMods, 'defenseDice')) }, roll);
-                const atkSkulls = skulls(atkFaces) + ac.baseAttack + sum(atkMods, 'skull');   // hits the attacker deals
-                const atkShields = shields(atkFaces) + ac.baseShield; // blocks the attacker has
-                const defSkulls = skulls(defFaces) + dc.baseAttack;   // hits the defender deals back
-                const defShields = shields(defFaces) + dc.baseShield + sum(defMods, 'shield'); // blocks the defender has
-                // pierce: the attacker ignores that many of the defender's shields
-                const pierce = ra.pierce || 0;
-                if (pierce) ctxAtk.push(`pierce ${pierce}`);
-                const woundsToDef = Math.max(0, atkSkulls - Math.max(0, defShields - pierce));
-                let woundsToAtk = Math.max(0, defSkulls - atkShields);
-                // riposte: if the defender blocked EVERY skull thrown at it, its guard bites back
-                const riposte = (rd.riposte || 0) + formPerk(def, 'riposte');
-                if (riposte && atkSkulls > 0 && woundsToDef === 0) { woundsToAtk += riposte; ctxDef.push(`riposte ${riposte}`); }
+                const defFaces = Array.from({ length: Math.max(0, dc.defense + (a.bonusDefense || 0) + sum(defMods, 'defenseDice')) }, roll);
+                const atkSkulls = skulls(atkFaces) + ac.baseAttack + sum(atkMods, 'skull');
+                const atkShields = shields(atkFaces) + ac.baseShield;
+                const defSkulls = skulls(defFaces) + dc.baseAttack;
+                const defShields = shields(defFaces) + dc.baseShield + sum(defMods, 'shield');
+                const woundsToDef = Math.max(0, atkSkulls - defShields);
+                // REACH GATES THE COUNTER-BLOW: the defender only hits back if the
+                // attacker is within the defender's reach. A melee fighter struck from
+                // range can't retaliate; a long-reach attacker (Ranger, a wide-reach
+                // monster) strikes safely.
+                const canCounter = dist <= dc.reach;
+                let woundsToAtk = canCounter ? Math.max(0, defSkulls - atkShields) : 0;
+                if (!canCounter && defSkulls > atkShields) ctxDef.push('out of reach — no counter');
 
                 // Apply wounds to a fighter: the monster can't be killed (heroes shove
                 // it back instead); heroes/minions lose HP → gravestone/removal.
@@ -498,30 +474,24 @@
                 const repelDef = applyWounds(def, atk, woundsToDef);
                 const repelAtk = applyWounds(atk, def, woundsToAtk);
 
-                // heal-on-minion-kill (Barbarian): the attacker regains life when its
-                // strike destroys a minion (and it survived the exchange).
-                if (defIsMinion && !(s.minions || []).some(m => m.id === def.id) &&
-                    atk.kind === 'hero' && !atk.dead && (atk.hp || 0) > 0 && ra.healOnMinionKill) {
-                    const max = atk.maxHp || atk.hp || 0;
-                    atk.hp = Math.min(max, (atk.hp || 0) + ra.healOnMinionKill);
-                    logEvent(s, atk.id, `regained ${ra.healOnMinionKill} life from the kill (${atk.hp}/${max})`);
+                // FLEE: only a hero defender may flee, and only if it rolled at least
+                // `threshold` shields. Threshold = base 2 + the hero's own fleeMod
+                // (Scout slips easily, heavy heroes struggle) + the attacker's fleeMod
+                // (some monsters are harder to escape). Tracked & shown every combat.
+                let flee = null;
+                if (def.kind === 'hero') {
+                    const threshold = Math.max(1, FLEE_BASE + (rd.fleeMod || 0) + (ra.fleeMod || 0));
+                    flee = { threshold, shields: defShields, can: defShields >= threshold };
                 }
 
                 // consume one-shot combat modifiers that just fired
                 atk.mods = (atk.mods || []).filter(m => !(m.duration === 'once' && modAffectsAttack(m)));
                 def.mods = (def.mods || []).filter(m => !(m.duration === 'once' && modAffectsDefense(m)));
 
-                // hex-on-hit: the attacker saps the target's attack for the turn (Enchantress)
-                const defAlive = !def.dead && (def.kind !== 'minion' || (s.minions || []).some(m => m.id === def.id));
-                if (ra.hexOnHit && defAlive) {
-                    addMod(s, def.id, { source: (atk.label || 'hero') + ' hex', attackDice: -ra.hexOnHit, scope: 'attack', duration: 'turn' });
-                    ctxAtk.push(`hex −${ra.hexOnHit}⚔`);
-                }
-
                 s.lastCombat = {
                     attackerId: atk.id, defenderId: def.id, atkFaces, defFaces,
                     atkKey: colorKeyOf(atk), defKey: colorKeyOf(def),
-                    atkSkulls, atkShields, defSkulls, defShields,
+                    atkSkulls, atkShields, defSkulls, defShields, flee,
                     modsAtk: atkMods.map(describeMod).concat(ctxAtk), modsDef: defMods.map(describeMod).concat(ctxDef),
                     woundsToDef, woundsToAtk, repelDef, repelAtk, ts: Date.now(),
                 };
@@ -529,7 +499,8 @@
                     ? (repel ? `pushed back ${repel}` : 'held ground')
                     : (wounds ? `${wounds} wound${wounds !== 1 ? 's' : ''}` : 'no damage');
                 logEvent(s, atk.id, `attacks ${def.label} — ${atkSkulls}☠/${atkShields}🛡 vs ${defSkulls}☠/${defShields}🛡 → ` +
-                    `${def.label} ${dmgOut(def, woundsToDef, repelDef)}, ${atk.label} ${dmgOut(atk, woundsToAtk, repelAtk)}`);
+                    `${def.label} ${dmgOut(def, woundsToDef, repelDef)}, ${atk.label} ${dmgOut(atk, woundsToAtk, repelAtk)}` +
+                    (flee ? ` · ${flee.can ? 'may FLEE' : 'cannot flee'} (${flee.shields}🛡/need ${flee.threshold})` : ''));
                 break;
             }
             case 'LOG': logEvent(s, a.seatId || null, a.text || ''); break;
@@ -559,5 +530,5 @@
 
     g.GameLogic = { empty, newGame, apply, redactFor, seatOf, charOf, cardOf, shuffle,
         effectiveReach, effectiveSight, effectiveBlast, charSheetOf, oblexMinionBonus, scoreOf, monsterCharOf, ladderValue,
-        canDiagonal, stepDistance };
+        canDiagonal, stepDistance, combatStats, FORM_COMBAT, FLEE_BASE };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
