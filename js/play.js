@@ -611,7 +611,7 @@ class PlayController {
                 side(def ? def.label : 'Defender', dc, lastCombat.defSkulls, lastCombat.defShields, dmgTxt(atk, lastCombat.woundsToAtk, lastCombat.repelAtk)) +
                 `</div>`;
             const f = lastCombat.flee;
-            if (f) html += `<div class="ph-flee ${f.can ? 'can' : 'cant'}">🏃 Flee: rolled ${f.shields}🛡 / need ${f.threshold} — ${f.can ? 'MAY FLEE' : 'cannot flee'}</div>`;
+            if (f) html += `<div class="ph-flee ${f.can ? 'can' : 'cant'}" title="A hero may flee when its Defense roll shows at least the threshold in shields. Break line of sight or reach the moment you can.">🏃 Flee: rolled ${f.shields}🛡 / need ${f.threshold} — ${f.can ? 'MAY FLEE' : 'cannot flee'}</div>`;
             if ((lastCombat.modsDef || []).some(m => /out of reach/.test(m))) html += `<div class="ph-flee cant">attacker out of reach — no blow back</div>`;
         }
         el.innerHTML = html || '<div class="ph-side-hint">Rolls show here.</div>';
@@ -740,7 +740,7 @@ class PlayController {
         if (btn) btn.onclick = () => { this.attackWith(this.gs.mySeatId, targetId); this.closePopover(); };
     }
     // Button (in a piece sheet) that shows this piece's range + line of sight on the board.
-    losBtn() { return `<button class="ph-btn ph-los-btn" style="width:100%;margin-bottom:8px;">👁 Show range / line of sight</button>`; }
+    losBtn() { return `<button class="ph-btn ph-los-btn" title="Light up this piece's reach (and, for a monster, its sight) on the board, with a distance number on every enemy. Then tap an empty cell for walk distance." style="width:100%;margin-bottom:8px;">👁 Show reach / sight on board</button>`; }
     wireLosBtn(pop, id) {
         const b = pop.querySelector('.ph-los-btn');
         if (b) b.onclick = () => { this.app.inspectPieceId = id; this.closePopover(); this.app.renderer.draw(); };
@@ -759,8 +759,22 @@ class PlayController {
         const enemies = this.enemiesOf(ent);
         const opts = enemies.map(o => `<option value="${o.id}">${esc(o.label)} · ${this.dist(ent, o)} away</option>`).join('')
             || '<option value="">no targets on board</option>';
-        return `<div class="ph-atk-row"><select class="ph-atk-target">${opts}</select>` +
-            `<button class="ph-btn ph-btn-warn ph-atk-go"${enemies.length ? '' : ' disabled'}>Attack ⚔</button></div>`;
+        return `<div class="ph-atk-row"><select class="ph-atk-target" title="Pick a target within your reach">${opts}</select>` +
+            this.attackPreview(ent) +
+            `<button class="ph-btn ph-btn-warn ph-atk-go" title="Resolve one exchange — both sides roll at once"${enemies.length ? '' : ' disabled'}>Attack ⚔</button></div>`;
+    }
+    // A tiny "this attack will roll ⚔N" preview so contextual dice (form, mods,
+    // grid/move strike) are visible before you commit.
+    attackPreview(ent) {
+        const st = this.effectiveCombat(ent);
+        const ch = this.gs.character(ent), c = (ch && ch.combat) || {};
+        let dice = st.attack;
+        if ((ent.kind === 'monster' || ent.clone) && this.strikeVia === 'move' && c.moveAttack != null) dice = c.moveAttack;
+        const mods = (ent.mods || []).filter(m => (m.attackDice || m.skull) && (m.scope === 'attack' || m.scope === 'any'));
+        dice += mods.reduce((n, m) => n + (m.attackDice || 0), 0);
+        const skulls = (st.baseAttack || 0) + mods.reduce((n, m) => n + (m.skull || 0), 0);
+        const tip = `The attack dice you'll roll (each ~50% skull)${skulls ? ' plus guaranteed skulls' : ''}. Skulls past the target's shields wound it; you only get hit back if it's within your reach.`;
+        return `<span class="ph-atk-prev" title="${esc(tip)}">⚔${dice}${skulls ? `+${skulls}☠` : ''}</span>`;
     }
     // ⚔ attack: pick an enemy piece and resolve one exchange
     combatBlock(seat) {
@@ -769,16 +783,18 @@ class PlayController {
         const st = this.effectiveCombat(seat);   // includes Druid form deltas
         const base = (st.baseAttack ? ` · +${st.baseAttack}☠` : '') + (st.baseShield ? ` · +${st.baseShield}🛡` : '');
         const perks = [];
-        if (c.rangedAttack) perks.push(`+${c.rangedAttack}⚔ from ${(c.rangedFrom || 1) + 1}+ away`);
-        if (c.fleeMod) perks.push(c.fleeMod < 0 ? `Flees easily (−${-c.fleeMod} shield)` : `Hard to Flee (+${c.fleeMod} shield)`);
+        if (st.baseShield) perks.push([`+${st.baseShield}🛡 always`, 'You always block this many hits, before rolling — hard to put down.']);
+        if (c.rangedAttack) perks.push([`+${c.rangedAttack}⚔ from ${(c.rangedFrom || 1) + 1}+ away`, 'Extra attack dice when you strike from that far — your reward for keeping range.']);
+        if (c.fleeMod) perks.push([c.fleeMod < 0 ? `Flees easily` : `Hard to Flee`, c.fleeMod < 0 ? 'You need fewer shields than normal to Flee.' : 'You need more shields than normal to Flee (heavy).']);
         // Druid form: show the roll bonuses/penalties the form applies
         const FD = window.GameLogic.FORM_COMBAT;
         if (seat.form && FD && FD[seat.form]) {
             const [da, dd] = FD[seat.form];
-            perks.unshift(`${seat.form}: ${da >= 0 ? '+' : ''}${da}⚔ / ${dd >= 0 ? '+' : ''}${dd}🛡`);
+            perks.unshift([`${seat.form}: ${da >= 0 ? '+' : ''}${da}⚔ / ${dd >= 0 ? '+' : ''}${dd}🛡`, "Your current shape's change to your combat dice."]);
         }
-        const perkRow = perks.length ? `<div class="ph-cc-perks">${perks.map(p => `<span class="ph-perk">${symbolize(esc(p))}</span>`).join('')}</div>` : '';
-        return `<div class="ph-cc-block"><h4>Combat — ⚔ ${st.attack} / 🛡 ${st.defense}${symbolize(base)} · reach ${st.reach}</h4>` +
+        const perkRow = perks.length ? `<div class="ph-cc-perks">${perks.map(p => `<span class="ph-perk" title="${esc(p[1])}">${symbolize(esc(p[0]))}</span>`).join('')}</div>` : '';
+        const hTip = '⚔ = attack dice · 🛡 = defense dice · reach = how far you can attack (a square). You only take a blow back if the attacker is within your reach.';
+        return `<div class="ph-cc-block"><h4 title="${esc(hTip)}">Combat — ⚔ ${st.attack} / 🛡 ${st.defense}${symbolize(base)} · reach ${st.reach}</h4>` +
             perkRow + this.strikeToggleHtml(seat) + this.attackRow(seat) +
             `<div class="ph-muted" style="font-size:10px;margin-top:4px;">Both sides roll; skulls beat shields to wound. You only strike back if the attacker is within your reach.</div></div>`;
     }
@@ -882,7 +898,8 @@ class PlayController {
             bits.push(`🎲 <b>${grids}</b> grid roll${grids !== 1 ? 's' : ''} (sight ${st.sight || 6}, ${axis})`);
         }
         if (moves > 0) bits.push(`👣 <b>${moves}</b> move${moves !== 1 ? 's' : ''} (reach ${reach}${st.movementDie ? `, D${st.movementDie}` : ''})`);
-        return bits.length ? `<div class="ph-move-hint">${bits.join(' · ')}</div>` : '';
+        const tip = 'A grid roll drops the monster on a square and strikes every hero it SEES (sight). A move slides it and strikes a hero within REACH. Both grow as objectives are collected.';
+        return bits.length ? `<div class="ph-move-hint" title="${esc(tip)}">${bits.join(' · ')}</div>` : '';
     }
     // Grid-roll control: monsters that roll fully random get a plain button;
     // axis-choosers get a value input for the axis they control (the other rolls).
@@ -919,8 +936,8 @@ class PlayController {
         if (seat.kind !== 'monster' || c.moveAttack == null) return '';
         const via = this.strikeVia || 'grid', st = this.effectiveCombat(seat);
         return `<div class="ph-strike-row"><span class="ph-muted" style="font-size:10px">Strike as:</span> ` +
-            `<button class="ph-strike${via === 'grid' ? ' on' : ''}" data-via="grid">Grid ⚔${st.attack}</button>` +
-            `<button class="ph-strike${via === 'move' ? ' on' : ''}" data-via="move">Move ⚔${c.moveAttack}</button></div>`;
+            `<button class="ph-strike${via === 'grid' ? ' on' : ''}" data-via="grid" title="A grid-roll attack (hits everyone in sight)">Grid ⚔${st.attack}</button>` +
+            `<button class="ph-strike${via === 'move' ? ' on' : ''}" data-via="move" title="A move attack (hits a hero within reach)">Move ⚔${c.moveAttack}</button></div>`;
     }
     wireStrikeToggle(container) {
         container.querySelectorAll('.ph-strike').forEach(b => b.onclick = () => { this.strikeVia = b.dataset.via; this.render(); });

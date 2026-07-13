@@ -435,7 +435,45 @@ class Renderer {
         });
         // second-pick: shortest-path step count to a chosen empty cell
         if (window.app.pathTargetCell) this.drawPathTo(ctx, size, ent);
+        this.drawInspectLegend(ctx, ent, { sight, reach, blast });
         ctx.restore();
+    }
+
+    // A small screen-fixed key explaining the inspector overlay, so the colours
+    // and numbers don't need a manual. Drawn in screen space (transform reset).
+    drawInspectLegend(ctx, ent, st) {
+        const isMon = ent.kind === 'monster' || ent.clone;
+        const rows = [['rgba(224,90,60,0.85)', `reach ${st.reach} — can attack`]];
+        if (isMon) rows.push(['rgba(224,168,0,0.85)', `sight ${st.sight} — sees heroes`]);
+        if (st.blast > 0) rows.push(['rgba(255,90,60,0.9)', `blast ${st.blast} on grid roll`]);
+        rows.push(['#5b636b', 'number on a piece = spaces away']);
+        rows.push(['#00ccff', 'tap empty cell = steps to walk there']);
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        const pad = 9, lh = 17, sw = 11, x = 10, y = 50;   // y offset clears the top roster bar
+        const title = `Inspecting ${ent.label || ''}`.trim();
+        ctx.font = '11px sans-serif';
+        let w = ctx.measureText(title).width;
+        rows.forEach(r => { w = Math.max(w, sw + 6 + ctx.measureText(r[1]).width); });
+        const h = pad * 2 + lh * (rows.length + 1);
+        ctx.fillStyle = 'rgba(12,15,18,0.86)'; ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1;
+        this.roundRectPath(ctx, x, y, w + pad * 2, h, 7); ctx.fill(); ctx.stroke();
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#e8ecef'; ctx.font = 'bold 11px sans-serif';
+        ctx.fillText(title, x + pad, y + pad + lh / 2);
+        ctx.font = '11px sans-serif';
+        rows.forEach((r, i) => {
+            const ry = y + pad + lh * (i + 1) + lh / 2;
+            ctx.fillStyle = r[0]; this.roundRectPath(ctx, x + pad, ry - sw / 2, sw, sw, 2); ctx.fill();
+            ctx.fillStyle = '#c6ccd2'; ctx.fillText(r[1], x + pad + sw + 6, ry);
+        });
+        ctx.restore();
+    }
+    roundRectPath(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        if (ctx.roundRect) { ctx.roundRect(x, y, w, h, r); return; }
+        ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
     }
 
     // ---- movement pathing (for the "count of spaces" second-pick) ---------
