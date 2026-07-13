@@ -21,7 +21,7 @@
     "cardFace": "back",
     "art": "players/red1.jpg",
     "stats": { "a1": 4, "a2": null, "m1": 12, "m2": null, "ba": 4, "bm": 6, "life": 8 },
-    "combat": { "attack": 4, "defense": 2, "reach": 1, "fleeMod": 1 }
+    "combat": { "attack": 4, "defense": 2, "reach": 1 }
   },
   {
     "id": "hunter",

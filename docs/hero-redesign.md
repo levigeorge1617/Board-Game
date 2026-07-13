@@ -17,7 +17,7 @@ objectives; they can't kill the monster (a hit *repels* it).
 | Hero (color) | ⚔ | 🛡 | reach | ❤ | Identity (lean keyword set) |
 |---|:-:|:-:|:-:|:-:|---|
 | **Paladin** (RED) | 2 | **3** | 1 | 8 | The wall. **+1🛡 base** · heavy (**+1 flee**) |
-| **Barbarian** (RED) | **4** | 2 | 1 | 8 | Bruiser. ⚔4 up close · heavy (**+1 flee**) · punished at range |
+| **Barbarian** (RED) | **4** | 2 | 1 | 8 | Bruiser. ⚔4 up close · punished at range |
 | **Hunter** (YELLOW) | 3 | 1 | **2** | 6 | Marksman: reach 2 · **pet** (hero-side piece) |
 | **Scout** (YELLOW) | 2 | 2 | 1 | 5 | Nimble: **−1 flee** (slips away) |
 | **Wizard** (BLUE) | 1 | 1 | **2** | 4 | Caster: reach 2, frail, card-driven |
@@ -57,8 +57,10 @@ Two systemic rules (no keyword, always on):
   range can't retaliate; a long-reach attacker strikes safely; a monster whose
   reach outgrows yours can't be pushed away.
 - **Flee threshold.** A hero defender may flee if its Defense roll shows
-  `≥ 2 + heroFleeMod + monsterFleeMod` shields (min 1). Tracked and shown on every
-  combat. Scout/Thief −1, heavy heroes +1; Oblex +1, Wyht −1.
+  `≥ 2 + heroFleeMod + monsterFleeMod` shields, clamped to `[1, its max shields]`
+  so flight is always at least possible. Tracked & shown on every combat.
+  Scout/Thief −1, Paladin/Cleric +1; Oblex +1, Wyht −1. (Sim: nimble/frail heroes
+  ~33–56%, bruisers ~11%, tanks ~26% — but tanks rarely need to run.)
 
 Heroes ignore line of sight entirely — only reach limits their attacks. Only the
 monster uses sight (for grid-roll attacks). Dice-pool length is floored at 0.

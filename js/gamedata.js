@@ -49,8 +49,7 @@ window.GAME_DATA = {
       "combat": {
         "attack": 4,
         "defense": 2,
-        "reach": 1,
-        "fleeMod": 1
+        "reach": 1
       }
     },
     {

@@ -214,7 +214,7 @@ The threshold starts at 2 shields and shifts with:
 - the MONSTER — some are harder to escape (Oblex's swarm, +1) or easier (Wyht, -1),
 - the CIRCUMSTANCE — a building is a safe haven (flee into one freely); leaving one costs -2 life at the door.
 
-If your Defense roll shows at least the threshold in shields, you may move out of the attacker's reach and line and end the fight. The most reliable escape is still positional: get behind a wall or into a building so the monster can't see or reach you.
+You never need more shields than your Defense could show, so fleeing is always at least possible — a low-defense hero's threshold is capped at 1. If your Defense roll shows at least the threshold in shields, you may move out of the attacker's reach and line and end the fight. The most reliable escape is still positional: get behind a wall or into a building so the monster can't see or reach you.
 
  
  

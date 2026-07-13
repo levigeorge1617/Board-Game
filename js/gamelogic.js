@@ -492,7 +492,10 @@
                 // (some monsters are harder to escape). Tracked & shown every combat.
                 let flee = null;
                 if (def.kind === 'hero') {
-                    const threshold = Math.max(1, FLEE_BASE + (rd.fleeMod || 0) + (ra.fleeMod || 0));
+                    // clamp so the threshold is always reachable (≤ the most shields the
+                    // hero could roll) — otherwise low-defense heroes could never flee.
+                    const maxShields = Math.max(1, dc.defense + dc.baseShield);
+                    const threshold = Math.max(1, Math.min(maxShields, FLEE_BASE + (rd.fleeMod || 0) + (ra.fleeMod || 0)));
                     flee = { threshold, shields: defShields, can: defShields >= threshold };
                 }
 
