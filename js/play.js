@@ -414,6 +414,12 @@ class PlayController {
         if (inv) inv.onclick = () => this.copyInvite();
     }
 
+    // The universal objective-count rewards, in order — used for the "next unlock"
+    // hint by the score so the escalation is legible.
+    nextUnlock(n) {
+        const ms = [{ at: 2, l: 'draw a card' }, { at: 4, l: '֍ bonus die' }, { at: 5, l: 'draw a card' }, { at: 6, l: 'draw a card' }, { at: 7, l: '☼ bonus die' }];
+        return ms.find(m => m.at > (n || 0)) || null;
+    }
     // ---- roster / seats ---------------------------------------------------
     renderRoster() {
         const s = this.gs.state;
@@ -428,12 +434,15 @@ class PlayController {
                 `<span class="ph-chip-count">${seat.hand.length}🂠</span></button>`;
         }).join('');
         const sc = s.score || { collected: 0, goal: 0 };
+        const nu = this.nextUnlock(sc.collected);
+        const schedule = 'Objective escalation — every hero: draw a card at 2, 5, 6 · ֍ bonus die at 4 · ☼ bonus die at 7. Monsters also grow (more grid rolls / moves / reach — see the monster sheet).';
+        const nextChip = nu ? `<span class="ph-next-unlock" title="${esc(schedule)}">▸ ${symbolize(esc(nu.l))} @${nu.at}</span>` : '';
         const scoreChip =
-            `<div class="ph-score" title="Objectives collected">` +
+            `<div class="ph-score" title="${esc(schedule)}">` +
                 `<button class="ph-score-btn" id="ph-score-dn">−</button>` +
                 `<span class="ph-score-val">${GAME_ICONS.obj} <b>${sc.collected}</b>${sc.goal ? ' / ' + sc.goal : ''}</span>` +
                 `<button class="ph-score-btn" id="ph-score-up">+</button>` +
-            `</div>`;
+            `</div>${nextChip}`;
         // Objective score + turn button stay inline; the seat picker, online
         // control and Reset live in a compact ⋯ menu so the bar fits on phones.
         document.getElementById('ph-roster').innerHTML =
@@ -441,7 +450,7 @@ class PlayController {
                 `<div class="ph-seats">${chips}</div>` +
                 `<div class="ph-bar-ctl">` +
                     scoreChip +
-                    `<button id="ph-next" class="ph-btn ${heroesTurn ? 'ph-turn-hero' : 'ph-turn-mon'}">${heroesTurn ? "Heroes'" : "Monster's"} turn ▸ end</button>` +
+                    `<button id="ph-next" class="ph-btn ${heroesTurn ? 'ph-turn-hero' : 'ph-turn-mon'}" title="${esc(heroesTurn ? 'Heroes\' turn: every hero draws a card, then moves & acts with their dice (attack costs an action). Flee to safety if struck. Tap to end the turn.' : 'Monster\'s turn: draw a card, then in any order — roll the grid to attack (sight), move to attack (reach), and use abilities. Tap to end the turn.')}">${heroesTurn ? "Heroes'" : "Monster's"} turn ▸ end</button>` +
                     `<div class="ph-more-wrap">` +
                         `<button id="ph-more" class="ph-btn" title="Table options">⋯</button>` +
                         `<div id="ph-more-menu" class="ph-more-menu" style="display:none">` +
