@@ -417,9 +417,9 @@ window.GAME_DATA = {
       "deck": "Black",
       "side": "monster",
       "timing": "draw",
-      "copies": 10,
+      "copies": 6,
       "cost": "0",
-      "text": "Choose the number and randomize\nthe letter for your next movement.\n\nThis can only be played instantly at the beginning of your turn.\n\nCan't be used on the turn it is drawn.",
+      "text": "Your next grid roll this turn: place the monster EXACTLY — choose BOTH the column and the row instead of rolling.\n\nPlay at the start of your turn; not the turn it is drawn.",
       "art": "cards/surprise.png",
       "raw": [
         "268",
@@ -1063,6 +1063,70 @@ window.GAME_DATA = {
         "Increase your next movement and your next action roll by +2 for one turn only.",
         "0"
       ]
+    },
+    {
+      "id": 300,
+      "name": "Whetstone",
+      "deck": "White",
+      "side": "hero",
+      "timing": "hand",
+      "copies": 2,
+      "cost": "1",
+      "text": "+2 attack dice on your next attack this turn.",
+      "art": "",
+      "effect": {
+        "attackDice": 2,
+        "scope": "attack",
+        "duration": "once"
+      }
+    },
+    {
+      "id": 301,
+      "name": "Brace",
+      "deck": "White",
+      "side": "hero",
+      "timing": "hand",
+      "copies": 2,
+      "cost": "0",
+      "text": "+2 defense dice on your next defense this turn.",
+      "art": "",
+      "effect": {
+        "defenseDice": 2,
+        "scope": "defense",
+        "duration": "once"
+      }
+    },
+    {
+      "id": 302,
+      "name": "Called Shot",
+      "deck": "White",
+      "side": "hero",
+      "timing": "hand",
+      "copies": 1,
+      "cost": "1",
+      "text": "Your next attack lands +1 automatic skull, before any dice.",
+      "art": "",
+      "effect": {
+        "skull": 1,
+        "scope": "attack",
+        "duration": "once"
+      }
+    },
+    {
+      "id": 303,
+      "name": "Thick Hide",
+      "deck": "Black",
+      "side": "monster",
+      "timing": "hand",
+      "copies": 1,
+      "cost": "0",
+      "text": "This turn the monster is hard to shove: +2 defense dice whenever it is attacked.",
+      "art": "",
+      "effect": {
+        "defenseDice": 2,
+        "scope": "defense",
+        "duration": "turn"
+      }
     }
   ]
 };

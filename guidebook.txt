@@ -289,6 +289,8 @@ If this card is drawn in the hero's draw pile; discard it, and the monster draws
 
  
 
-Playing a card: 
+Playing a card:
 
-Pay the Action☼ or Movement֍ cost in the bottom left corner. 0 means it costs nothing. Resolve the effects of the card, and then place it in the appropriate discard pile. 
+Pay the Action☼ or Movement֍ cost in the bottom left corner. 0 means it costs nothing. Resolve the effects of the card, and then place it in the appropriate discard pile.
+
+Some cards buff a ROLL (a die of dice added to your next action/movement roll, e.g. SpellBook, Boots). Others add COMBAT dice to your next fight (Whetstone +2 attack dice, Brace +2 defense dice, Called Shot +1 automatic skull; the monster's Empowered/Thick Hide do the same for it). Those effects wait on your piece until the matching roll or exchange happens, then are spent — the app tracks them for you (see the "Active effects" chips).
