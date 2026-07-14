@@ -28,7 +28,12 @@
     // Druid form → [attack dice delta, defense dice delta] applied to the pool.
     const FORM_COMBAT = { BEAR: [1, 1], TURTLE: [0, 2], CHEETAH: [0, -1], DEER: [0, -1] };
     // A dice-tray/readout color key for a combatant (hero color name, else 'monster').
-    function colorKeyOf(ent) { return ent && ent.kind === 'hero' ? ent.color : 'monster'; }
+    function colorKeyOf(ent) {
+        if (!ent) return 'monster';
+        if (ent.kind === 'hero') return ent.color;
+        if (ent.pet) return ent.ownerColor || 'YELLOW';   // a hero-side pet rolls in its owner's colour
+        return 'monster';
+    }
 
     // ---- objective-scaled ("ladder") stats --------------------------------
     // Several monster numbers GROW as heroes collect objectives. A ladder is
@@ -301,6 +306,16 @@
                 }
                 break;
             }
+            case 'GIVE_CARD': {
+                const from = seatOf(s, a.seatId), to = seatOf(s, a.toSeatId);
+                if (!from || !to || from.id === to.id) break;
+                const idx = from.hand.findIndex(c => c && c.iid === a.iid); if (idx < 0) break;
+                const [inst] = from.hand.splice(idx, 1);
+                to.hand.push(inst);
+                const card = cardOf(data, inst.cid);
+                logEvent(s, from.id, `gave ${card ? card.name : 'a card'} to ${to.label}`);
+                break;
+            }
             case 'SET_PHASE': {
                 s.phase = a.phase === 'monster' ? 'monster' : 'heroes';
                 (s.seats || []).forEach(seat => { if (seat.formTemp) { seat.form = null; seat.formTemp = false; } });
@@ -322,7 +337,7 @@
                 const barrier = !!a.barrier, pet = !!a.pet, side = a.side === 'hero' ? 'hero' : 'monster';
                 s.minions.push({
                     id: (barrier ? 'bar-' : pet ? 'pet-' : 'min-') + Date.now() + '-' + Math.floor(Math.random() * 1000), kind: 'minion',
-                    barrier, pet, side, label: a.label || (barrier ? 'Barrier' : pet ? 'Pet' : 'Minion ' + n),
+                    barrier, pet, side, ownerColor: a.ownerColor || null, label: a.label || (barrier ? 'Barrier' : pet ? 'Pet' : 'Minion ' + n),
                     x: a.x, y: a.y, hp: life, maxHp: life,
                     attack: barrier ? 0 : (a.attack || 2), defense: a.defense || (barrier ? 0 : 1), reach: a.reach || 1,
                     baseAttack: a.baseAttack || 0, baseShield: a.baseShield || 0,

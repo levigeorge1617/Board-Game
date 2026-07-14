@@ -169,7 +169,13 @@ textarea.dz-input { resize: vertical; line-height: 1.5; }
 .ph-roll-card { border-top: 3px solid var(--c, #363b40); }
 
 /* event log (left) */
-#ph-log { position: absolute; left: 12px; top: 104px; width: 252px; z-index: 6; }
+#ph-log { position: absolute; right: 12px; top: 104px; width: 252px; z-index: 6; }
+.ph-legend { position: absolute; left: 12px; top: 104px; z-index: 6; width: 220px; background: #0d0f11ee; border: 1px solid #2a2f33; border-radius: 8px; padding: 8px 10px; font-size: 11px; color: #c6ccd2; box-shadow: 0 4px 14px rgba(0,0,0,.4); }
+.ph-legend-head { display: flex; justify-content: space-between; align-items: center; font-weight: 700; color: #e8ecef; margin-bottom: 6px; }
+.ph-legend-x { background: transparent; border: none; color: #9aa7b5; cursor: pointer; font-size: 13px; line-height: 1; padding: 0 2px; }
+.ph-legend-x:hover { color: #ff6b6b; }
+.ph-legend-row { display: flex; align-items: center; gap: 7px; line-height: 1.7; }
+.ph-legend-sw { width: 12px; height: 12px; border-radius: 3px; flex: 0 0 auto; border: 1px solid rgba(255,255,255,.15); }
 .ph-log-head { display: flex; justify-content: space-between; align-items: center; background: #12151af2; border: 1px solid #2a2f33; border-bottom: none; border-radius: 8px 8px 0 0; padding: 5px 10px; font-size: 10px; color: #9aa7b5; text-transform: uppercase; letter-spacing: .5px; }
 .ph-log-min { background: transparent; border: none; color: #9aa7b5; cursor: pointer; font-size: 17px; line-height: 1; padding: 0 4px; }
 .ph-log-body { background: #0d0f11ea; border: 1px solid #2a2f33; border-top: none; border-radius: 0 0 8px 8px; max-height: 38vh; overflow-y: auto; padding: 5px 10px; }
@@ -422,6 +428,12 @@ textarea.dz-input { resize: vertical; line-height: 1.5; }
 .ph-play-btn:hover { background: #3bbd7a; }
 .ph-disc-btn { background: #333a40; border-left: 1px solid #262b30; }
 .ph-disc-btn:hover { background: #4a525a; }
+.ph-give-btn { background: #1c3a52; border-left: 1px solid #262b30; }
+.ph-give-btn:hover { background: #275879; }
+.ph-give-row { display: flex; gap: 5px; padding: 6px; background: #0e1418; align-items: center; }
+.ph-give-to { flex: 1; min-width: 0; background: #10202a; border: 1px solid #1c5066; color: #cfe8f2; border-radius: 6px; padding: 4px 6px; font-size: 11px; }
+.ph-give-send { background: #2d6a4f; border: 1px solid #2ea06e; color: #eafff4; border-radius: 6px; padding: 4px 9px; font-size: 11px; font-weight: bold; cursor: pointer; }
+.ph-give-send:hover { background: #3bbd7a; }
 
 /* keep the played-card banner clear of the top bar */
 #ph-played { top: 64px; }
@@ -436,7 +448,8 @@ textarea.dz-input { resize: vertical; line-height: 1.5; }
         width: 42px; height: 42px; border: none; border-radius: 9px; background: #007acc; color: #fff; font-size: 19px; cursor: pointer; box-shadow: 0 3px 12px #0008; }
     #sidebar-backdrop.show { display: block; position: fixed; inset: 0; background: #0009; z-index: 65; }
     .ph-bar { padding-left: 58px; }
-    #ph-log { top: 58px; left: 8px; width: min(64vw, 240px); }
+    #ph-log { top: 58px; right: 8px; left: auto; width: min(58vw, 230px); }
+    .ph-legend { top: 58px; left: 8px; width: min(40vw, 200px); font-size: 10px; }
     #ph-rolls-inner.popped { width: min(88vw, 300px); }
     #ph-hand .ph-card { width: 140px; }
     .ph-hand.open .ph-hand-body { max-height: 54vh; }

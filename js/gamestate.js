@@ -113,6 +113,7 @@ class GameState {
     draw(seatId, deck) { this.dispatch({ type: 'DRAW', seatId, deck }); }
     discard(seatId, iid) { this.dispatch({ type: 'DISCARD', seatId, iid }); }
     playCard(seatId, iid) { this.dispatch({ type: 'PLAY_CARD', seatId, iid }); }
+    giveCard(seatId, iid, toSeatId) { this.dispatch({ type: 'GIVE_CARD', seatId, iid, toSeatId }); }
     togglePhase() { this.dispatch({ type: 'SET_PHASE', phase: this.state.phase === 'heroes' ? 'monster' : 'heroes' }); }
     setSeatCharacter(seatId, characterId) { this.dispatch({ type: 'SET_CHARACTER', seatId, characterId }); }
     score(delta, seatId) { this.dispatch({ type: 'SCORE', delta, seatId }); }
