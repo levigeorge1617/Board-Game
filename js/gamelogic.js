@@ -25,6 +25,7 @@
     // A "combatant" is a seat (hero/monster) OR a minion — both can move and fight.
     const combatantOf = (s, id) => (s.seats || []).find(x => x.id === id) || (s.minions || []).find(x => x.id === id) || null;
     // combat die faces: 1-3 = skull ☠, 4-5 = shield 🛡, 6 = blank
+    // Druid form → [attack dice delta, defense dice delta] applied to the pool.
     const FORM_COMBAT = { BEAR: [1, 1], TURTLE: [0, 2], CHEETAH: [0, -1], DEER: [0, -1] };
     // A dice-tray/readout color key for a combatant (hero color name, else 'monster').
     function colorKeyOf(ent) { return ent && ent.kind === 'hero' ? ent.color : 'monster'; }
@@ -42,8 +43,10 @@
     const monsterCharOf = (s, data) => { const seat = (s.seats || []).find(x => x.kind === 'monster'); return seat && (data.monsters || []).find(m => m.id === seat.characterId) || null; };
     // Oblex auto-buffs its whole swarm off its own objective ladder — every minion
     // gets these for free, no per-minion tweaking. { attack, reach } deltas.
-    function oblexMinionBonus(monChar, score) {
-        if (!monChar || monChar.id !== 'oblex') return { attack: 0, reach: 0 };
+    // Only Oblex's OWN swarm is buffable — not a hero's pet, a barrier, or a clone.
+    const oblexBuffable = ent => ent && ent.kind === 'minion' && !ent.clone && !ent.pet && !ent.barrier && ent.side !== 'hero';
+    function oblexMinionBonus(monChar, score, ent) {
+        if (!monChar || monChar.id !== 'oblex' || (ent && !oblexBuffable(ent))) return { attack: 0, reach: 0 };
         return {
             attack: (score >= 4 ? 1 : 0) + (score >= 7 ? 1 : 0),   // 4◆ +1, 7◆ +1
             reach: (score >= 6 ? 1 : 0),                            // 6◆ +1
@@ -52,7 +55,8 @@
     // Effective SIGHT (how far a piece can SEE an enemy) and REACH (how far it can
     // ATTACK), both objective-scaled. Sight ≥ reach. Heroes default to a fixed
     // sight; minions see short unless Oblex extends their reach.
-    const DEFAULT_SIGHT = 6, MINION_SIGHT = 3;
+    const DEFAULT_SIGHT = 6;
+    const FLEE_BASE = 2;   // shields a hero must roll to flee, before hero/monster modifiers
     // Resolve the character sheet a piece fights with (clone/monster → a monster,
     // hero → a hero); plain minions have no sheet.
     function charSheetOf(ent, data) {
@@ -64,14 +68,14 @@
     function effectiveReach(ent, data, score, monChar) {
         if (!ent) return 1;
         const ch = charSheetOf(ent, data);
-        if (!ch) return Math.max(1, (ent.reach || 1) + oblexMinionBonus(monChar, score).reach);   // plain minion
+        if (!ch) return Math.max(1, (ent.reach || 1) + oblexMinionBonus(monChar, score, ent).reach);   // plain minion
         const c = ch.combat || {};
         return Math.max(1, ladderValue(c.reach || 1, c.reachLadder, score, 'reach'));
     }
-    function effectiveSight(ent, data, score) {
+    function effectiveSight(ent, data, score, monChar) {
         if (!ent) return DEFAULT_SIGHT;
         const ch = charSheetOf(ent, data);
-        if (!ch) return MINION_SIGHT;   // plain minion
+        if (!ch) return effectiveReach(ent, data, score, monChar);   // a minion sees only as far as it reaches
         const st = ch.stats || {};
         return Math.max(1, ladderValue(st.sight || DEFAULT_SIGHT, st.sightLadder, score, 'sight'));
     }
@@ -83,15 +87,20 @@
 
     // A clone fights with the monster's own kit, not a minion's stat block.
     const cloneChar = (ent, data) => ent.clone ? (data.monsters || []).find(m => m.id === ent.characterId) : null;
-    function combatStats(ent, data, score, monChar) {
+    // `via` = how a monster engaged: 'grid' (a grid-roll strike) or 'move' (moved
+    // into reach). A monster may have a different moveAttack (some hit hard on the
+    // grid, weaker when moving, or vice versa). Heroes ignore `via`.
+    function combatStats(ent, data, score, monChar, via) {
         let c, attack, defense;
+        const monAttack = () => (via === 'move' && c.moveAttack != null)
+            ? c.moveAttack : ladderValue(c.attack || 0, c.attackLadder, score, 'attack');
         const clc = cloneChar(ent, data);
         if (clc) {
             c = clc.combat || {};
-            attack = ladderValue(c.attack || 0, c.attackLadder, score, 'attack');
+            attack = monAttack();
             defense = c.defense || 0;
         } else if (ent.kind === 'minion') {
-            const b = oblexMinionBonus(monChar, score || 0);
+            const b = oblexMinionBonus(monChar, score || 0, ent);
             attack = (ent.attack || 0) + b.attack; defense = ent.defense || 0;
             c = { reach: (ent.reach || 1) + b.reach, baseAttack: ent.baseAttack, baseShield: ent.baseShield };
         } else {
@@ -99,7 +108,7 @@
             c = (ch && ch.combat) || {};
             // monster attack/reach can climb the objective ladder (e.g. Ghathag's
             // permanent bruise, the Fog's growing reach)
-            attack = ladderValue(c.attack || 0, c.attackLadder, score, 'attack');
+            attack = monAttack();
             defense = c.defense || 0;
         }
         if (ent.form && FORM_COMBAT[ent.form]) { attack += FORM_COMBAT[ent.form][0]; defense += FORM_COMBAT[ent.form][1]; }
@@ -310,15 +319,16 @@
                 const n = (s.minions || []).filter(m => !m.barrier && !m.clone).length + 1;
                 s.minions = s.minions || [];
                 const life = a.hp || (1 + Math.floor(Math.random() * 4));   // d4 health when spawned
-                const barrier = !!a.barrier;
+                const barrier = !!a.barrier, pet = !!a.pet, side = a.side === 'hero' ? 'hero' : 'monster';
                 s.minions.push({
-                    id: (barrier ? 'bar-' : 'min-') + Date.now() + '-' + Math.floor(Math.random() * 1000), kind: 'minion',
-                    barrier, label: a.label || (barrier ? 'Barrier' : 'Minion ' + n),
+                    id: (barrier ? 'bar-' : pet ? 'pet-' : 'min-') + Date.now() + '-' + Math.floor(Math.random() * 1000), kind: 'minion',
+                    barrier, pet, side, label: a.label || (barrier ? 'Barrier' : pet ? 'Pet' : 'Minion ' + n),
                     x: a.x, y: a.y, hp: life, maxHp: life,
                     attack: barrier ? 0 : (a.attack || 2), defense: a.defense || (barrier ? 0 : 1), reach: a.reach || 1,
-                    baseAttack: a.baseAttack || 0, baseShield: a.baseShield || 0, color: a.color || (barrier ? '#6b6f74' : '#9b2d2d'),
+                    baseAttack: a.baseAttack || 0, baseShield: a.baseShield || 0,
+                    color: a.color || (barrier ? '#6b6f74' : pet ? '#d9a520' : '#9b2d2d'),
                 });
-                logEvent(s, null, `${barrier ? 'A barrier' : 'A minion'} was placed at ${cellName(a.x, a.y)} (❤${life})`);
+                logEvent(s, null, `${barrier ? 'A barrier' : pet ? 'A pet' : 'A minion'} was placed at ${cellName(a.x, a.y)} (❤${life})`);
                 break;
             }
             case 'ADD_CLONE': {
@@ -412,35 +422,56 @@
                 break;
             }
             case 'ROLL_GRID': {
-                const col = 1 + Math.floor(Math.random() * Math.max(1, a.cols || 1));
-                const row = String.fromCharCode(65 + Math.floor(Math.random() * Math.max(1, a.rows || 1)));
-                s.lastGrid = { col, row, ts: Date.now() };
-                logEvent(s, a.seatId || 'seat-monster', `rolled grid target ${col}-${row}`);
+                // The monster may CHOOSE one axis and roll the other (axis 'x' = it
+                // picked the column, 'y' = it picked the row); otherwise both random.
+                const rndCol = () => 1 + Math.floor(Math.random() * Math.max(1, a.cols || 1));
+                const rndRow = () => String.fromCharCode(65 + Math.floor(Math.random() * Math.max(1, a.rows || 1)));
+                let col, row;
+                if (a.axis === 'x' && a.value) { col = a.value; row = rndRow(); }
+                else if (a.axis === 'y' && a.value) { row = String.fromCharCode(64 + a.value); col = rndCol(); }
+                else { col = rndCol(); row = rndRow(); }
+                s.lastGrid = { col, row, axis: a.axis || 'random', ts: Date.now() };
+                const how = a.axis === 'x' ? `chose col ${col}, rolled row` : a.axis === 'y' ? `chose row ${row}, rolled col` : 'both random';
+                logEvent(s, a.seatId || 'seat-monster', `grid roll (${how}) → ${col}-${row}`);
                 break;
             }
             case 'COMBAT': {
                 const atk = combatantOf(s, a.attackerId), def = combatantOf(s, a.defenderId);
                 if (!atk || !def || atk.id === def.id) break;
                 const score = scoreOf(s), monChar = monsterCharOf(s, data);
-                const ac = combatStats(atk, data, score, monChar), dc = combatStats(def, data, score, monChar);
+                const ac = combatStats(atk, data, score, monChar, a.via), dc = combatStats(def, data, score, monChar);
+                const rawCombatOf = e => { const ch = charSheetOf(e, data); return (ch && ch.combat) || {}; };
+                const ra = rawCombatOf(atk), rd = rawCombatOf(def);
+                const dist = (atk.x != null && def.x != null) ? Math.max(Math.abs(atk.x - def.x), Math.abs(atk.y - def.y)) : 1;
+                // The one contextual bonus: rangedAttack gives +dice when striking from
+                // beyond reach 1 (the Ranger's reward for keeping his distance).
+                let ctxAtkDice = 0; const ctxAtk = [], ctxDef = [];
+                if (ra.rangedAttack && dist > (ra.rangedFrom || 1)) { ctxAtkDice += ra.rangedAttack; ctxAtk.push(`+${ra.rangedAttack}⚔ from range`); }
+
                 const roll = () => 1 + Math.floor(Math.random() * 6);
                 const skulls = f => f.filter(v => v <= 3).length;   // faces 1-3 = ☠
                 const shields = f => f.filter(v => v >= 4 && v <= 5).length; // 4-5 = 🛡
-                // combat modifiers held on each fighter (extra pool dice + flat skulls/shields)
+                // effects already on each fighter (extra pool dice + flat skulls/shields, e.g. from cards)
                 const atkMods = (atk.mods || []).filter(modAffectsAttack);
                 const defMods = (def.mods || []).filter(modAffectsDefense);
                 const sum = (list, k) => list.reduce((n, m) => n + (m[k] || 0), 0);
-                // Both sides roll their own pool: attacker rolls Attack dice, defender
-                // rolls Defense dice. EACH side's skulls wound the OTHER; each side's
-                // shields block the other's skulls. Damage flows both ways.
-                const atkFaces = Array.from({ length: Math.max(0, ac.attack) + (a.bonusAttack || 0) + sum(atkMods, 'attackDice') }, roll);
-                const defFaces = Array.from({ length: Math.max(0, dc.defense) + (a.bonusDefense || 0) + sum(defMods, 'defenseDice') }, roll);
-                const atkSkulls = skulls(atkFaces) + ac.baseAttack + sum(atkMods, 'skull');   // hits the attacker deals
-                const atkShields = shields(atkFaces) + ac.baseShield; // blocks the attacker has
-                const defSkulls = skulls(defFaces) + dc.baseAttack;   // hits the defender deals back
-                const defShields = shields(defFaces) + dc.baseShield + sum(defMods, 'shield'); // blocks the defender has
+                // Uniform combat: each side rolls its Attack / Defense dice (+ any
+                // modifier dice), adds flat base skulls/shields, then tallies skulls
+                // against the opponent's shields. Pool length floored at 0.
+                const atkFaces = Array.from({ length: Math.max(0, ac.attack + ctxAtkDice + (a.bonusAttack || 0) + sum(atkMods, 'attackDice')) }, roll);
+                const defFaces = Array.from({ length: Math.max(0, dc.defense + (a.bonusDefense || 0) + sum(defMods, 'defenseDice')) }, roll);
+                const atkSkulls = skulls(atkFaces) + ac.baseAttack + sum(atkMods, 'skull');
+                const atkShields = shields(atkFaces) + ac.baseShield;
+                const defSkulls = skulls(defFaces) + dc.baseAttack;
+                const defShields = shields(defFaces) + dc.baseShield + sum(defMods, 'shield');
                 const woundsToDef = Math.max(0, atkSkulls - defShields);
-                const woundsToAtk = Math.max(0, defSkulls - atkShields);
+                // REACH GATES THE COUNTER-BLOW: the defender only hits back if the
+                // attacker is within the defender's reach. A melee fighter struck from
+                // range can't retaliate; a long-reach attacker (Ranger, a wide-reach
+                // monster) strikes safely.
+                const canCounter = dist <= dc.reach;
+                let woundsToAtk = canCounter ? Math.max(0, defSkulls - atkShields) : 0;
+                if (!canCounter && defSkulls > atkShields) ctxDef.push('out of reach — no counter');
 
                 // Apply wounds to a fighter: the monster can't be killed (heroes shove
                 // it back instead); heroes/minions lose HP → gravestone/removal.
@@ -455,6 +486,19 @@
                 const repelDef = applyWounds(def, atk, woundsToDef);
                 const repelAtk = applyWounds(atk, def, woundsToAtk);
 
+                // FLEE: only a hero defender may flee, and only if it rolled at least
+                // `threshold` shields. Threshold = base 2 + the hero's own fleeMod
+                // (Scout slips easily, heavy heroes struggle) + the attacker's fleeMod
+                // (some monsters are harder to escape). Tracked & shown every combat.
+                let flee = null;
+                if (def.kind === 'hero') {
+                    // clamp so the threshold is always reachable (≤ the most shields the
+                    // hero could roll) — otherwise low-defense heroes could never flee.
+                    const maxShields = Math.max(1, dc.defense + dc.baseShield);
+                    const threshold = Math.max(1, Math.min(maxShields, FLEE_BASE + (rd.fleeMod || 0) + (ra.fleeMod || 0)));
+                    flee = { threshold, shields: defShields, can: defShields >= threshold };
+                }
+
                 // consume one-shot combat modifiers that just fired
                 atk.mods = (atk.mods || []).filter(m => !(m.duration === 'once' && modAffectsAttack(m)));
                 def.mods = (def.mods || []).filter(m => !(m.duration === 'once' && modAffectsDefense(m)));
@@ -462,15 +506,16 @@
                 s.lastCombat = {
                     attackerId: atk.id, defenderId: def.id, atkFaces, defFaces,
                     atkKey: colorKeyOf(atk), defKey: colorKeyOf(def),
-                    atkSkulls, atkShields, defSkulls, defShields,
-                    modsAtk: atkMods.map(describeMod), modsDef: defMods.map(describeMod),
+                    atkSkulls, atkShields, defSkulls, defShields, flee,
+                    modsAtk: atkMods.map(describeMod).concat(ctxAtk), modsDef: defMods.map(describeMod).concat(ctxDef),
                     woundsToDef, woundsToAtk, repelDef, repelAtk, ts: Date.now(),
                 };
                 const dmgOut = (target, wounds, repel) => target.kind === 'monster'
                     ? (repel ? `pushed back ${repel}` : 'held ground')
                     : (wounds ? `${wounds} wound${wounds !== 1 ? 's' : ''}` : 'no damage');
                 logEvent(s, atk.id, `attacks ${def.label} — ${atkSkulls}☠/${atkShields}🛡 vs ${defSkulls}☠/${defShields}🛡 → ` +
-                    `${def.label} ${dmgOut(def, woundsToDef, repelDef)}, ${atk.label} ${dmgOut(atk, woundsToAtk, repelAtk)}`);
+                    `${def.label} ${dmgOut(def, woundsToDef, repelDef)}, ${atk.label} ${dmgOut(atk, woundsToAtk, repelAtk)}` +
+                    (flee ? ` · ${flee.can ? 'may FLEE' : 'cannot flee'} (${flee.shields}🛡/need ${flee.threshold})` : ''));
                 break;
             }
             case 'LOG': logEvent(s, a.seatId || null, a.text || ''); break;
@@ -500,5 +545,5 @@
 
     g.GameLogic = { empty, newGame, apply, redactFor, seatOf, charOf, cardOf, shuffle,
         effectiveReach, effectiveSight, effectiveBlast, charSheetOf, oblexMinionBonus, scoreOf, monsterCharOf, ladderValue,
-        canDiagonal, stepDistance };
+        canDiagonal, stepDistance, combatStats, FORM_COMBAT, FLEE_BASE };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

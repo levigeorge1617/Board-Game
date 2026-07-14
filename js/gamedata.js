@@ -5,23 +5,8 @@ window.GAME_DATA = {
     {
       "id": "paladin",
       "name": "Paladin",
-      "abilities": "2☼: Give +1☼ to an ally hero's roll. Lose 1 life.\n\n3☼: Draw an extra card.\n\nOnly Lose -3 life if 2 or less spaces away from the monster in line of sight.\n\nRegain 2 life if you end your turn next to an ally.\n\nDoes +1 to minions.",
-      "objectiveAbilities": "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 6☼: Move next to an ally hero who is alive. Lose 2 life.\n\n7◆: Gain ☼ Bonus\n7◆: Allies 1 space away get +2 to any roll.\n\n8◆:",
-      "raw": [
-        "4",
-        "",
-        "2☼: Give +1☼ to an ally hero's roll. Lose 1 life.\n\n3☼: Draw an extra card.\n\nOnly Lose -3 life if 2 or less spaces away from the monster in line of sight.\n\nRegain 2 life if you end your turn next to an ally.\n\nDoes +1 to minions.",
-        "1",
-        "4",
-        "6",
-        "RED",
-        "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 6☼: Move next to an ally hero who is alive. Lose 2 life.\n\n7◆: Gain ☼ Bonus\n7◆: Allies 1 space away get +2 to any roll.\n\n8◆:",
-        "",
-        "12",
-        "",
-        "Paladin",
-        "RED"
-      ],
+      "abilities": "The wall — 🛡3 and always blocks 1 hit (+1🛡). Heavy armour makes him slow to Flee. Reach 1: a foe striking from beyond his reach takes no blow back, so keep him in the front line.\n\n2☼: Give an ally +1 to their next roll (lose 1 life).\n3☼: Draw an extra card.\nEnd your turn beside an ally to regain 2 life.",
+      "objectiveAbilities": "7◆: Allies 1 space away get +1 to their rolls.\n\n5◆ (6☼): Teleport next to any living ally (lose 2 life).",
       "color": "RED",
       "pair": "red",
       "cardFace": "front",
@@ -38,29 +23,16 @@ window.GAME_DATA = {
       "combat": {
         "attack": 2,
         "defense": 3,
-        "reach": 1
+        "reach": 1,
+        "baseShield": 1,
+        "fleeMod": 1
       }
     },
     {
       "id": "barbarian",
       "name": "Barbarian",
-      "abilities": "4☼: During your next movement, kill all minions who would be in range for combat while moving\n\nOnly Lose -3 life if 2 or less spaces away from the monster in line of sight.\n\nIf caught by a monster in a building, lose -2 life and escape the building.\n\nDefeating a minion restores +2 life.\n\nDoes +2 to minions and Minions do -1 to hero.",
-      "objectiveAbilities": "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 3☼: Move all minions that are 6+X☼ spaces away next to you. Engage combat. use any extra ☼ for X.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
-      "raw": [
-        "4",
-        "",
-        "4☼: During your next movement, kill all minions who would be in range for combat while moving\n\nOnly Lose -3 life if 2 or less spaces away from the monster in line of sight.\n\nIf caught by a monster in a building, lose -2 life and escape the building.\n\nDefeating a minion restores +2 life.\n\nDoes +2 to minions and Minions do -1 to hero.",
-        "",
-        "4",
-        "6",
-        "RED",
-        "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 3☼: Move all minions that are 6+X☼ spaces away next to you. Engage combat. use any extra ☼ for X.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
-        "",
-        "12",
-        "",
-        "Barbarian",
-        ""
-      ],
+      "abilities": "Raw power — ⚔4, reach 1. A pure melee bruiser: he hits hardest toe-to-toe, but an enemy striking from beyond his reach takes no counter, so a ranged foe can wear him down. Heavy — slow to Flee.\n\n4☼: On your next move, destroy every minion you end adjacent to along the way.",
+      "objectiveAbilities": "5◆ (3☼): Haul every minion 6+ spaces away next to you and fight them (spend extra ☼ to reach farther).",
       "color": "RED",
       "pair": "red",
       "cardFace": "back",
@@ -83,23 +55,8 @@ window.GAME_DATA = {
     {
       "id": "hunter",
       "name": "Hunter",
-      "abilities": "3☼: Summon your pet. Can only have 1 summoned at a time.\n\n2☼: Pet performs an action.\n\nPet can fly over obstacles(not walls).\nMovement rolls are shared between the pet and hero. NOT bonus Dice.\n\nPet dies in any combat with monster.",
-      "objectiveAbilities": "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 6☼: Summon a second pet.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
-      "raw": [
-        "4",
-        "",
-        "3☼: Summon your pet. Can only have 1 summoned at a time.\n\n2☼: Pet performs an action.\n\nPet can fly over obstacles(not walls).\nMovement rolls are shared between the pet and hero. NOT bonus Dice.\n\nPet dies in any combat with monster.",
-        "1",
-        "6",
-        "12",
-        "YELLOW",
-        "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 6☼: Summon a second pet.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
-        "",
-        "20",
-        "",
-        "Hunter",
-        "YELLOW"
-      ],
+      "abilities": "Marksman — reach 2, so he strikes minions that can't strike back.\n\n3☼: Summon your pet (🐾 button) — a hero-side piece (⚔1 / 🛡1 / ❤3). 2☼: your pet takes an action. The pet shares your movement rolls (not bonus dice), flies over obstacles (not walls), and is DESTROYED if it ever fights the monster itself.",
+      "objectiveAbilities": "5◆ (6☼): Summon a second pet.",
       "color": "YELLOW",
       "pair": "yellow",
       "cardFace": "front",
@@ -122,23 +79,8 @@ window.GAME_DATA = {
     {
       "id": "scout",
       "name": "Scout",
-      "abilities": "1☼: Increase movement roll by 2.\n\n5֍: Perform an action.\n\nOnly lose -3 life if 7 or more spaces away from the monster in line of sight.\n\n\n\nRoll a 4 with ☼ to avoid death when caught by a monster in a building.",
-      "objectiveAbilities": "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 4☼: Move to any wall in line of sight. End Turn.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
-      "raw": [
-        "4",
-        "",
-        "1☼: Increase movement roll by 2.\n\n5֍: Perform an action.\n\nOnly lose -3 life if 7 or more spaces away from the monster in line of sight.\n\n\n\nRoll a 4 with ☼ to avoid death when caught by a monster in a building.",
-        "",
-        "6",
-        "12",
-        "YELLOW",
-        "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 4☼: Move to any wall in line of sight. End Turn.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
-        "",
-        "20",
-        "",
-        "Scout",
-        ""
-      ],
+      "abilities": "Nimble — the party's escape artist: he Flees on 1 fewer shield than anyone else.\n\n1☼: +2 to your movement roll.\n5֍: spend a movement roll as an action.",
+      "objectiveAbilities": "5◆ (4☼): Dash to any wall in line of sight, then end your turn.",
       "color": "YELLOW",
       "pair": "yellow",
       "cardFace": "back",
@@ -155,29 +97,15 @@ window.GAME_DATA = {
       "combat": {
         "attack": 2,
         "defense": 2,
-        "reach": 1
+        "reach": 1,
+        "fleeMod": -1
       }
     },
     {
       "id": "wizard",
       "name": "Wizard",
-      "abilities": "2☼: Reroll any dice this turn.\n\n4☼: Draw an extra card\n\nMay discard a card to draw another card.\n\nHas -2 to every roll in combat. Always goes second in combat.",
-      "objectiveAbilities": "2,5,6◇: Draw a card\n\n3◇: Relocate 1 door\n\n4◆: Gain ֍ Bonus\n\n5◆: 6☼: Trade places with any object.\n5◇: Relocate 1 door\n\n7◆: Gain ☼ Bonus",
-      "raw": [
-        "6",
-        "",
-        "2☼: Reroll any dice this turn.\n\n4☼: Draw an extra card\n\nMay discard a card to draw another card.\n\nHas -2 to every roll in combat. Always goes second in combat.",
-        "1",
-        "4",
-        "4",
-        "BLUE",
-        "2,5,6◇: Draw a card\n\n3◇: Relocate 1 door\n\n4◆: Gain ֍ Bonus\n\n5◆: 6☼: Trade places with any object.\n5◇: Relocate 1 door\n\n7◆: Gain ☼ Bonus",
-        "4",
-        "4",
-        "",
-        "Wizard",
-        "BLUE"
-      ],
+      "abilities": "Caster — strikes at reach 2 but frail (⚔1 / 🛡1 / ❤4). Wins through spell cards, not blows.\n\n2☼: Reroll any of your dice this turn.\n4☼: Draw an extra card.\nYou may discard a card to draw another.",
+      "objectiveAbilities": "3◇: Relocate 1 door.\n5◇: Relocate 1 door.\n\n5◆ (6☼): Trade places with any object on the board.",
       "color": "BLUE",
       "pair": "blue",
       "cardFace": "front",
@@ -194,29 +122,14 @@ window.GAME_DATA = {
       "combat": {
         "attack": 1,
         "defense": 1,
-        "reach": 1
+        "reach": 2
       }
     },
     {
       "id": "enchantress",
       "name": "Enchantress",
-      "abilities": "4☼: Walk through a wall.\n\n5☼: Move a monster or ally 1 space.\n\nMay discard a card to draw another card.\n\nCan only use 1 dice for combat and escaping.\n\n\nHas -1 to every roll in combat. Always goes second in combat.",
-      "objectiveAbilities": "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n4◆: 6☼: Use any ally card on any hero.\n\n5◆: 7☼: Use an action anywhere.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
-      "raw": [
-        "4",
-        "4",
-        "4☼: Walk through a wall.\n\n5☼: Move a monster or ally 1 space.\n\nMay discard a card to draw another card.\n\nCan only use 1 dice for combat and escaping.\n\n\nHas -1 to every roll in combat. Always goes second in combat.",
-        "",
-        "4",
-        "4",
-        "BLUE",
-        "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n4◆: 6☼: Use any ally card on any hero.\n\n5◆: 7☼: Use an action anywhere.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
-        "",
-        "6",
-        "",
-        "Enchantress",
-        ""
-      ],
+      "abilities": "Controller — bends the board rather than trading blows (⚔1 / 🛡1). Win with utility.\n\n4☼: Walk through a wall.\n5☼: Move a monster or an ally 1 space.\nYou may discard a card to draw another.",
+      "objectiveAbilities": "4◆ (6☼): Play any ally's card on any hero.\n5◆ (7☼): Use an action anywhere on the board.",
       "color": "BLUE",
       "pair": "blue",
       "cardFace": "back",
@@ -239,23 +152,8 @@ window.GAME_DATA = {
     {
       "id": "thief",
       "name": "Thief",
-      "abilities": "1☼ and 2֍: Use an action 2 spaces away.\n\n5☼: Use an ally hero's card.\n\nRolls with the D10 can be used to move diagonally a space.\n\n Has -4 to all combat and escape rolls.\n\n\nMay initiate combat through a wall.",
-      "objectiveAbilities": "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 6☼: Can not be targeted or seen until next turn.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
-      "raw": [
-        "8",
-        "",
-        "1☼ and 2֍: Use an action 2 spaces away.\n\n5☼: Use an ally hero's card.\n\nRolls with the D10 can be used to move diagonally a space.\n\n Has -4 to all combat and escape rolls.\n\n\nMay initiate combat through a wall.",
-        "1",
-        "4",
-        "10",
-        "GREEN",
-        "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 6☼: Can not be targeted or seen until next turn.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
-        "4",
-        "10",
-        "",
-        "Thief",
-        "GREEN"
-      ],
+      "abilities": "Assassin — ⚔4 and slips away easily (Flees on 1 fewer shield), but fragile (🛡1 / ❤5). Reach 1: devastating up close. Moves diagonally (GREEN).\n\n1☼ + 2֍: Use an action 2 spaces away.\n5☼: Use an ally hero's card.",
+      "objectiveAbilities": "5◆ (6☼): Cannot be targeted or seen until your next turn.",
       "color": "GREEN",
       "pair": "green",
       "cardFace": "front",
@@ -272,29 +170,15 @@ window.GAME_DATA = {
       "combat": {
         "attack": 4,
         "defense": 1,
-        "reach": 1
+        "reach": 1,
+        "fleeMod": -1
       }
     },
     {
       "id": "ranger",
       "name": "Ranger",
-      "abilities": "2☼: -2 to a minion 4 spaces away.\n\n3☼ and 4֍: Move an Objective 1 space.\n\nRolls with the D10 can be used to move diagonally a space.\n\nCan initiate combat 3 spaces away.\n\nHas +1 in combat, if more than 1 space away.",
-      "objectiveAbilities": "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 4☼: Reroll any ֍ dice.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
-      "raw": [
-        "4",
-        "",
-        "2☼: -2 to a minion 4 spaces away.\n\n3☼ and 4֍: Move an Objective 1 space.\n\nRolls with the D10 can be used to move diagonally a space.\n\nCan initiate combat 3 spaces away.\n\nHas +1 in combat, if more than 1 space away.",
-        "",
-        "4",
-        "10",
-        "GREEN",
-        "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 4☼: Reroll any ֍ dice.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
-        "8",
-        "10",
-        "",
-        "Ranger",
-        ""
-      ],
+      "abilities": "Sharpshooter — reach 3, and +1 attack die when striking from 2+ spaces away. Staying back keeps him safe: a target he out-reaches can't strike back. Moves diagonally (GREEN).\n\n2☼: Deal 2 damage to a minion within reach.\n3☼ + 4֍: Move an objective 1 space.",
+      "objectiveAbilities": "5◆ (4☼): Reroll any of your movement dice.",
       "color": "GREEN",
       "pair": "green",
       "cardFace": "back",
@@ -311,29 +195,16 @@ window.GAME_DATA = {
       "combat": {
         "attack": 3,
         "defense": 2,
-        "reach": 3
+        "reach": 3,
+        "rangedAttack": 1,
+        "rangedFrom": 1
       }
     },
     {
       "id": "druid",
       "name": "Druid",
-      "abilities": "3☼: Transform. Persists until cast again. Can be used multiple times per turn.\n\n4☼: Transform an ally for this turn.\n\nTURTLE: +3☼ and -4֍\nCHEETAH: +4֍ and -3☼\nBEAR: +2 in combat roll. take -1 from minions.\nDEER: Restore +2 life to any hero for 1☼, Takes +4 from attacks while in this form.\n\nHas -3 to all combat and escape rolls. Always goes second in combat.",
-      "objectiveAbilities": "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n4◆: Rolls with the D10 can be used to move diagonally a space.\n\n5◆: 3☼: Draw an extra card.\n\n7◆: Gain ☼ Bonus.",
-      "raw": [
-        "6",
-        "",
-        "3☼: Transform. Persists until cast again. Can be used multiple times per turn.\n\n4☼: Transform an ally for this turn.\n\nTURTLE: +3☼ and -4֍\nCHEETAH: +4֍ and -3☼\nBEAR: +2 in combat roll. take -1 from minions.\nDEER: Restore +2 life to any hero for 1☼, Takes +4 from attacks while in this form.\n\nHas -3 to all combat and escape rolls. Always goes second in combat.",
-        "1",
-        "4",
-        "10",
-        "PURPLE",
-        "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n4◆: Rolls with the D10 can be used to move diagonally a space.\n\n5◆: 3☼: Draw an extra card.\n\n7◆: Gain ☼ Bonus.",
-        "",
-        "8",
-        "",
-        "Druid",
-        "PURPLE"
-      ],
+      "abilities": "Shapeshifter — 3☼: Transform (persists until you change again; may be re-cast several times a turn). 4☼: Transform an ally for this turn. Your sheet shows the active form's roll bonuses.\n\nBEAR: +1⚔ / +1🛡 (bruiser).\nTURTLE: +2🛡 (shell).\nCHEETAH: -1🛡, +2 to movement rolls (fast, fragile).\nDEER: -1🛡; for 1☼ restore 2 life to any hero (fragile healer).",
+      "objectiveAbilities": "5◆ (3☼): Draw an extra card.",
       "color": "PURPLE",
       "pair": "purple",
       "cardFace": "front",
@@ -356,23 +227,8 @@ window.GAME_DATA = {
     {
       "id": "cleric",
       "name": "Cleric",
-      "abilities": "12☼: Revive any hero to half health. End both heroes turns.\n\n4☼: Restore +3 life to any living hero.\n\nBoth Dice count towards actions OR Movements. Excludes Bonus Dice. Can only use 1 dice for combat and escaping.\n\n\nHas -4 to all combat and escape rolls. Always goes second in combat.",
-      "objectiveAbilities": "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 3☼: Give +2☼ to an ally hero's roll. Lose 2 life.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
-      "raw": [
-        "6",
-        "8",
-        "12☼: Revive any hero to half health. End both heroes turns.\n\n4☼: Restore +3 life to any living hero.\n\nBoth Dice count towards actions OR Movements. Excludes Bonus Dice. Can only use 1 dice for combat and escaping.\n\n\nHas -4 to all combat and escape rolls. Always goes second in combat.",
-        "",
-        "4",
-        "6",
-        "PURPLE",
-        "2,5,6◇: Draw a card\n\n4◆: Gain ֍ Bonus\n\n5◆: 3☼: Give +2☼ to an ally hero's roll. Lose 2 life.\n\n7◆: Gain ☼ Bonus\n\n8◆:",
-        "6",
-        "8",
-        "",
-        "Cleric",
-        ""
-      ],
+      "abilities": "Blessed — 🛡3 and always blocks 1 hit (+1🛡): very hard to put down, though heavy and slow to Flee.\n\n4☼: Restore 3 life to any living hero.\n12☼: Revive any hero to half health (ends both heroes' turns).\nBoth your dice count as actions OR movement.",
+      "objectiveAbilities": "5◆ (3☼): Give an ally +2 to a roll (you lose 2 life).",
       "color": "PURPLE",
       "pair": "purple",
       "cardFace": "back",
@@ -389,7 +245,9 @@ window.GAME_DATA = {
       "combat": {
         "attack": 1,
         "defense": 3,
-        "reach": 1
+        "reach": 1,
+        "baseShield": 1,
+        "fleeMod": 1
       }
     }
   ],
@@ -397,22 +255,26 @@ window.GAME_DATA = {
     {
       "id": "maraurnzol",
       "name": "Maraurn'Zol",
-      "abilities": "Movement — RAMPAGE (meteor). On her turn, roll the grid and crash her down on that square. EVERY hero in line of sight of where she lands takes her Strike — this is the meteor. Her Strike (meteor only) ignores all cover: it burns through objects and walls.\n\nx◆: +1 Rampage (extra meteor) for every 4 objectives taken.\n2◆: Meteor blast radius 1 (also Strike the ring around the impact).\n4◆: Meteor blast radius 2.\n7◆: Meteor blast radius 3.\n\nAdvance: instead of a meteor she may walk 1 space. From an Advance she makes only a NORMAL melee Strike — reach 1, needs clear line of sight, no cover-ignore and no blast. Sight 6.\n\nEscape: a struck hero may Flee — roll Defense; shields block the hit and scramble 1 space each. Get out of line of sight to be safe.",
-      "objectiveAbilities": "6◇: Add a CLONE of Maraurn'Zol (use the ✚ Clone button on her sheet). The clone takes its own Rampage after her with the same blast radius, and — like her — can't be killed, only shoved.\n\n9◇: Meteor Storm — take one extra Rampage; every hero not behind a full wall is Struck.",
+      "abilities": "A glass cannon that strikes from anywhere. On a GRID ROLL (both axes random — she can't aim) she lands and hits EVERY hero within her large sight (7), hard (⚔5) and THROUGH walls and objects. Her reach also applies to the grid roll, so she hits everyone within her blast radius of the landing too.\n\nx◆: +1 grid roll for every 4 objectives.\n2◆: Blast radius 1.\n4◆: Blast radius 2.\n7◆: Blast radius 3.\n\nIf she MOVES instead, she makes only a weak melee strike (⚔2, reach 1). Easy to shove back (🛡0) — the only safety is out of her sight.",
+      "objectiveAbilities": "6◇: Add a copy of Maraurn'Zol (✚ Clone button). It takes its own grid-roll attack after her, with the same blast radius, and can't be killed — only shoved.\n\n9◇: Take one extra grid-roll attack; every hero not behind a full wall is hit.",
       "element": "Fire",
       "art": "players/bad5.jpg",
       "stats": {
         "monsterDie": 6,
         "movementDie": null,
-        "sight": 6,
-        "moveStyle": "rampage",
-        "rampageEvery": 4
+        "sight": 7,
+        "gridAxis": "random",
+        "gridRolls": 1,
+        "gridRollsEvery": 4,
+        "moves": 1
       },
       "combat": {
         "attack": 5,
+        "moveAttack": 2,
         "defense": 0,
         "reach": 1,
         "ignoreCover": true,
+        "reachAppliesToGrid": true,
         "blastLadder": [
           {
             "at": 2,
@@ -432,16 +294,17 @@ window.GAME_DATA = {
     {
       "id": "thefog",
       "name": "The Fog",
-      "abilities": "Movement — CREEP. The Fog never teleports. Roll its movement die (D20) — its own +2 is added for you — and slide it forward that many spaces, engulfing everything it rolls over. It creeps faster the deeper the game runs.\n\n1◆: Strike all heroes 1 space away.\n4◆: Reach 2 — strike heroes 2 spaces away.\n8◆: Reach 3 — strike heroes 3 spaces away.\n2◆: +D4 to movement rolls.\n4◆: +D4 to movement rolls.\n\nHeroes inside a building are SAFE — the Fog cannot strike them. Sight 6.\n\nEscape: do NOT try to shove it back (its reach outgrows the push and you stay pinned — a loop). Break line of sight or step into a building. The Fog is slow early; outrun it while you can.",
-      "objectiveAbilities": "2◇: The Fog sees heroes through all objects — but still NOT through building walls.\n\n9◇: Suffocate — kill up to 2 heroes who are not inside a building.",
+      "abilities": "It has NO grid roll — it never teleports. It rolls its big movement die (D20, +2, and faster later) and slides forward, striking every hero within reach as it rolls over them. Its reach grows 1 → 2 → 3, so once it out-reaches you it can't be pushed back — break line of sight or get indoors.\n\n1◆: Reach 1 (strike 1 away).\n4◆: Reach 2.\n8◆: Reach 3.\n2◆: +D4 to movement rolls.\n4◆: +D4 to movement rolls.\n\nHeroes inside a building are SAFE. Sight 6.",
+      "objectiveAbilities": "2◇: The Fog sees heroes through all objects — but still NOT through building walls.\n\n9◇: Kill up to 2 heroes who are not inside a building.",
       "element": "Smoke",
       "art": "players/bad4.jpg",
       "stats": {
         "monsterDie": 6,
         "movementDie": 20,
         "sight": 6,
-        "moveStyle": "creep",
-        "rampageEvery": 0,
+        "gridAxis": null,
+        "gridRolls": 0,
+        "moves": 1,
         "moveFlat": 2,
         "moveDiceLadder": [
           {
@@ -474,7 +337,7 @@ window.GAME_DATA = {
     {
       "id": "ghathag",
       "name": "Ghathag",
-      "abilities": "Movement — STALK. Each turn he steps forward in a straight line toward the nearest hero. He cannot enter buildings (cannot pass through doors). While stalking his sight drops to 1 — slip out of his lane and he loses your scent.\n\nx◆: +1 Stalk for every 4 objectives taken.\n2◆: Stalk 3 spaces.\n4◆: Stalk 3 more spaces.\n6◆: Stalk 3 more spaces.\n3◆: Place a barrier (use the 🧱 Barrier button). Barriers block movement and line of sight.\n4◆: Ghathag is enraged — permanent +2 attack (his Strike becomes ⚔6). Being cornered by him is now deadly.\n\nSight 4 (only 1 while stalking).\n\nEscape: a hero he reaches may Flee — roll Defense; shields block and scramble. Duck through a door; he can't follow you inside.",
+      "abilities": "A stalker with NO grid roll — each move he steps toward the nearest hero and strikes at reach 1, hitting hard (⚔4, ⚔6 once enraged) and shrugging off pushes (🛡2, hard to shove). Sight 4, but only 1 while stalking — slip out of his lane and he loses you. He cannot enter buildings.\n\nx◆: +1 move for every 4 objectives.\n2◆: Step 3 spaces.\n4◆: Step 3 more.\n6◆: Step 3 more.\n3◆: Place a barrier (🧱 button) — blocks movement and line of sight.\n4◆: Enraged — permanent +2 attack (⚔6).",
       "objectiveAbilities": "3◇: Place 2 barriers.\n5◇: Place 2 barriers.\n4◆: Barriers placed now have +2 life.\n7◆: Barriers placed now have +2 more life.\n9◇: Turn every barrier into a minion (roll each for its health).",
       "element": "Claw",
       "art": "players/bad2.jpg",
@@ -483,8 +346,10 @@ window.GAME_DATA = {
         "movementDie": null,
         "sight": 4,
         "stalkSight": 1,
-        "moveStyle": "stalk",
-        "rampageEvery": 4
+        "gridAxis": null,
+        "gridRolls": 0,
+        "moves": 1,
+        "movesEvery": 4
       },
       "combat": {
         "attack": 4,
@@ -501,7 +366,7 @@ window.GAME_DATA = {
     {
       "id": "oblex",
       "name": "Oblex",
-      "abilities": "Movement — OOZE. Oblex moves with the GRID ROLL (roll the grid, slide it there) — random repositioning, not a controlled walk. After moving it may trade places with any minion (its real teleport). It does NOT gain extra moves as objectives are taken.\n\nUnlike a Rampage, an OOZE does NOT strike everyone in sight — Oblex is no bruiser. It only makes a weak normal Strike (⚔2) on a hero it lands next to; the danger is that it SWAPS a strong minion into your face instead.\n\n1◆: Summon minions equal to 1 + 1 per 3 objectives taken (roll each d4 for health).\n3◆: Or, instead of summoning, give +1 attack to one minion.\n5◆: All minions may move 2 spaces each turn.\n\nMinion baseline: ⚔2 / 🛡1 / ❤ d4. Its ladder buffs below apply to EVERY minion automatically. Sight 4.\n\nEscape: a hero a minion reaches may Flee — roll Defense; shields block and scramble. Break line of sight from the swarm.",
+      "abilities": "Weak itself — its minions do the fighting. On a GRID ROLL it controls the COLUMN and rolls the row, then may swap places with any minion. It gets no extra grid rolls. Its own strike is weak (⚔2, sight 4); the danger is the swarm it drops in your face, and it is hard to slip away from (flee +1).\n\n1◆: Summon 1 + 1 per 3 objectives (roll each d4 for health).\n3◆: Or give +1 attack to one minion.\n5◆: All minions may move 2 spaces each turn.\n\nMinion baseline ⚔2 / 🛡1 / ❤ d4; the ladder buffs below apply to every minion automatically.",
       "objectiveAbilities": "1◇: Summon 2 minions.\n3◇: Summon 3 minions.\n5◇: Summon 4 minions.\n4◆: Every minion gets +1 attack (automatic).\n6◆: Every minion gets +1 reach (automatic).\n7◆: Every minion gets +1 attack (automatic).\n9◇: Double the number of minions on the board.",
       "element": "Flesh",
       "art": "players/bad3.jpg",
@@ -509,33 +374,39 @@ window.GAME_DATA = {
         "monsterDie": 6,
         "movementDie": null,
         "sight": 4,
-        "moveStyle": "ooze",
-        "rampageEvery": 0
+        "gridAxis": "x",
+        "gridRolls": 1,
+        "gridRollsEvery": 0,
+        "moves": 1
       },
       "combat": {
         "attack": 2,
         "defense": 0,
-        "reach": 1
+        "reach": 1,
+        "fleeMod": 1
       }
     },
     {
       "id": "wyhtthetrickster",
       "name": "Wyht, the Trickster",
-      "abilities": "Movement — BLINK. She flits around the board: roll the grid to blink her to a random square (a short Rampage), positioning for her tricks. She wins by disruption, not by blows.\n\nx◆: +1 Blink for every 3 objectives taken.\n2◆: Relocate any 1 objective to a space you choose.\n4◆: Every hero discards 1 card — or one hero of your choice discards 2.\n6◆: Draw 2 monster cards, OR one hero of your choice discards down to 4 cards.\n8◆: Swap the positions of two objectives, or add +1 to one objective's value.\n\nWyht draws an extra card whenever she draws. Sight 5.\n\nA Blink that passes a hero in line of sight lets her Strike that hero (weak, ⚔2). They may Flee — roll Defense.",
-      "objectiveAbilities": "1◇: Add 1 objective to the board (this raises the heroes' goal).\n3◇: Randomly relocate ALL objectives.\n5◇: Add 1 objective to the board.\n10◇: Choose a hero — they die.",
+      "abilities": "A trickster who wins by disruption, not damage. On a GRID ROLL she CHOOSES a row or a column and rolls the other, blinking into position; a hero she passes in her sight (5) takes a weak hit (⚔2). She is easy to slip away from (flee -1).\n\nx◆: +1 grid roll for every 3 objectives.\n2◆: Relocate any 1 objective to a space you choose.\n4◆: Every hero discards 1 card — or one hero of your choice discards 2.\n6◆: Draw 2 monster cards, OR one hero of your choice discards down to 4 cards.\n8◆: Swap the positions of two objectives, or add +1 to one objective's value.\n\nWyht draws an extra card whenever she draws.",
+      "objectiveAbilities": "1◇: Add 1 objective to the board (raises the heroes' goal).\n3◇: Randomly relocate ALL objectives.\n5◇: Add 1 objective to the board.\n10◇: Choose a hero — they die.",
       "element": "Mind",
       "art": "players/bad1.jpg",
       "stats": {
         "monsterDie": 6,
         "movementDie": null,
         "sight": 5,
-        "moveStyle": "blink",
-        "rampageEvery": 3
+        "gridAxis": "choose",
+        "gridRolls": 1,
+        "gridRollsEvery": 3,
+        "moves": 1
       },
       "combat": {
         "attack": 2,
         "defense": 0,
-        "reach": 1
+        "reach": 1,
+        "fleeMod": -1
       }
     }
   ],
@@ -546,9 +417,9 @@ window.GAME_DATA = {
       "deck": "Black",
       "side": "monster",
       "timing": "draw",
-      "copies": 10,
+      "copies": 6,
       "cost": "0",
-      "text": "Choose the number and randomize\nthe letter for your next movement.\n\nThis can only be played instantly at the beginning of your turn.\n\nCan't be used on the turn it is drawn.",
+      "text": "Your next grid roll this turn: place the monster EXACTLY — choose BOTH the column and the row instead of rolling.\n\nPlay at the start of your turn; not the turn it is drawn.",
       "art": "cards/surprise.png",
       "raw": [
         "268",
@@ -656,7 +527,12 @@ window.GAME_DATA = {
       "timing": "draw",
       "copies": 5,
       "cost": "0",
-      "text": "The monster's next turn movement can kill heroes diagonally\n\nAll other monster rules still apply",
+      "text": "The monster's next Strike this turn rolls +2 attack dice (its blow lands harder).",
+      "effect": {
+        "attackDice": 2,
+        "scope": "attack",
+        "duration": "turn"
+      },
       "art": "cards/diaginal.png",
       "raw": [
         "260",
@@ -764,7 +640,7 @@ window.GAME_DATA = {
       "timing": "draw",
       "copies": 8,
       "cost": "X☼",
-      "text": "Move a monster or minion X spaces.\n\nMovement can be divided between multiple minions and the monster.\n\nIf the monster is able to attack a hero by moving this way, allow the hero to escape by rolling a 3 action or higher",
+      "text": "Move a monster or minion X spaces.\n\nMovement can be divided between multiple minions and the monster.\n\nIf this move lets the monster or a minion Strike a hero, that hero may Flee (roll Defense) as normal.",
       "art": "cards/move.png",
       "raw": [
         "132",
@@ -872,7 +748,7 @@ window.GAME_DATA = {
       "timing": "hand",
       "copies": 8,
       "cost": "3☼",
-      "text": "Revive a hero who died.\n\nSet the hero's health to their max -5\n\nThe revived hero can not use their action dice this turn, but can use movement dice.",
+      "text": "Revive a hero who died.\n\nSet the revived hero's health to 4 (same as a normal revive).\n\nThe revived hero can not use their action dice this turn, but can use movement dice.",
       "art": "cards/revive.png",
       "raw": [
         "286",
@@ -1187,6 +1063,70 @@ window.GAME_DATA = {
         "Increase your next movement and your next action roll by +2 for one turn only.",
         "0"
       ]
+    },
+    {
+      "id": 300,
+      "name": "Whetstone",
+      "deck": "White",
+      "side": "hero",
+      "timing": "hand",
+      "copies": 2,
+      "cost": "1",
+      "text": "+2 attack dice on your next attack this turn.",
+      "art": "",
+      "effect": {
+        "attackDice": 2,
+        "scope": "attack",
+        "duration": "once"
+      }
+    },
+    {
+      "id": 301,
+      "name": "Brace",
+      "deck": "White",
+      "side": "hero",
+      "timing": "hand",
+      "copies": 2,
+      "cost": "0",
+      "text": "+2 defense dice on your next defense this turn.",
+      "art": "",
+      "effect": {
+        "defenseDice": 2,
+        "scope": "defense",
+        "duration": "once"
+      }
+    },
+    {
+      "id": 302,
+      "name": "Called Shot",
+      "deck": "White",
+      "side": "hero",
+      "timing": "hand",
+      "copies": 1,
+      "cost": "1",
+      "text": "Your next attack lands +1 automatic skull, before any dice.",
+      "art": "",
+      "effect": {
+        "skull": 1,
+        "scope": "attack",
+        "duration": "once"
+      }
+    },
+    {
+      "id": 303,
+      "name": "Thick Hide",
+      "deck": "Black",
+      "side": "monster",
+      "timing": "hand",
+      "copies": 1,
+      "cost": "0",
+      "text": "This turn the monster is hard to shove: +2 defense dice whenever it is attacked.",
+      "art": "",
+      "effect": {
+        "defenseDice": 2,
+        "scope": "defense",
+        "duration": "turn"
+      }
     }
   ]
 };

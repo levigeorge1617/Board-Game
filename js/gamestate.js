@@ -119,14 +119,14 @@ class GameState {
     setGoal(goal) { this.dispatch({ type: 'SET_GOAL', goal }); }
     log(text, seatId) { this.dispatch({ type: 'LOG', text, seatId }); }
     rollDice(seatId, dieList, kind, flat, flatFrom) { this.dispatch({ type: 'ROLL_DICE', seatId, dieList, kind, flat, flatFrom }); }
-    rollGrid(seatId, cols, rows) { this.dispatch({ type: 'ROLL_GRID', seatId, cols, rows }); }
+    rollGrid(seatId, cols, rows, axis, value) { this.dispatch({ type: 'ROLL_GRID', seatId, cols, rows, axis, value }); }
     movePiece(seatId, x, y) { this.dispatch({ type: 'MOVE_PIECE', seatId, x, y }); }
     adjustHp(seatId, delta) { this.dispatch({ type: 'ADJUST_HP', seatId, delta }); }
     kill(seatId) { this.dispatch({ type: 'KILL', seatId }); }
     reviveTick(seatId, amount) { this.dispatch({ type: 'REVIVE_TICK', seatId, amount }); }
     setForm(seatId, form, temp) { this.dispatch({ type: 'SET_FORM', seatId, form, temp }); }
     setBoard(board) { this.dispatch({ type: 'SET_BOARD', board }); }
-    attack(attackerId, defenderId, cols, rows) { this.dispatch({ type: 'COMBAT', attackerId, defenderId, cols, rows }); }
+    attack(attackerId, defenderId, cols, rows, via) { this.dispatch({ type: 'COMBAT', attackerId, defenderId, cols, rows, via }); }
     addMinion(opts) { this.dispatch(Object.assign({ type: 'ADD_MINION' }, opts)); }
     addClone(x, y) { this.dispatch({ type: 'ADD_CLONE', x, y }); }
     removeMinion(id) { this.dispatch({ type: 'REMOVE_MINION', id }); }

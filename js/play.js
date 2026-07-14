@@ -274,13 +274,12 @@ class PlayController {
         const ch = this.gs.character(seat);
         let html = `<div class="ph-side-seat" style="--c:${PH_COLOR[seat.color] || '#888'}">${esc(seat.label)}</div>`;
         html += this.diceBar(seat, ch, false);
-        if (seat.kind === 'monster') html += `<button id="ph-side-grid" class="ph-btn ph-btn-go" style="width:100%;margin-top:6px;">Roll grid ▸ #/A</button>`;
+        if (seat.kind === 'monster') html += this.monsterMoveHint(ch, (this.gs.state.score && this.gs.state.score.collected) || 0) + this.gridControlHtml(seat, ch);
         html += this.modsBar(seat);
         wrap.innerHTML = html;
         this.wireDice(wrap, seat);
         this.wireMods(wrap, seat);
-        const g = document.getElementById('ph-side-grid');
-        if (g) g.onclick = () => this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows);
+        this.wireGridControl(wrap, seat);
     }
 
     // Active roll/combat modifiers queued on a fighter (from played cards, etc.).
@@ -307,15 +306,15 @@ class PlayController {
         const wrap = document.getElementById('ph-sec-combat'); if (!wrap) return;
         const seat = this.gs.seat(this.gs.mySeatId);
         if (!seat) { wrap.innerHTML = '<p class="ph-side-hint">Pick your seat to attack.</p>'; return; }
-        const ch = this.gs.character(seat);
-        const c = (ch && ch.combat) || {};
-        const base = (c.baseAttack ? ` · +${c.baseAttack}☠` : '') + (c.baseShield ? ` · +${c.baseShield}🛡` : '');
+        const st = this.effectiveCombat(seat);
+        const base = (st.baseAttack ? ` · +${st.baseAttack}☠` : '') + (st.baseShield ? ` · +${st.baseShield}🛡` : '');
         wrap.innerHTML =
-            `<div class="ph-side-seat" style="--c:${PH_COLOR[seat.color] || '#888'}">⚔ ${c.attack || 0} / 🛡 ${c.defense || 0}${symbolize(base)}</div>` +
-            this.attackRow(seat) +
-            `<div class="ph-muted" style="font-size:10px;margin-top:5px;">Both sides roll: your skulls wound the target, their skulls wound you — shields block.</div>`;
+            `<div class="ph-side-seat" style="--c:${PH_COLOR[seat.color] || '#888'}">⚔ ${st.attack} / 🛡 ${st.defense}${symbolize(base)} · reach ${st.reach}</div>` +
+            this.strikeToggleHtml(seat) + this.attackRow(seat) +
+            `<div class="ph-muted" style="font-size:10px;margin-top:5px;">Both sides roll; skulls beat shields. You strike back only if the attacker is within your reach.</div>`;
+        this.wireStrikeToggle(wrap);
         const go = wrap.querySelector('.ph-atk-go');
-        if (go) go.onclick = () => { const t = wrap.querySelector('.ph-atk-target'); if (t && t.value) this.gs.attack(seat.id, t.value, this.app.board.cols, this.app.board.rows); };
+        if (go) go.onclick = () => { const t = wrap.querySelector('.ph-atk-target'); if (t && t.value) this.attackWith(seat.id, t.value); };
     }
 
     // ---- dice bar (shared by sidebar + character sheet) -------------------
@@ -415,6 +414,12 @@ class PlayController {
         if (inv) inv.onclick = () => this.copyInvite();
     }
 
+    // The universal objective-count rewards, in order — used for the "next unlock"
+    // hint by the score so the escalation is legible.
+    nextUnlock(n) {
+        const ms = [{ at: 2, l: 'draw a card' }, { at: 4, l: '֍ bonus die' }, { at: 5, l: 'draw a card' }, { at: 6, l: 'draw a card' }, { at: 7, l: '☼ bonus die' }];
+        return ms.find(m => m.at > (n || 0)) || null;
+    }
     // ---- roster / seats ---------------------------------------------------
     renderRoster() {
         const s = this.gs.state;
@@ -429,12 +434,15 @@ class PlayController {
                 `<span class="ph-chip-count">${seat.hand.length}🂠</span></button>`;
         }).join('');
         const sc = s.score || { collected: 0, goal: 0 };
+        const nu = this.nextUnlock(sc.collected);
+        const schedule = 'Objective escalation — every hero: draw a card at 2, 5, 6 · ֍ bonus die at 4 · ☼ bonus die at 7. Monsters also grow (more grid rolls / moves / reach — see the monster sheet).';
+        const nextChip = nu ? `<span class="ph-next-unlock" title="${esc(schedule)}">▸ ${symbolize(esc(nu.l))} @${nu.at}</span>` : '';
         const scoreChip =
-            `<div class="ph-score" title="Objectives collected">` +
+            `<div class="ph-score" title="${esc(schedule)}">` +
                 `<button class="ph-score-btn" id="ph-score-dn">−</button>` +
                 `<span class="ph-score-val">${GAME_ICONS.obj} <b>${sc.collected}</b>${sc.goal ? ' / ' + sc.goal : ''}</span>` +
                 `<button class="ph-score-btn" id="ph-score-up">+</button>` +
-            `</div>`;
+            `</div>${nextChip}`;
         // Objective score + turn button stay inline; the seat picker, online
         // control and Reset live in a compact ⋯ menu so the bar fits on phones.
         document.getElementById('ph-roster').innerHTML =
@@ -442,7 +450,7 @@ class PlayController {
                 `<div class="ph-seats">${chips}</div>` +
                 `<div class="ph-bar-ctl">` +
                     scoreChip +
-                    `<button id="ph-next" class="ph-btn ${heroesTurn ? 'ph-turn-hero' : 'ph-turn-mon'}">${heroesTurn ? "Heroes'" : "Monster's"} turn ▸ end</button>` +
+                    `<button id="ph-next" class="ph-btn ${heroesTurn ? 'ph-turn-hero' : 'ph-turn-mon'}" title="${esc(heroesTurn ? 'Heroes\' turn: every hero draws a card, then moves & acts with their dice (attack costs an action). Flee to safety if struck. Tap to end the turn.' : 'Monster\'s turn: draw a card, then in any order — roll the grid to attack (sight), move to attack (reach), and use abilities. Tap to end the turn.')}">${heroesTurn ? "Heroes'" : "Monster's"} turn ▸ end</button>` +
                     `<div class="ph-more-wrap">` +
                         `<button id="ph-more" class="ph-btn" title="Table options">⋯</button>` +
                         `<div id="ph-more-menu" class="ph-more-menu" style="display:none">` +
@@ -611,6 +619,9 @@ class PlayController {
                 `<span class="ph-cb-vs">vs</span>` +
                 side(def ? def.label : 'Defender', dc, lastCombat.defSkulls, lastCombat.defShields, dmgTxt(atk, lastCombat.woundsToAtk, lastCombat.repelAtk)) +
                 `</div>`;
+            const f = lastCombat.flee;
+            if (f) html += `<div class="ph-flee ${f.can ? 'can' : 'cant'}" title="A hero may flee when its Defense roll shows at least the threshold in shields. Break line of sight or reach the moment you can.">🏃 Flee: rolled ${f.shields}🛡 / need ${f.threshold} — ${f.can ? 'MAY FLEE' : 'cannot flee'}</div>`;
+            if ((lastCombat.modsDef || []).some(m => /out of reach/.test(m))) html += `<div class="ph-flee cant">attacker out of reach — no blow back</div>`;
         }
         el.innerHTML = html || '<div class="ph-side-hint">Rolls show here.</div>';
     }
@@ -660,8 +671,7 @@ class PlayController {
         const chooser = window.GAME_DATA ? this.characterChooser(seat) : '';
         const score = (this.gs.state.score && this.gs.state.score.collected) || 0;
         const gridBtn = seat.kind === 'monster'
-            ? `<button id="ph-roll-grid" class="ph-btn ph-btn-go" style="width:100%;margin-bottom:8px;">Roll grid ▸ #/A</button>` +
-              this.monsterMoveHint(ch, score) + this.monsterActions(seat, ch, score) : '';
+            ? this.monsterMoveHint(ch, score) + this.gridControlHtml(seat, ch) + this.monsterActions(seat, ch, score) : '';
 
         pop.innerHTML =
             `<div class="ph-sheet" style="--c:${col}">` +
@@ -679,6 +689,7 @@ class PlayController {
                             this.attackTargetBtn(seat) +
                             this.losBtn() +
                             gridBtn +
+                            this.heroActions(seat, ch) +
                             this.pieceBlock(seat) +
                             this.combatBlock(seat) +
                             this.formsBlock(seat, ch) +
@@ -694,9 +705,10 @@ class PlayController {
         this.wireAttackTarget(pop, seat.id);
         this.wireLosBtn(pop, seat.id);
         this.wireDice(pop, seat);
-        const gb = pop.querySelector('#ph-roll-grid');
-        if (gb) gb.onclick = () => this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows);
+        this.wireGridControl(pop, seat);
+        this.wireStrikeToggle(pop);
         this.wireMonsterActions(pop, seat, score);
+        this.wireHeroActions(pop, seat);
         const sel = pop.querySelector('.ph-cc-choose');
         if (sel) sel.onchange = (e) => this.gs.setSeatCharacter(seat.id, e.target.value);
 
@@ -717,7 +729,7 @@ class PlayController {
         });
         on('.ph-atk-go', () => {
             const target = pop.querySelector('.ph-atk-target');
-            if (target && target.value) this.gs.attack(seat.id, target.value, this.app.board.cols, this.app.board.rows);
+            if (target && target.value) this.attackWith(seat.id, target.value);
         });
     }
 
@@ -734,39 +746,72 @@ class PlayController {
     }
     wireAttackTarget(pop, targetId) {
         const btn = pop.querySelector('.ph-attack-target');
-        if (btn) btn.onclick = () => { this.gs.attack(this.gs.mySeatId, targetId, this.app.board.cols, this.app.board.rows); this.closePopover(); };
+        if (btn) btn.onclick = () => { this.attackWith(this.gs.mySeatId, targetId); this.closePopover(); };
     }
     // Button (in a piece sheet) that shows this piece's range + line of sight on the board.
-    losBtn() { return `<button class="ph-btn ph-los-btn" style="width:100%;margin-bottom:8px;">👁 Show range / line of sight</button>`; }
+    losBtn() { return `<button class="ph-btn ph-los-btn" title="Light up this piece's reach (and, for a monster, its sight) on the board, with a distance number on every enemy. Then tap an empty cell for walk distance." style="width:100%;margin-bottom:8px;">👁 Show reach / sight on board</button>`; }
     wireLosBtn(pop, id) {
         const b = pop.querySelector('.ph-los-btn');
         if (b) b.onclick = () => { this.app.inspectPieceId = id; this.closePopover(); this.app.renderer.draw(); };
     }
 
-    // enemies = the opposing side (heroes vs monster+minions), placed & alive
+    // Which side a piece fights on: heroes + their pets vs the monster + its
+    // minions/clones/barriers.
+    sideOf(ent) { return ent.kind === 'hero' ? 'hero' : ent.kind === 'monster' ? 'monster' : (ent.side || 'monster'); }
+    // enemies = every placed, living piece on the opposing side
     enemiesOf(ent) {
-        const heroSide = ent.kind === 'hero';
-        const list = heroSide
-            ? this.gs.state.seats.filter(o => o.kind === 'monster').concat(this.gs.state.minions || [])
-            : this.gs.state.seats.filter(o => o.kind === 'hero');
-        return list.filter(o => o.x != null && !o.dead);
+        const mine = this.sideOf(ent);
+        return this.gs.state.seats.concat(this.gs.state.minions || [])
+            .filter(o => o.id !== ent.id && o.x != null && !o.dead && this.sideOf(o) !== mine);
     }
     attackRow(ent) {
         const enemies = this.enemiesOf(ent);
         const opts = enemies.map(o => `<option value="${o.id}">${esc(o.label)} · ${this.dist(ent, o)} away</option>`).join('')
             || '<option value="">no targets on board</option>';
-        return `<div class="ph-atk-row"><select class="ph-atk-target">${opts}</select>` +
-            `<button class="ph-btn ph-btn-warn ph-atk-go"${enemies.length ? '' : ' disabled'}>Attack ⚔</button></div>`;
+        return `<div class="ph-atk-row"><select class="ph-atk-target" title="Pick a target within your reach">${opts}</select>` +
+            this.attackPreview(ent) +
+            `<button class="ph-btn ph-btn-warn ph-atk-go" title="Resolve one exchange — both sides roll at once"${enemies.length ? '' : ' disabled'}>Attack ⚔</button></div>`;
+    }
+    // A tiny "this attack will roll ⚔N" preview so contextual dice (form, mods,
+    // grid/move strike) are visible before you commit.
+    attackPreview(ent) {
+        const st = this.effectiveCombat(ent);
+        const ch = this.gs.character(ent), c = (ch && ch.combat) || {};
+        let dice = st.attack;
+        if ((ent.kind === 'monster' || ent.clone) && this.strikeVia === 'move' && c.moveAttack != null) dice = c.moveAttack;
+        const mods = (ent.mods || []).filter(m => (m.attackDice || m.skull) && (m.scope === 'attack' || m.scope === 'any'));
+        dice += mods.reduce((n, m) => n + (m.attackDice || 0), 0);
+        const skulls = (st.baseAttack || 0) + mods.reduce((n, m) => n + (m.skull || 0), 0);
+        const tip = `The attack dice you'll roll (each ~50% skull)${skulls ? ' plus guaranteed skulls' : ''}. Skulls past the target's shields wound it; you only get hit back if it's within your reach.`;
+        return `<span class="ph-atk-prev" title="${esc(tip)}">⚔${dice}${skulls ? `+${skulls}☠` : ''}</span>`;
     }
     // ⚔ attack: pick an enemy piece and resolve one exchange
     combatBlock(seat) {
         const ch = this.gs.character(seat);
         const c = (ch && ch.combat) || {};
-        const reachNote = c.reach > 1 ? ` · reach ${c.reach}` : '';
-        const base = (c.baseAttack ? ` · +${c.baseAttack}☠` : '') + (c.baseShield ? ` · +${c.baseShield}🛡` : '');
-        return `<div class="ph-cc-block"><h4>Combat — ⚔ ${c.attack || 0} / 🛡 ${c.defense || 0}${symbolize(base)}${reachNote}</h4>` +
-            this.attackRow(seat) +
-            `<div class="ph-muted" style="font-size:10px;margin-top:4px;">Both sides roll — your skulls wound the target, their skulls wound you; shields block. Damage applies automatically.</div></div>`;
+        const st = this.effectiveCombat(seat);   // includes Druid form deltas
+        const base = (st.baseAttack ? ` · +${st.baseAttack}☠` : '') + (st.baseShield ? ` · +${st.baseShield}🛡` : '');
+        const perks = [];
+        if (st.baseShield) perks.push([`+${st.baseShield}🛡 always`, 'You always block this many hits, before rolling — hard to put down.']);
+        if (c.rangedAttack) perks.push([`+${c.rangedAttack}⚔ from ${(c.rangedFrom || 1) + 1}+ away`, 'Extra attack dice when you strike from that far — your reward for keeping range.']);
+        if (c.fleeMod) perks.push([c.fleeMod < 0 ? `Flees easily` : `Hard to Flee`, c.fleeMod < 0 ? 'You need fewer shields than normal to Flee.' : 'You need more shields than normal to Flee (heavy).']);
+        // Druid form: show the roll bonuses/penalties the form applies
+        const FD = window.GameLogic.FORM_COMBAT;
+        if (seat.form && FD && FD[seat.form]) {
+            const [da, dd] = FD[seat.form];
+            perks.unshift([`${seat.form}: ${da >= 0 ? '+' : ''}${da}⚔ / ${dd >= 0 ? '+' : ''}${dd}🛡`, "Your current shape's change to your combat dice."]);
+        }
+        const perkRow = perks.length ? `<div class="ph-cc-perks">${perks.map(p => `<span class="ph-perk" title="${esc(p[1])}">${symbolize(esc(p[0]))}</span>`).join('')}</div>` : '';
+        const hTip = '⚔ = attack dice · 🛡 = defense dice · reach = how far you can attack (a square). You only take a blow back if the attacker is within your reach.';
+        return `<div class="ph-cc-block"><h4 title="${esc(hTip)}">Combat — ⚔ ${st.attack} / 🛡 ${st.defense}${symbolize(base)} · reach ${st.reach}</h4>` +
+            perkRow + this.strikeToggleHtml(seat) + this.attackRow(seat) +
+            `<div class="ph-muted" style="font-size:10px;margin-top:4px;">Both sides roll; skulls beat shields to wound. You only strike back if the attacker is within your reach.</div></div>`;
+    }
+    // Effective combat stats (base + Druid form + ladders) via the shared reducer.
+    effectiveCombat(ent) {
+        const data = window.GAME_DATA, GL = window.GameLogic;
+        const score = (this.gs.state.score && this.gs.state.score.collected) || 0;
+        return GL.combatStats(ent, data, score, GL.monsterCharOf(this.gs.state, data));
     }
     dist(a, b) { return (a.x == null || b.x == null) ? '?' : Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)); }
 
@@ -811,7 +856,7 @@ class PlayController {
         pop.querySelectorAll('.ph-stat-up').forEach(b => b.onclick = () => this.gs.adjustMinion(m.id, b.dataset.stat, 1));
         pop.querySelector('.ph-min-remove').onclick = () => { this.gs.removeMinion(m.id); this.closePopover(); };
         const go = pop.querySelector('.ph-atk-go');
-        if (go) go.onclick = () => { const t = pop.querySelector('.ph-atk-target'); if (t && t.value) this.gs.attack(m.id, t.value, this.app.board.cols, this.app.board.rows); };
+        if (go) go.onclick = () => { const t = pop.querySelector('.ph-atk-target'); if (t && t.value) this.attackWith(m.id, t.value); };
     }
 
     pieceBlock(seat) {
@@ -848,24 +893,70 @@ class PlayController {
         return `<div class="ph-cc-block"><h4>Druid forms</h4><div class="ph-forms">${btns}</div>${allyRow}</div>`;
     }
 
-    // A one-line reminder of HOW this monster moves + how many random moves the
-    // current objective count unlocks (the "two ways monsters move" system).
+    // A one-line reminder of this monster's turn budget at the current objective
+    // count: how many grid-roll attacks (and their sight/axis) and how many moves
+    // (and their reach) it gets — the levers that make monsters feel different.
     monsterMoveHint(ch, score) {
+        const st = (ch && ch.stats) || {}, c = (ch && ch.combat) || {};
+        const grids = (st.gridRolls || 0) + (st.gridRollsEvery ? Math.floor(score / st.gridRollsEvery) : 0);
+        const moves = (st.moves || 0) + (st.movesEvery ? Math.floor(score / st.movesEvery) : 0);
+        const reach = window.GameLogic.ladderValue(c.reach || 1, c.reachLadder, score, 'reach');
+        const bits = [];
+        if (grids > 0) {
+            const axis = { x: 'you pick the column', y: 'you pick the row', choose: 'pick either axis' }[st.gridAxis] || 'fully random';
+            bits.push(`🎲 <b>${grids}</b> grid roll${grids !== 1 ? 's' : ''} (sight ${st.sight || 6}, ${axis})`);
+        }
+        if (moves > 0) bits.push(`👣 <b>${moves}</b> move${moves !== 1 ? 's' : ''} (reach ${reach}${st.movementDie ? `, D${st.movementDie}` : ''})`);
+        const tip = 'A grid roll drops the monster on a square and strikes every hero it SEES (sight). A move slides it and strikes a hero within REACH. Both grow as objectives are collected.';
+        return bits.length ? `<div class="ph-move-hint" title="${esc(tip)}">${bits.join(' · ')}</div>` : '';
+    }
+    // Grid-roll control: monsters that roll fully random get a plain button;
+    // axis-choosers get a value input for the axis they control (the other rolls).
+    gridControlHtml(seat, ch) {
         const st = (ch && ch.stats) || {};
-        const style = st.moveStyle;
-        if (!style) return '';
-        const every = st.rampageEvery || 0;
-        const extra = every ? Math.floor(score / every) : 0;
-        let txt;
-        if (style === 'rampage') txt = `🌠 <b>${1 + extra}</b> Rampage${1 + extra !== 1 ? 's' : ''} + 1 Advance — random grid moves strike everyone in sight`;
-        else if (style === 'blink') txt = `✨ <b>${1 + extra}</b> Blink${1 + extra !== 1 ? 's' : ''} — flit to a random square, then work your tricks`;
-        else if (style === 'creep') txt = `🌫️ Creep — roll the movement die and slide forward (never teleports)`;
-        else if (style === 'stalk') txt = `🐾 <b>${1 + extra}</b> Stalk${1 + extra !== 1 ? 's' : ''} — step forward toward the nearest hero (sight drops to ${st.stalkSight || 1} while stalking)`;
-        else if (style === 'ooze') txt = `🫧 Ooze — move with the GRID ROLL, then swap places with any minion (weak strike, no sight burst)`;
-        else txt = '';
-        if (!txt) return '';
-        const sight = st.sight ? ` · 👁 sight ${st.sight}` : '';
-        return `<div class="ph-move-hint">${txt}${sight}</div>`;
+        if ((st.gridRolls || 0) <= 0) return '';   // no grid roll (The Fog / Ghathag)
+        const axis = st.gridAxis;
+        if (!axis || axis === 'random')
+            return `<button class="ph-btn ph-btn-go ph-grid-rand" style="width:100%;margin:6px 0 8px;">🎲 Roll grid ▸ random</button>`;
+        const chooseAxis = axis === 'choose';
+        const axisCtl = chooseAxis
+            ? `<select class="ph-grid-axis"><option value="x">Column</option><option value="y">Row</option></select>`
+            : `<input type="hidden" class="ph-grid-axis" value="${axis}">`;
+        const label = chooseAxis ? 'Pick an axis + value; the other is rolled'
+            : (axis === 'x' ? 'You pick the Column; the Row is rolled' : 'You pick the Row; the Column is rolled');
+        return `<div class="ph-grid-ctl"><div class="ph-muted" style="font-size:10px;margin-bottom:3px;">🎲 ${label}</div>` +
+            `<div class="ph-atk-row">${axisCtl}<input class="ph-grid-val" type="number" min="1" value="1" style="width:54px">` +
+            `<button class="ph-btn ph-btn-go ph-grid-go">Roll grid</button></div></div>`;
+    }
+    wireGridControl(container, seat) {
+        const rnd = container.querySelector('.ph-grid-rand');
+        if (rnd) rnd.onclick = () => this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows);
+        const go = container.querySelector('.ph-grid-go');
+        if (go) go.onclick = () => {
+            const axisEl = container.querySelector('.ph-grid-axis'), valEl = container.querySelector('.ph-grid-val');
+            const axis = axisEl ? axisEl.value : 'x';
+            const val = parseInt(valEl && valEl.value, 10) || 1;
+            this.gs.rollGrid(seat.id, this.app.board.cols, this.app.board.rows, axis, val);
+        };
+    }
+    // Monster strike-type toggle (grid-roll attack vs the weaker/other move attack).
+    strikeToggleHtml(seat) {
+        const ch = this.gs.character(seat), c = (ch && ch.combat) || {};
+        if (seat.kind !== 'monster' || c.moveAttack == null) return '';
+        const via = this.strikeVia || 'grid', st = this.effectiveCombat(seat);
+        return `<div class="ph-strike-row"><span class="ph-muted" style="font-size:10px">Strike as:</span> ` +
+            `<button class="ph-strike${via === 'grid' ? ' on' : ''}" data-via="grid" title="A grid-roll attack (hits everyone in sight)">Grid ⚔${st.attack}</button>` +
+            `<button class="ph-strike${via === 'move' ? ' on' : ''}" data-via="move" title="A move attack (hits a hero within reach)">Move ⚔${c.moveAttack}</button></div>`;
+    }
+    wireStrikeToggle(container) {
+        container.querySelectorAll('.ph-strike').forEach(b => b.onclick = () => { this.strikeVia = b.dataset.via; this.render(); });
+    }
+    // Resolve an attack, tagging the monster's engagement (grid vs move) so the
+    // right attack value is used.
+    attackWith(attackerId, defenderId) {
+        const a = this.gs.combatant(attackerId);
+        const via = (a && (a.kind === 'monster' || a.clone)) ? (this.strikeVia || 'grid') : undefined;
+        this.gs.attack(attackerId, defenderId, this.app.board.cols, this.app.board.rows, via);
     }
 
     // Per-monster board actions (spawn a clone, place a barrier). Rendered on the
@@ -880,22 +971,37 @@ class PlayController {
         }
         return btns.join('');
     }
+    // A free-ish cell next to a piece, to drop a spawned piece (clone/barrier/pet).
+    nearCell(ent) {
+        const cols = this.app.board.cols, rows = this.app.board.rows;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1]]) {
+            const x = (ent.x || 0) + dx, y = (ent.y || 0) + dy;
+            if (x >= 0 && y >= 0 && x < cols && y < rows) return { x, y };
+        }
+        return { x: ent.x || 0, y: ent.y || 0 };
+    }
     wireMonsterActions(pop, seat, score) {
-        const mon = seat;
-        const near = () => {   // a free-ish cell next to the monster to drop the new piece
-            const cols = this.app.board.cols, rows = this.app.board.rows;
-            for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1]]) {
-                const x = (mon.x || 0) + dx, y = (mon.y || 0) + dy;
-                if (x >= 0 && y >= 0 && x < cols && y < rows) return { x, y };
-            }
-            return { x: mon.x || 0, y: mon.y || 0 };
-        };
         const clone = pop.querySelector('.ph-mon-clone');
-        if (clone) clone.onclick = () => { const c = near(); this.gs.addClone(c.x, c.y); this.closePopover(); };
+        if (clone) clone.onclick = () => { const c = this.nearCell(seat); this.gs.addClone(c.x, c.y); this.closePopover(); };
         const bar = pop.querySelector('.ph-mon-barrier');
         if (bar) bar.onclick = () => {
-            const hp = 2 + (score >= 4 ? 2 : 0) + (score >= 7 ? 2 : 0); const c = near();
+            const hp = 2 + (score >= 4 ? 2 : 0) + (score >= 7 ? 2 : 0); const c = this.nearCell(seat);
             this.gs.addMinion({ x: c.x, y: c.y, hp, barrier: true, label: 'Barrier' });
+            this.closePopover();
+        };
+    }
+
+    // Per-hero board actions (Hunter's pet). Rendered on the hero sheet.
+    heroActions(seat, ch) {
+        if (!ch || seat.kind !== 'hero' || ch.id !== 'hunter') return '';
+        const pets = (this.gs.state.minions || []).filter(m => m.pet).length;
+        return `<button class="ph-btn ph-hero-pet" style="width:100%;margin-bottom:6px;">🐾 Summon pet${pets ? ` (${pets} out)` : ''}</button>`;
+    }
+    wireHeroActions(pop, seat) {
+        const pet = pop.querySelector('.ph-hero-pet');
+        if (pet) pet.onclick = () => {
+            const c = this.nearCell(seat);
+            this.gs.addMinion({ x: c.x, y: c.y, side: 'hero', pet: true, attack: 1, defense: 1, hp: 3, label: seat.label + "'s pet" });
             this.closePopover();
         };
     }

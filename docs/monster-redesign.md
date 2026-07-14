@@ -1,10 +1,28 @@
 # Monsters, movement & escape — redesign
 
-Companion to `docs/combat-redesign.md` (the attack/defense dice pool). This pass
-tunes the **five monsters**, formalizes the **two ways monsters move**, and
-reworks **escape** so line of sight — not a lonely dice roll — decides safety.
-Everything here is human-executable at a real table (see §6, cardboard mapping)
-and, where the app helps, is surfaced in the character sheet (see §7).
+> **Current model (v3).** Monsters are now built from a small set of **levers**,
+> and the branded move names (Rampage/Blink/Creep/Stalk/Ooze) are gone — a
+> monster just does GRID ROLLS and MOVES. The authoritative rules live in
+> `guidebook.txt`; this file is design history. Current per-monster levers:
+>
+> | Monster | sight | grid rolls | grid axis | moves | ⚔ grid / move | 🛡 (push) | notes |
+> |---|:--:|:--:|---|:--:|:--:|:--:|---|
+> | **Maraurn'Zol** | **7** | 1 (+1/4◆) | random | 1 | **5** / 2 | 0 | ignores cover, blast (reach on grid), clone |
+> | **Wyht** | 5 | 1 (+1/3◆) | **choose** | 1 | 2 / 2 | 0 | disruption; flee −1 |
+> | **Oblex** | 4 | 1 | pick col (x) | 1 | 2 / 2 | 0 | swarm; swap w/ minion; flee +1 |
+> | **The Fog** | 6 | **0** | — | 1 (D20+2, grows) | 3 (move) | 0 | no grid; reach 1→3; buildings safe |
+> | **Ghathag** | 4 (1 stalking) | **0** | — | 1 (+1/4◆) | 4→6 (move) | **2** | no grid; barriers; no doors |
+>
+> Grid-roll attacks strike everyone in **sight** along a clear line; move attacks
+> strike within **reach**. A monster may choose one grid axis and roll the other
+> (or roll both). `moveAttack` lets grid vs move hit for different amounts. High
+> defense = hard to push back. All wired + shown on the monster sheet (grid
+> control, strike-type toggle, move-budget hint).
+
+Companion to `docs/combat-redesign.md` (the attack/defense dice pool). The
+sections below are the earlier design pass — kept for rationale, but where they
+name specific moves or the "1 Rampage + 1 Advance" turn, the v3 summary above and
+the guidebook supersede them.
 
 ---
 

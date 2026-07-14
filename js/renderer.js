@@ -289,6 +289,13 @@ class Renderer {
                 ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
                 ctx.fillStyle = '#ffd7d7'; ctx.font = `${size * 0.18}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
                 ctx.fillText('clone', cx, cy + r + 1);
+            } else if (m.pet) {   // a hero-side pet: gold, paw glyph, name below
+                ctx.lineWidth = 2.5; ctx.strokeStyle = '#7a5c10'; ctx.stroke();
+                ctx.fillStyle = '#3a2e08'; ctx.font = `${size * 0.32}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('🐾', cx, cy);
+                this.badge(ctx, cx + r * 0.7, cy + r * 0.7, size, m.hp, '#111', '#d9a520', '#fff');
+                ctx.fillStyle = '#e8ecef'; ctx.font = `${size * 0.18}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+                ctx.shadowColor = '#000'; ctx.shadowBlur = 3; ctx.fillText(m.label || 'Pet', cx, cy + r + 1);
             } else {
                 ctx.lineWidth = 2.5; ctx.strokeStyle = '#3a0d0d'; ctx.stroke();
                 ctx.fillStyle = '#f2e6e6'; ctx.font = `${size * 0.34}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -350,11 +357,15 @@ class Renderer {
         const play = window.app.play, data = window.GAME_DATA, GL = window.GameLogic;
         const score = GL.scoreOf(play.gs.state), monChar = GL.monsterCharOf(play.gs.state, data);
         const ch = GL.charSheetOf(ent, data);
+        const reach = GL.effectiveReach(ent, data, score, monChar);
+        // Only the MONSTER's sight/line-of-sight matter (for its grid-roll attacks).
+        // A hero just has reach — no sight limit, and walls don't gate its strikes.
+        const isHero = ent.kind === 'hero';
         return {
-            sight: GL.effectiveSight(ent, data, score),
-            reach: GL.effectiveReach(ent, data, score, monChar),
+            sight: isHero ? reach : GL.effectiveSight(ent, data, score, monChar),
+            reach,
             blast: GL.effectiveBlast(ent, data, score),
-            ignoreCover: !!(ch && ch.combat && ch.combat.ignoreCover),
+            ignoreCover: isHero || !!(ch && ch.combat && ch.combat.ignoreCover),
             diagonal: GL.canDiagonal(ent),
         };
     }
@@ -424,7 +435,45 @@ class Renderer {
         });
         // second-pick: shortest-path step count to a chosen empty cell
         if (window.app.pathTargetCell) this.drawPathTo(ctx, size, ent);
+        this.drawInspectLegend(ctx, ent, { sight, reach, blast });
         ctx.restore();
+    }
+
+    // A small screen-fixed key explaining the inspector overlay, so the colours
+    // and numbers don't need a manual. Drawn in screen space (transform reset).
+    drawInspectLegend(ctx, ent, st) {
+        const isMon = ent.kind === 'monster' || ent.clone;
+        const rows = [['rgba(224,90,60,0.85)', `reach ${st.reach} — can attack`]];
+        if (isMon) rows.push(['rgba(224,168,0,0.85)', `sight ${st.sight} — sees heroes`]);
+        if (st.blast > 0) rows.push(['rgba(255,90,60,0.9)', `blast ${st.blast} on grid roll`]);
+        rows.push(['#5b636b', 'number on a piece = spaces away']);
+        rows.push(['#00ccff', 'tap empty cell = steps to walk there']);
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        const pad = 9, lh = 17, sw = 11, x = 10, y = 50;   // y offset clears the top roster bar
+        const title = `Inspecting ${ent.label || ''}`.trim();
+        ctx.font = '11px sans-serif';
+        let w = ctx.measureText(title).width;
+        rows.forEach(r => { w = Math.max(w, sw + 6 + ctx.measureText(r[1]).width); });
+        const h = pad * 2 + lh * (rows.length + 1);
+        ctx.fillStyle = 'rgba(12,15,18,0.86)'; ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1;
+        this.roundRectPath(ctx, x, y, w + pad * 2, h, 7); ctx.fill(); ctx.stroke();
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#e8ecef'; ctx.font = 'bold 11px sans-serif';
+        ctx.fillText(title, x + pad, y + pad + lh / 2);
+        ctx.font = '11px sans-serif';
+        rows.forEach((r, i) => {
+            const ry = y + pad + lh * (i + 1) + lh / 2;
+            ctx.fillStyle = r[0]; this.roundRectPath(ctx, x + pad, ry - sw / 2, sw, sw, 2); ctx.fill();
+            ctx.fillStyle = '#c6ccd2'; ctx.fillText(r[1], x + pad + sw + 6, ry);
+        });
+        ctx.restore();
+    }
+    roundRectPath(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        if (ctx.roundRect) { ctx.roundRect(x, y, w, h, r); return; }
+        ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
     }
 
     // ---- movement pathing (for the "count of spaces" second-pick) ---------
