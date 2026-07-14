@@ -85,6 +85,9 @@ hr { border: 0; border-top: 1px solid #444; margin: 4px 0; }
 .dz-input:focus { outline: none; border-color: #007acc; }
 textarea.dz-input { resize: vertical; line-height: 1.5; }
 .dz-hint { font-size: 10px; color: #6c757d; font-style: italic; }
+.dz-divider { margin: 16px 0 8px; max-width: 640px; border-top: 1px solid #2a2f33; padding-top: 10px; }
+.dz-divider > span { font-size: 12px; font-weight: bold; color: #00ccff; }
+.dz-effect-badge { margin: 8px 12px 12px; font-size: 11px; font-weight: bold; color: #9fe0f2; background: rgba(0,204,255,.1); border: 1px solid #1c5066; border-radius: 6px; padding: 4px 8px; }
 
 #dz-preview { overflow-y: auto; padding: 16px; border-left: 1px solid #33383c; background: #202325; }
 .dz-card { background: #26292c; border: 1px solid #3a3f43; border-top: 4px solid var(--accent, #555); border-radius: 8px; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,0.4); }
