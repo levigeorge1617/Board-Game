@@ -114,10 +114,10 @@
     "timing": "hand",
     "copies": 4,
     "cost": "1☼",
-    "text": "+2 attack dice on your next attack this turn.",
+    "text": "+3 attack dice on your next attack this turn.",
     "art": "",
     "effect": {
-      "attackDice": 2,
+      "attackDice": 3,
       "scope": "attack",
       "duration": "once"
     }
@@ -130,10 +130,10 @@
     "timing": "hand",
     "copies": 4,
     "cost": "0",
-    "text": "+2 defense dice on your next defense this turn.",
+    "text": "+3 defense dice on your next defense this turn.",
     "art": "",
     "effect": {
-      "defenseDice": 2,
+      "defenseDice": 3,
       "scope": "defense",
       "duration": "once"
     }
@@ -146,10 +146,10 @@
     "timing": "hand",
     "copies": 3,
     "cost": "1☼",
-    "text": "Your next attack lands +1 automatic skull, before any dice.",
+    "text": "Your next attack lands +2 automatic skulls, before any dice.",
     "art": "",
     "effect": {
-      "skull": 1,
+      "skull": 2,
       "scope": "attack",
       "duration": "once"
     }
@@ -162,10 +162,10 @@
     "timing": "hand",
     "copies": 2,
     "cost": "2☼",
-    "text": "+3 attack dice on your next attack this turn.",
+    "text": "+5 attack dice on your next attack this turn.",
     "art": "",
     "effect": {
-      "attackDice": 3,
+      "attackDice": 5,
       "scope": "attack",
       "duration": "once"
     }
@@ -178,10 +178,10 @@
     "timing": "hand",
     "copies": 3,
     "cost": "1☼",
-    "text": "Until your next turn, you always block 1 extra hit (+1 shield).",
+    "text": "Until your next turn, you always block 2 extra hits (+2 shields).",
     "art": "",
     "effect": {
-      "shield": 1,
+      "shield": 2,
       "scope": "defense",
       "duration": "turn"
     }
@@ -194,7 +194,7 @@
     "timing": "hand",
     "copies": 4,
     "cost": "3☼",
-    "text": "Revive a dead hero to 4 life. It may move this turn but not use action dice.",
+    "text": "Revive a dead hero to 8 life. It may move this turn but not use action dice.",
     "art": "cards/revive.png"
   },
   {
@@ -205,7 +205,7 @@
     "timing": "hand",
     "copies": 5,
     "cost": "X☼",
-    "text": "Restore X+2 life to you or a hero within 1 space.",
+    "text": "Restore X+4 life to you or a hero within 1 space.",
     "art": "cards/potion.png"
   },
   {
@@ -216,7 +216,7 @@
     "timing": "hand",
     "copies": 5,
     "cost": "1☼",
-    "text": "Restore 3 life to any hero within 1 space.",
+    "text": "Restore 6 life to any hero within 1 space.",
     "art": ""
   },
   {
@@ -227,7 +227,7 @@
     "timing": "hand",
     "copies": 3,
     "cost": "2☼",
-    "text": "Restore 2 life to yourself and draw a card.",
+    "text": "Restore 4 life to yourself and draw a card.",
     "art": ""
   },
   {
@@ -326,7 +326,7 @@
     "timing": "hand",
     "copies": 3,
     "cost": "1☼",
-    "text": "An ally within 1 space rolls +2 defense dice on their next defense.",
+    "text": "An ally within 1 space rolls +3 defense dice on their next defense.",
     "art": ""
   },
   {
@@ -370,10 +370,10 @@
     "timing": "hand",
     "copies": 4,
     "cost": "0",
-    "text": "The monster's Strikes this turn roll +2 attack dice.",
+    "text": "The monster's Strikes this turn roll +3 attack dice.",
     "art": "cards/diaginal.png",
     "effect": {
-      "attackDice": 2,
+      "attackDice": 3,
       "scope": "attack",
       "duration": "turn"
     }
@@ -386,10 +386,10 @@
     "timing": "hand",
     "copies": 2,
     "cost": "2☼",
-    "text": "The monster's Strikes this turn roll +3 attack dice.",
+    "text": "The monster's Strikes this turn roll +5 attack dice.",
     "art": "",
     "effect": {
-      "attackDice": 3,
+      "attackDice": 5,
       "scope": "attack",
       "duration": "turn"
     }
@@ -402,10 +402,10 @@
     "timing": "hand",
     "copies": 3,
     "cost": "0",
-    "text": "This turn the monster is hard to shove: +2 defense dice whenever it is attacked.",
+    "text": "This turn the monster is hard to shove: +3 defense dice whenever it is attacked.",
     "art": "",
     "effect": {
-      "defenseDice": 2,
+      "defenseDice": 3,
       "scope": "defense",
       "duration": "turn"
     }
@@ -418,10 +418,10 @@
     "timing": "hand",
     "copies": 2,
     "cost": "3☼",
-    "text": "This turn the monster is almost unmovable: +3 defense dice whenever it is attacked.",
+    "text": "This turn the monster is almost unmovable: +5 defense dice whenever it is attacked.",
     "art": "",
     "effect": {
-      "defenseDice": 3,
+      "defenseDice": 5,
       "scope": "defense",
       "duration": "turn"
     }
@@ -434,10 +434,10 @@
     "timing": "hand",
     "copies": 2,
     "cost": "1☼",
-    "text": "The monster's Strikes this turn land +2 automatic skulls, before dice.",
+    "text": "The monster's Strikes this turn land +3 automatic skulls, before dice.",
     "art": "",
     "effect": {
-      "skull": 2,
+      "skull": 3,
       "scope": "attack",
       "duration": "turn"
     }
@@ -450,7 +450,7 @@
     "timing": "hand",
     "copies": 8,
     "cost": "0",
-    "text": "Randomly place 1 minion (roll its d4 health).",
+    "text": "Randomly place 1 minion (roll its 2+d4 health).",
     "art": "cards/summon.png"
   },
   {
@@ -461,7 +461,7 @@
     "timing": "hand",
     "copies": 5,
     "cost": "X☼",
-    "text": "Randomly place X minions (roll each one's d4 health).",
+    "text": "Randomly place X minions (roll each one's 2+d4 health).",
     "art": "cards/summonX.png"
   },
   {
@@ -472,7 +472,7 @@
     "timing": "hand",
     "copies": 2,
     "cost": "4☼",
-    "text": "Summon 3 minions next to the monster, each at full 4 health.",
+    "text": "Summon 3 minions next to the monster, each at full 6 health.",
     "art": ""
   },
   {
@@ -494,7 +494,7 @@
     "timing": "hand",
     "copies": 2,
     "cost": "2☼",
-    "text": "Every minion rolls +1 attack die this turn.",
+    "text": "Every minion rolls +2 attack dice this turn.",
     "art": ""
   },
   {
@@ -560,7 +560,7 @@
     "timing": "hand",
     "copies": 3,
     "cost": "2☼",
-    "text": "Place a 2-life barrier (2x1). It blocks movement and line of sight.",
+    "text": "Place a 4-life barrier (2x1). It blocks movement and line of sight.",
     "art": ""
   },
   {
@@ -637,7 +637,7 @@
     "timing": "hand",
     "copies": 3,
     "cost": "1☼",
-    "text": "A hero of your choice rolls 2 fewer defense dice on their next defense.",
+    "text": "A hero of your choice rolls 3 fewer defense dice on their next defense.",
     "art": ""
   },
   {
@@ -659,7 +659,7 @@
     "timing": "hand",
     "copies": 1,
     "cost": "6☼",
-    "text": "Choose a hero within the monster's sight: they take 3 wounds (no defense roll).",
+    "text": "Choose a hero within the monster's sight: they take 6 wounds (no defense roll).",
     "art": ""
   },
   {

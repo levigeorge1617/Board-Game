@@ -26,7 +26,7 @@
     const combatantOf = (s, id) => (s.seats || []).find(x => x.id === id) || (s.minions || []).find(x => x.id === id) || null;
     // combat die faces: 1-3 = skull ☠, 4-5 = shield 🛡, 6 = blank
     // Druid form → [attack dice delta, defense dice delta] applied to the pool.
-    const FORM_COMBAT = { BEAR: [1, 1], TURTLE: [0, 2], CHEETAH: [0, -1], DEER: [0, -1] };
+    const FORM_COMBAT = { BEAR: [2, 2], TURTLE: [0, 4], CHEETAH: [0, -2], DEER: [0, -2] };
     // A dice-tray/readout color key for a combatant (hero color name, else 'monster').
     function colorKeyOf(ent) {
         if (!ent) return 'monster';
@@ -53,7 +53,7 @@
     function oblexMinionBonus(monChar, score, ent) {
         if (!monChar || monChar.id !== 'oblex' || (ent && !oblexBuffable(ent))) return { attack: 0, reach: 0 };
         return {
-            attack: (score >= 4 ? 1 : 0) + (score >= 7 ? 1 : 0),   // 4◆ +1, 7◆ +1
+            attack: (score >= 4 ? 2 : 0) + (score >= 7 ? 2 : 0),   // 4◆ +2, 7◆ +2
             reach: (score >= 6 ? 1 : 0),                            // 6◆ +1
         };
     }
@@ -61,7 +61,8 @@
     // ATTACK), both objective-scaled. Sight ≥ reach. Heroes default to a fixed
     // sight; minions see short unless Oblex extends their reach.
     const DEFAULT_SIGHT = 6;
-    const FLEE_BASE = 2;   // shields a hero must roll to flee, before hero/monster modifiers
+    const FLEE_BASE = 3;   // shields a hero must roll to flee, before hero/monster modifiers
+    const REVIVE_HP = 8;   // life a revived hero returns with
     // Resolve the character sheet a piece fights with (clone/monster → a monster,
     // hero → a hero); plain minions have no sheet.
     function charSheetOf(ent, data) {
@@ -333,13 +334,13 @@
             case 'ADD_MINION': {
                 const n = (s.minions || []).filter(m => !m.barrier && !m.clone).length + 1;
                 s.minions = s.minions || [];
-                const life = a.hp || (1 + Math.floor(Math.random() * 4));   // d4 health when spawned
+                const life = a.hp || (2 + Math.floor(Math.random() * 4));   // 2 + d4 health when spawned
                 const barrier = !!a.barrier, pet = !!a.pet, side = a.side === 'hero' ? 'hero' : 'monster';
                 s.minions.push({
                     id: (barrier ? 'bar-' : pet ? 'pet-' : 'min-') + Date.now() + '-' + Math.floor(Math.random() * 1000), kind: 'minion',
                     barrier, pet, side, ownerColor: a.ownerColor || null, label: a.label || (barrier ? 'Barrier' : pet ? 'Pet' : 'Minion ' + n),
                     x: a.x, y: a.y, hp: life, maxHp: life,
-                    attack: barrier ? 0 : (a.attack || 2), defense: a.defense || (barrier ? 0 : 1), reach: a.reach || 1,
+                    attack: barrier ? 0 : (a.attack || 3), defense: a.defense || (barrier ? 0 : 2), reach: a.reach || 1,
                     baseAttack: a.baseAttack || 0, baseShield: a.baseShield || 0,
                     color: a.color || (barrier ? '#6b6f74' : pet ? '#d9a520' : '#9b2d2d'),
                 });
@@ -386,7 +387,7 @@
             case 'REVIVE_TICK': {
                 const seat = seatOf(s, a.seatId); if (!seat || !seat.dead || !seat.grave) break;
                 seat.grave.count = Math.max(0, seat.grave.count - (a.amount || 1));
-                if (seat.grave.count <= 0) { seat.dead = false; seat.grave = null; seat.hp = Math.min(4, seat.maxHp || 4); logEvent(s, seat.id, 'was revived (life 4)'); }
+                if (seat.grave.count <= 0) { seat.dead = false; seat.grave = null; seat.hp = Math.min(REVIVE_HP, seat.maxHp || REVIVE_HP); logEvent(s, seat.id, `was revived (life ${seat.hp})`); }
                 else logEvent(s, seat.id, `revive progress (${seat.grave.count} to go)`);
                 break;
             }
@@ -502,7 +503,7 @@
                 const repelAtk = applyWounds(atk, def, woundsToAtk);
 
                 // FLEE: only a hero defender may flee, and only if it rolled at least
-                // `threshold` shields. Threshold = base 2 + the hero's own fleeMod
+                // `threshold` shields. Threshold = base 3 + the hero's own fleeMod
                 // (Scout slips easily, heavy heroes struggle) + the attacker's fleeMod
                 // (some monsters are harder to escape). Tracked & shown every combat.
                 let flee = null;

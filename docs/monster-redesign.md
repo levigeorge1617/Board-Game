@@ -103,20 +103,24 @@ the push — break line of sight instead.**
 Combat die: **3 ☠ / 2 🛡 / 1 ▢** → 0.5 skull & 0.33 shield per die. Monsters
 can't be killed (heroes *repel* them 1 space per net skull).
 
+Attack/defense pools are **doubled** from the original redesign (a bigger fistful
+of dice reads better than one or two); health doubled alongside, so exchange math
+is unchanged, just bigger.
+
 | Monster | ⚔ Atk | 🛡 Def | Reach | 👁 Sight | Move | +Move/obj | Signature |
 |---------|:----:|:----:|:----:|:----:|------|:--:|-----------|
-| **Maraurn'Zol** (Fire) | **5** | 0 | 1 | 6 | rampage | /4 | meteors ignore all cover; clone; growing AoE |
-| **The Fog** (Smoke) | 4 | 0 | 1→3 | 6 | creep (D20+2) | — | buildings are safe; grows range & speed |
-| **Ghathag** (Claw) | 4 (+2 charge) | **2** | 1 | 4 (1 stalking) | stalk | /4 | barriers; deadly on the charge; no doors |
-| **Oblex** (Flesh) | 2 | 0 | 1 | 4 | swap | — | minions do everything; buffs the swarm |
-| **Wyht** (Mind) | 2 | 0 | 1 | 5 | blink | /3 | card/objective disruption, not blows |
+| **Maraurn'Zol** (Fire) | **9** | 0 | 1 | 7 | rampage | /4 | meteors ignore all cover; clone; growing AoE |
+| **The Fog** (Smoke) | 6 | 0 | 1→3 | 6 | creep (D20+2) | — | buildings are safe; grows range & speed |
+| **Ghathag** (Claw) | 7 (⚔11 enraged) | **4** | 1 | 4 (1 stalking) | stalk | /4 | barriers; deadly enraged; no doors |
+| **Oblex** (Flesh) | 4 | 0 | 1 | 4 | swap | — | minions do everything; buffs the swarm |
+| **Wyht** (Mind) | 4 | 0 | 1 | 5 | blink | /3 | card/objective disruption, not blows |
 
 Sanity checks (wounds ≈ 0.5·Atk − 0.33·Def):
-- Maraurn'Zol 5 vs Wizard D1 ≈ **2.2** (frail heroes must never be caught in a meteor's line);
-  vs Paladin D3 ≈ **1.5** (the wall survives several).
-- Ghathag charging = **6** dice ≈ 3 − D shields: cornering by him is lethal, but his
+- Maraurn'Zol 9 vs Wizard D2 ≈ **3.8** (frail heroes must never be caught in a meteor's line);
+  vs Paladin D6 ≈ **2.5** (the wall survives several).
+- Ghathag enraged = **11** dice ≈ 5.5 − D shields: cornering by him is lethal, but his
   sight is **1 while stalking** — step out of his lane and he whiffs.
-- Oblex/Wyht at **2** barely scratch on their own — their pressure is the swarm / the tricks.
+- Oblex/Wyht at **4** barely scratch on their own — their pressure is the swarm / the tricks.
 
 ---
 
@@ -143,17 +147,17 @@ collected · `N◇` = one-time trigger at N. Full authored text lives in
 
 ### Ghathag — the stalker
 - **Stalk** toward the nearest hero; **sight 1 while stalking**; **can't enter buildings.**
-- `x◆` +1 Stalk / 4 obj · `2◆` Stalk 3 · `4◆`/`6◆` +3 more each · `3◆` place a 2-life 2×1 barrier.
-- **Charge:** moved 3+ then reached a hero → **+2 attack dice**.
-- Barriers: `3◇`/`5◇` place 2 · `4◆`/`7◆` barriers +2 life · `9◇` every barrier becomes a minion.
+- `x◆` +1 Stalk / 4 obj · `2◆` Stalk 3 · `4◆`/`6◆` +3 more each · `3◆` place a 4-life 2×1 barrier.
+- **Enrage:** at 4◆ his Strike climbs **permanently ⚔7 → ⚔11**.
+- Barriers: `3◇`/`5◇` place 2 · `4◆`/`7◆` barriers +3 life · `9◇` every barrier becomes a minion.
 - *Identity:* a patient predator that walls you in, then bursts you down if he closes.
   **Barriers reuse the minion system** (a minion with ⚔0 that blocks line of sight);
   `9◇` simply grants them attack.
 
 ### Oblex — the swarm
 - Weak itself; **swap places with a minion** after moving. **No extra moves** from objectives.
-- `1◆` summon **1 + 1 per 3 objectives** (d4 HP each) · `3◆` instead, +1 attack to a minion · `5◆` minions move 2.
-- `1◇`/`3◇`/`5◇` summon 2/3/4 · `4◆`/`7◆` minion attack +1 · `6◆` minion reach +1 · `9◇` **double** the minions.
+- `1◆` summon **1 + 1 per 3 objectives** (2+d4 HP each) · `3◆` instead, +2 attack to a minion · `5◆` minions move 2.
+- `1◇`/`3◇`/`5◇` summon 2/3/4 · `4◆`/`7◆` minion attack +2 · `6◆` minion reach +1 · `9◇` **double** the minions.
 - *Identity:* death by a thousand cuts; the board fills up and the buffs make each cut bite.
 
 ### Wyht — the trickster (retuned to actually threaten)
@@ -244,7 +248,7 @@ moves like its range. (`GameLogic.canDiagonal` drives the movement/path metric.)
 
 Both are **objective-scaled** through the same ladder mechanism as everything
 else (`effectiveSight` / `effectiveReach`), so the Fog's reach visibly climbs
-1 → 2 → 3, Ghathag's Strike climbs to ⚔6, etc. — and the board indicators redraw
+1 → 2 → 3, Ghathag's Strike climbs to ⚔11, etc. — and the board indicators redraw
 to match the live objective count. Maraurn'Zol's meteor sets `ignoreCover`, so
 her sight/Strike passes through walls and objects.
 
@@ -266,17 +270,17 @@ walls, doors, pieces, minions, barriers and objectives still do.
 
 ## 9. Per-monster fixes (v2)
 
-- **Ghathag** — charge is now a **permanent +2 attack** unlocked at 4◆ (⚔4→⚔6),
+- **Ghathag** — enrage is a **permanent +4 attack** unlocked at 4◆ (⚔7→⚔11),
   no "moved 3 spaces" check; a **stalk counter** shows in the move hint; a
-  **🧱 Place barrier** button drops a blocking barrier piece (HP 2, +2 at 4◆,
-  +2 at 7◆) that blocks movement and line of sight. *(Physical form: a 2×1
+  **🧱 Place barrier** button drops a blocking barrier piece (HP 4, +3 at 4◆,
+  +3 at 7◆) that blocks movement and line of sight. *(Physical form: a 2×1
   rotatable tile; in-app, place two adjacent barrier pieces for the 2×1.)*
 - **Oblex** — minion attack/reach buffs now apply **automatically** to the whole
   swarm off the objective count (`oblexMinionBonus`, folded into combat). OOZE is
   labelled as a **grid-roll move + minion swap**, and its weak strike (no sight
   burst) is spelled out.
 - **Wyht** — 6◆ is now "**draw 2 monster cards, OR one hero discards down to 4**."
-- **The Fog** — attack **4 → 3**; its **+2 and D4 movement ladder are baked into
+- **The Fog** — attack **6**; its **+2 and D4 movement ladder are baked into
   the move roll** (shown in the dice total); reach growth is live on the board.
 - **Maraurn'Zol** — a **✚ Add clone** button spawns a real second piece that
   fights with her kit and can't be killed (only shoved); the **blast radius** and

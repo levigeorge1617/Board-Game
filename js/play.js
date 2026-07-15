@@ -1006,7 +1006,7 @@ class PlayController {
         const id = ch.id, btns = [];
         if (id === 'maraurnzol') btns.push(`<button class="ph-btn ph-mon-clone" style="width:100%;margin-bottom:6px;">✚ Add clone (6◇)</button>`);
         if (id === 'ghathag') {
-            const hp = 2 + (score >= 4 ? 2 : 0) + (score >= 7 ? 2 : 0);
+            const hp = 4 + (score >= 4 ? 3 : 0) + (score >= 7 ? 3 : 0);
             btns.push(`<button class="ph-btn ph-mon-barrier" style="width:100%;margin-bottom:6px;">🧱 Place barrier (❤${hp})</button>`);
         }
         return btns.join('');
@@ -1025,7 +1025,7 @@ class PlayController {
         if (clone) clone.onclick = () => { const c = this.nearCell(seat); this.gs.addClone(c.x, c.y); this.closePopover(); };
         const bar = pop.querySelector('.ph-mon-barrier');
         if (bar) bar.onclick = () => {
-            const hp = 2 + (score >= 4 ? 2 : 0) + (score >= 7 ? 2 : 0); const c = this.nearCell(seat);
+            const hp = 4 + (score >= 4 ? 3 : 0) + (score >= 7 ? 3 : 0); const c = this.nearCell(seat);
             this.gs.addMinion({ x: c.x, y: c.y, hp, barrier: true, label: 'Barrier' });
             this.closePopover();
         };
@@ -1041,7 +1041,7 @@ class PlayController {
         const pet = pop.querySelector('.ph-hero-pet');
         if (pet) pet.onclick = () => {
             const c = this.nearCell(seat);
-            this.gs.addMinion({ x: c.x, y: c.y, side: 'hero', pet: true, attack: 1, defense: 1, hp: 3, ownerColor: seat.color, label: seat.label + "'s pet" });
+            this.gs.addMinion({ x: c.x, y: c.y, side: 'hero', pet: true, attack: 2, defense: 2, hp: 6, ownerColor: seat.color, label: seat.label + "'s pet" });
             this.closePopover();
         };
     }

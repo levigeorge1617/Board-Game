@@ -166,7 +166,7 @@ To perform a revive, an ally hero must be standing next to the dead hero's actio
 
 That hero can use their action dice☼ rolls to reduce the action dice of the dead hero. 
 
-When the dead hero's action dice☼ reaches zero, they are revived and the dice is replaced with the hero piece. Their health is set to 4 
+When the dead hero's action dice☼ reaches zero, they are revived and the dice is replaced with the hero piece. Their health is set to 8
 
 The revived hero may take their turn this round, but can only use their movement dice֍. They may not perform any actions☼ or play cards. 
 

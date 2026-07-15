@@ -2,38 +2,38 @@
   {
     "id": "paladin",
     "name": "Paladin",
-    "abilities": "The wall — 🛡3 and always blocks 1 hit (+1🛡). Heavy armour makes him slow to Flee. Reach 1: a foe striking from beyond his reach takes no blow back, so keep him in the front line.\n\n2☼: Give an ally +1 to their next roll (lose 1 life).\n3☼: Draw an extra card.\nEnd your turn beside an ally to regain 2 life.",
+    "abilities": "The wall — 🛡6 and always blocks 2 hits (+2🛡). Heavy armour makes him slow to Flee. Reach 1: a foe striking from beyond his reach takes no blow back, so keep him in the front line.\n\n2☼: Give an ally +1 to their next roll (lose 1 life).\n3☼: Draw an extra card.\nEnd your turn beside an ally to regain 4 life.",
     "objectiveAbilities": "7◆: Allies 1 space away get +1 to their rolls.\n\n5◆ (6☼): Teleport next to any living ally (lose 2 life).",
     "color": "RED",
     "pair": "red",
     "cardFace": "front",
     "art": "players/red2.jpg",
-    "stats": { "a1": 4, "a2": null, "m1": 12, "m2": null, "ba": 4, "bm": 6, "life": 8 },
-    "combat": { "attack": 2, "defense": 3, "reach": 1, "baseShield": 1, "fleeMod": 1 }
+    "stats": { "a1": 4, "a2": null, "m1": 12, "m2": null, "ba": 4, "bm": 6, "life": 16 },
+    "combat": { "attack": 4, "defense": 6, "reach": 1, "baseShield": 2, "fleeMod": 1 }
   },
   {
     "id": "barbarian",
     "name": "Barbarian",
-    "abilities": "Raw power — ⚔4, reach 1. A pure melee bruiser: he hits hardest toe-to-toe, but an enemy striking from beyond his reach takes no counter, so a ranged foe can wear him down. Heavy — slow to Flee.\n\n4☼: On your next move, destroy every minion you end adjacent to along the way.",
+    "abilities": "Raw power — ⚔7, reach 1. A pure melee bruiser: he hits hardest toe-to-toe, but an enemy striking from beyond his reach takes no counter, so a ranged foe can wear him down. Heavy — slow to Flee.\n\n4☼: On your next move, destroy every minion you end adjacent to along the way.",
     "objectiveAbilities": "5◆ (3☼): Haul every minion 6+ spaces away next to you and fight them (spend extra ☼ to reach farther).",
     "color": "RED",
     "pair": "red",
     "cardFace": "back",
     "art": "players/red1.jpg",
-    "stats": { "a1": 4, "a2": null, "m1": 12, "m2": null, "ba": 4, "bm": 6, "life": 8 },
-    "combat": { "attack": 4, "defense": 2, "reach": 1 }
+    "stats": { "a1": 4, "a2": null, "m1": 12, "m2": null, "ba": 4, "bm": 6, "life": 16 },
+    "combat": { "attack": 7, "defense": 4, "reach": 1 }
   },
   {
     "id": "hunter",
     "name": "Hunter",
-    "abilities": "Marksman — reach 2, so he strikes minions that can't strike back.\n\n3☼: Summon your pet (🐾 button) — a hero-side piece (⚔1 / 🛡1 / ❤3). 2☼: your pet takes an action. The pet shares your movement rolls (not bonus dice), flies over obstacles (not walls), and is DESTROYED if it ever fights the monster itself.",
+    "abilities": "Marksman — reach 2, so he strikes minions that can't strike back.\n\n3☼: Summon your pet (🐾 button) — a hero-side piece (⚔2 / 🛡2 / ❤6). 2☼: your pet takes an action. The pet shares your movement rolls (not bonus dice), flies over obstacles (not walls), and is DESTROYED if it ever fights the monster itself.",
     "objectiveAbilities": "5◆ (6☼): Summon a second pet.",
     "color": "YELLOW",
     "pair": "yellow",
     "cardFace": "front",
     "art": "players/yellow1.jpg",
-    "stats": { "a1": 4, "a2": null, "m1": 20, "m2": null, "ba": 6, "bm": 12, "life": 6 },
-    "combat": { "attack": 3, "defense": 1, "reach": 2 }
+    "stats": { "a1": 4, "a2": null, "m1": 20, "m2": null, "ba": 6, "bm": 12, "life": 12 },
+    "combat": { "attack": 5, "defense": 2, "reach": 2 }
   },
   {
     "id": "scout",
@@ -44,79 +44,79 @@
     "pair": "yellow",
     "cardFace": "back",
     "art": "players/yellow2.jpg",
-    "stats": { "a1": 4, "a2": null, "m1": 20, "m2": null, "ba": 6, "bm": 12, "life": 5 },
-    "combat": { "attack": 2, "defense": 2, "reach": 1, "fleeMod": -1 }
+    "stats": { "a1": 4, "a2": null, "m1": 20, "m2": null, "ba": 6, "bm": 12, "life": 10, "sight": 8 },
+    "combat": { "attack": 4, "defense": 4, "reach": 1, "fleeMod": -1 }
   },
   {
     "id": "wizard",
     "name": "Wizard",
-    "abilities": "Caster — strikes at reach 2 but frail (⚔1 / 🛡1 / ❤4). Wins through spell cards, not blows.\n\n2☼: Reroll any of your dice this turn.\n4☼: Draw an extra card.\nYou may discard a card to draw another.",
+    "abilities": "Caster — strikes at reach 2 but frail (⚔3 / 🛡2 / ❤8). Wins through spell cards.\n\n2☼: Reroll any of your dice this turn.\n4☼: Draw an extra card.\nYou may discard a card to draw another.",
     "objectiveAbilities": "3◇: Relocate 1 door.\n5◇: Relocate 1 door.\n\n5◆ (6☼): Trade places with any object on the board.",
     "color": "BLUE",
     "pair": "blue",
     "cardFace": "front",
     "art": "players/blue2.jpg",
-    "stats": { "a1": 6, "a2": null, "m1": 4, "m2": 4, "ba": 4, "bm": 4, "life": 4 },
-    "combat": { "attack": 1, "defense": 1, "reach": 2 }
+    "stats": { "a1": 6, "a2": null, "m1": 4, "m2": 4, "ba": 4, "bm": 4, "life": 8 },
+    "combat": { "attack": 3, "defense": 2, "reach": 2 }
   },
   {
     "id": "enchantress",
     "name": "Enchantress",
-    "abilities": "Controller — bends the board rather than trading blows (⚔1 / 🛡1). Win with utility.\n\n4☼: Walk through a wall.\n5☼: Move a monster or an ally 1 space.\nYou may discard a card to draw another.",
+    "abilities": "Controller — bends the board rather than trading blows (⚔3 / 🛡2). Win with utility.\n\n4☼: Walk through a wall.\n5☼: Move a monster or an ally 1 space.\nYou may discard a card to draw another.",
     "objectiveAbilities": "4◆ (6☼): Play any ally's card on any hero.\n5◆ (7☼): Use an action anywhere on the board.",
     "color": "BLUE",
     "pair": "blue",
     "cardFace": "back",
     "art": "players/blue1.jpg",
-    "stats": { "a1": 4, "a2": 4, "m1": 6, "m2": null, "ba": 4, "bm": 4, "life": 5 },
-    "combat": { "attack": 1, "defense": 1, "reach": 1 }
+    "stats": { "a1": 4, "a2": 4, "m1": 6, "m2": null, "ba": 4, "bm": 4, "life": 10 },
+    "combat": { "attack": 3, "defense": 2, "reach": 1 }
   },
   {
     "id": "thief",
     "name": "Thief",
-    "abilities": "Assassin — ⚔4 and slips away easily (Flees on 1 fewer shield), but fragile (🛡1 / ❤5). Reach 1: devastating up close. Moves diagonally (GREEN).\n\n1☼ + 2֍: Use an action 2 spaces away.\n5☼: Use an ally hero's card.",
+    "abilities": "Assassin — ⚔7 and slips away easily (Flees on 1 fewer shield), but fragile (🛡2 / ❤10). Reach 1: devastating up close. Moves diagonally (GREEN).\n\n1☼ + 2֍: Use an action 2 spaces away.\n5☼: Use an ally hero's card.",
     "objectiveAbilities": "5◆ (6☼): Cannot be targeted or seen until your next turn.",
     "color": "GREEN",
     "pair": "green",
     "cardFace": "front",
     "art": "players/green1.jpg",
-    "stats": { "a1": 8, "a2": null, "m1": 10, "m2": 4, "ba": 4, "bm": 10, "life": 5 },
-    "combat": { "attack": 4, "defense": 1, "reach": 1, "fleeMod": -1 }
+    "stats": { "a1": 8, "a2": null, "m1": 10, "m2": 4, "ba": 4, "bm": 10, "life": 10 },
+    "combat": { "attack": 7, "defense": 2, "reach": 1, "fleeMod": -1 }
   },
   {
     "id": "ranger",
     "name": "Ranger",
-    "abilities": "Sharpshooter — reach 3, and +1 attack die when striking from 2+ spaces away. Staying back keeps him safe: a target he out-reaches can't strike back. Moves diagonally (GREEN).\n\n2☼: Deal 2 damage to a minion within reach.\n3☼ + 4֍: Move an objective 1 space.",
+    "abilities": "Sharpshooter — reach 3, and +2 attack dice when striking from 2+ spaces away. Staying back keeps him safe: a target he out-reaches can't strike back. Moves diagonally (GREEN).\n\n2☼: Deal 4 damage to a minion within reach.\n3☼ + 4֍: Move an objective 1 space.",
     "objectiveAbilities": "5◆ (4☼): Reroll any of your movement dice.",
     "color": "GREEN",
     "pair": "green",
     "cardFace": "back",
     "art": "players/green2.jpg",
-    "stats": { "a1": 4, "a2": null, "m1": 10, "m2": 8, "ba": 4, "bm": 10, "life": 6 },
-    "combat": { "attack": 3, "defense": 2, "reach": 3, "rangedAttack": 1, "rangedFrom": 1 }
+    "stats": { "a1": 4, "a2": null, "m1": 10, "m2": 8, "ba": 4, "bm": 10, "life": 12 },
+    "combat": { "attack": 5, "defense": 4, "reach": 3, "rangedAttack": 2, "rangedFrom": 1 }
   },
   {
     "id": "druid",
     "name": "Druid",
-    "abilities": "Shapeshifter — 3☼: Transform (persists until you change again; may be re-cast several times a turn). 4☼: Transform an ally for this turn. Your sheet shows the active form's roll bonuses.\n\nBEAR: +1⚔ / +1🛡 (bruiser).\nTURTLE: +2🛡 (shell).\nCHEETAH: -1🛡, +2 to movement rolls (fast, fragile).\nDEER: -1🛡; for 1☼ restore 2 life to any hero (fragile healer).",
+    "abilities": "Shapeshifter — 3☼: Transform (persists until you change again; may be re-cast several times a turn). 4☼: Transform an ally for this turn. Your sheet shows the active form's roll bonuses.\n\nBEAR: +2⚔ / +2🛡 (bruiser).\nTURTLE: +4🛡 (shell).\nCHEETAH: -2🛡, +2 to movement rolls (fast, fragile).\nDEER: -2🛡; for 1☼ restore 4 life to any hero (fragile healer).",
     "objectiveAbilities": "5◆ (3☼): Draw an extra card.",
     "color": "PURPLE",
     "pair": "purple",
     "cardFace": "front",
     "art": "players/purple2.jpg",
-    "stats": { "a1": 6, "a2": null, "m1": 8, "m2": null, "ba": 4, "bm": 10, "life": 6 },
-    "combat": { "attack": 2, "defense": 2, "reach": 1 }
+    "stats": { "a1": 6, "a2": null, "m1": 8, "m2": null, "ba": 4, "bm": 10, "life": 12 },
+    "combat": { "attack": 4, "defense": 4, "reach": 1 }
   },
   {
     "id": "cleric",
     "name": "Cleric",
-    "abilities": "Blessed — 🛡3 and always blocks 1 hit (+1🛡): very hard to put down, though heavy and slow to Flee.\n\n4☼: Restore 3 life to any living hero.\n12☼: Revive any hero to half health (ends both heroes' turns).\nBoth your dice count as actions OR movement.",
+    "abilities": "Blessed — 🛡6 and always blocks 2 hits (+2🛡): very hard to put down, though heavy and slow to Flee.\n\n4☼: Restore 6 life to any living hero.\n12☼: Revive any hero to half health (ends both heroes' turns).\nBoth your dice count as actions OR movement.",
     "objectiveAbilities": "5◆ (3☼): Give an ally +2 to a roll (you lose 2 life).",
     "color": "PURPLE",
     "pair": "purple",
     "cardFace": "back",
     "art": "players/purple1.jpg",
-    "stats": { "a1": 6, "a2": 8, "m1": 8, "m2": 6, "ba": 4, "bm": 6, "life": 6 },
-    "combat": { "attack": 1, "defense": 3, "reach": 1, "baseShield": 1, "fleeMod": 1 }
+    "stats": { "a1": 6, "a2": 8, "m1": 8, "m2": 6, "ba": 4, "bm": 6, "life": 12 },
+    "combat": { "attack": 3, "defense": 6, "reach": 1, "baseShield": 2, "fleeMod": 1 }
   }
 ]

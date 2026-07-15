@@ -2,7 +2,7 @@
   {
     "id": "maraurnzol",
     "name": "Maraurn'Zol",
-    "abilities": "A glass cannon that strikes from anywhere. On a GRID ROLL (both axes random — she can't aim) she lands and hits EVERY hero within her large sight (7), hard (⚔5) and THROUGH walls and objects. Her reach also applies to the grid roll, so she hits everyone within her blast radius of the landing too.\n\nx◆: +1 grid roll for every 4 objectives.\n2◆: Blast radius 1.\n4◆: Blast radius 2.\n7◆: Blast radius 3.\n\nIf she MOVES instead, she makes only a weak melee strike (⚔2, reach 1). Easy to shove back (🛡0) — the only safety is out of her sight.",
+    "abilities": "A glass cannon that strikes from anywhere. On a GRID ROLL (both axes random — she can't aim) she lands and hits EVERY hero within her large sight (7), hard (⚔9) and THROUGH walls and objects. Her reach also applies to the grid roll, so she hits everyone within her blast radius of the landing too.\n\nx◆: +1 grid roll for every 4 objectives.\n2◆: Blast radius 1.\n4◆: Blast radius 2.\n7◆: Blast radius 3.\n\nIf she MOVES instead, she makes only a weak melee strike (⚔4, reach 1). Easy to shove back (🛡0) — the only safety is out of her sight.",
     "objectiveAbilities": "6◇: Add a copy of Maraurn'Zol (✚ Clone button). It takes its own grid-roll attack after her, with the same blast radius, and can't be killed — only shoved.\n\n9◇: Take one extra grid-roll attack; every hero not behind a full wall is hit.",
     "element": "Fire",
     "art": "players/bad5.jpg",
@@ -16,8 +16,8 @@
       "moves": 1
     },
     "combat": {
-      "attack": 5,
-      "moveAttack": 2,
+      "attack": 9,
+      "moveAttack": 4,
       "defense": 0,
       "reach": 1,
       "ignoreCover": true,
@@ -50,7 +50,7 @@
       ]
     },
     "combat": {
-      "attack": 3,
+      "attack": 6,
       "defense": 0,
       "reach": 1,
       "buildingsSafe": true,
@@ -63,8 +63,8 @@
   {
     "id": "ghathag",
     "name": "Ghathag",
-    "abilities": "A stalker with NO grid roll — each move he steps toward the nearest hero and strikes at reach 1, hitting hard (⚔4, ⚔6 once enraged) and shrugging off pushes (🛡2, hard to shove). Sight 4, but only 1 while stalking — slip out of his lane and he loses you. He cannot enter buildings.\n\nx◆: +1 move for every 4 objectives.\n2◆: Step 3 spaces.\n4◆: Step 3 more.\n6◆: Step 3 more.\n3◆: Place a barrier (🧱 button) — blocks movement and line of sight.\n4◆: Enraged — permanent +2 attack (⚔6).",
-    "objectiveAbilities": "3◇: Place 2 barriers.\n5◇: Place 2 barriers.\n4◆: Barriers placed now have +2 life.\n7◆: Barriers placed now have +2 more life.\n9◇: Turn every barrier into a minion (roll each for its health).",
+    "abilities": "A stalker with NO grid roll — each move he steps toward the nearest hero and strikes at reach 1, hitting hard (⚔7, ⚔11 once enraged) and shrugging off pushes (🛡4, hard to shove). Sight 4, but only 1 while stalking — slip out of his lane and he loses you. He cannot enter buildings.\n\nx◆: +1 move for every 4 objectives.\n2◆: Step 3 spaces.\n4◆: Step 3 more.\n6◆: Step 3 more.\n3◆: Place a barrier (🧱 button) — blocks movement and line of sight.\n4◆: Enraged — permanent +4 attack (⚔11).",
+    "objectiveAbilities": "3◇: Place 2 barriers.\n5◇: Place 2 barriers.\n4◆: Barriers placed now have +3 life.\n7◆: Barriers placed now have +3 more life.\n9◇: Turn every barrier into a minion (roll each for its health).",
     "element": "Claw",
     "art": "players/bad2.jpg",
     "stats": {
@@ -78,19 +78,19 @@
       "movesEvery": 4
     },
     "combat": {
-      "attack": 4,
-      "defense": 2,
+      "attack": 7,
+      "defense": 4,
       "reach": 1,
       "attackLadder": [
-        { "at": 4, "attack": 6 }
+        { "at": 4, "attack": 11 }
       ]
     }
   },
   {
     "id": "oblex",
     "name": "Oblex",
-    "abilities": "Weak itself — its minions do the fighting. On a GRID ROLL it controls the COLUMN and rolls the row, then may swap places with any minion. It gets no extra grid rolls. Its own strike is weak (⚔2, sight 4); the danger is the swarm it drops in your face, and it is hard to slip away from (flee +1).\n\n1◆: Summon 1 + 1 per 3 objectives (roll each d4 for health).\n3◆: Or give +1 attack to one minion.\n5◆: All minions may move 2 spaces each turn.\n\nMinion baseline ⚔2 / 🛡1 / ❤ d4; the ladder buffs below apply to every minion automatically.",
-    "objectiveAbilities": "1◇: Summon 2 minions.\n3◇: Summon 3 minions.\n5◇: Summon 4 minions.\n4◆: Every minion gets +1 attack (automatic).\n6◆: Every minion gets +1 reach (automatic).\n7◆: Every minion gets +1 attack (automatic).\n9◇: Double the number of minions on the board.",
+    "abilities": "Weak itself — its minions do the fighting. On a GRID ROLL it controls the COLUMN and rolls the row, then may swap places with any minion. It gets no extra grid rolls. Its own strike is weak (⚔4, sight 4); the danger is the swarm it drops in your face, and it is hard to slip away from (flee +1).\n\n1◆: Summon 1 + 1 per 3 objectives (roll each 2+d4 for health).\n3◆: Or give +2 attack to one minion.\n5◆: All minions may move 2 spaces each turn.\n\nMinion baseline ⚔3 / 🛡2 / ❤ 2+d4; the ladder buffs below apply to every minion automatically.",
+    "objectiveAbilities": "1◇: Summon 2 minions.\n3◇: Summon 3 minions.\n5◇: Summon 4 minions.\n4◆: Every minion gets +2 attack (automatic).\n6◆: Every minion gets +1 reach (automatic).\n7◆: Every minion gets +2 attack (automatic).\n9◇: Double the number of minions on the board.",
     "element": "Flesh",
     "art": "players/bad3.jpg",
     "stats": {
@@ -103,7 +103,7 @@
       "moves": 1
     },
     "combat": {
-      "attack": 2,
+      "attack": 4,
       "defense": 0,
       "reach": 1,
       "fleeMod": 1
@@ -112,7 +112,7 @@
   {
     "id": "wyhtthetrickster",
     "name": "Wyht, the Trickster",
-    "abilities": "A trickster who wins by disruption, not damage. On a GRID ROLL she CHOOSES a row or a column and rolls the other, blinking into position; a hero she passes in her sight (5) takes a weak hit (⚔2). She is easy to slip away from (flee -1).\n\nx◆: +1 grid roll for every 3 objectives.\n2◆: Relocate any 1 objective to a space you choose.\n4◆: Every hero discards 1 card — or one hero of your choice discards 2.\n6◆: Draw 2 monster cards, OR one hero of your choice discards down to 4 cards.\n8◆: Swap the positions of two objectives, or add +1 to one objective's value.\n\nWyht draws an extra card whenever she draws.",
+    "abilities": "A trickster who wins by disruption, not damage. On a GRID ROLL she CHOOSES a row or a column and rolls the other, blinking into position; a hero she passes in her sight (5) takes a weak hit (⚔4). She is easy to slip away from (flee -1).\n\nx◆: +1 grid roll for every 3 objectives.\n2◆: Relocate any 1 objective to a space you choose.\n4◆: Every hero discards 1 card — or one hero of your choice discards 2.\n6◆: Draw 2 monster cards, OR one hero of your choice discards down to 4 cards.\n8◆: Swap the positions of two objectives, or add +1 to one objective's value.\n\nWyht draws an extra card whenever she draws.",
     "objectiveAbilities": "1◇: Add 1 objective to the board (raises the heroes' goal).\n3◇: Randomly relocate ALL objectives.\n5◇: Add 1 objective to the board.\n10◇: Choose a hero — they die.",
     "element": "Mind",
     "art": "players/bad1.jpg",
@@ -126,7 +126,7 @@
       "moves": 1
     },
     "combat": {
-      "attack": 2,
+      "attack": 4,
       "defense": 0,
       "reach": 1,
       "fleeMod": -1
