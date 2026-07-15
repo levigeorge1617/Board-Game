@@ -344,7 +344,7 @@ class AppController {
                     if (pid) {
                         if (this.inspectPieceId === pid) this.clearInspect();
                         else { this.inspectPieceId = pid; this.pathTargetCell = null; }
-                        this.hideHPPopover(); this.renderer.draw(); return;
+                        this.hideHPPopover(); this.renderer.draw(); this.refreshLegend(); return;
                     }
                 }
                 const targetToken = this.board.tokens.find(t => t.x === cellX && t.y === cellY);
@@ -524,7 +524,7 @@ class AppController {
                     this.inspectPieceId = (this.inspectPieceId === pid) ? null : pid;
                     this._touch.longPressed = true;
                     if (this.play) this.play.dragPiece = null;   // cancel drag so the lift doesn't move it / open the sheet
-                    this.renderer.draw();
+                    this.renderer.draw(); this.refreshLegend();
                 }, 450);
             }
             else {
@@ -625,7 +625,8 @@ class AppController {
     }
 
     // Clear the range/LoS inspector AND its path-distance second-pick together.
-    clearInspect() { this.inspectPieceId = null; this.pathTargetCell = null; }
+    clearInspect() { this.inspectPieceId = null; this.pathTargetCell = null; this.refreshLegend(); }
+    refreshLegend() { if (this.play && this.play.renderLegend) this.play.renderLegend(); }
     // Set (or toggle off) the shortest-path target cell — only meaningful while a
     // piece is being inspected. Same cell twice clears it.
     setPathTarget(x, y) {

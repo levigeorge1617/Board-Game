@@ -81,6 +81,7 @@ class PlayController {
         hud.innerHTML =
             '<div id="ph-roster"></div>' +
             '<div id="ph-log"></div>' +
+            '<div id="ph-legend" class="ph-legend" style="display:none"></div>' +
             '<div id="ph-played"></div>' +
             '<div id="ph-hand" class="ph-hand"></div>' +
             '<div id="ph-pop" class="ph-pop" style="display:none;"></div>';
@@ -231,6 +232,7 @@ class PlayController {
         this.maybeAnimateDice();
         this.maybeAnimateCombat();
         this.maybeHighlightGrid();
+        this.renderLegend();
         if (this.openSeatId) this.renderPopover();
     }
 
@@ -243,6 +245,25 @@ class PlayController {
         this.app.highlightedCol = (lg.col | 0) - 1;
         this.app.highlightedRow = String(lg.row).charCodeAt(0) - 65;
         this.app.renderer.draw();
+    }
+
+    // HTML key for the board inspector overlay (shown while a piece is inspected).
+    renderLegend() {
+        const el = document.getElementById('ph-legend'); if (!el) return;
+        const ent = this.app.inspectPieceId && this.gs.combatant(this.app.inspectPieceId);
+        if (!ent || ent.dead || ent.x == null || this.app.appMode !== 'play') { el.style.display = 'none'; return; }
+        const st = this.app.renderer.inspectStats(ent);
+        const isMon = ent.kind === 'monster' || ent.clone;
+        const rows = [['#e05a3c', `reach ${st.reach} — can attack`]];
+        if (isMon) rows.push(['#e0a800', `sight ${st.sight} — sees heroes`]);
+        if (st.blast > 0) rows.push(['#ff5a3c', `blast ${st.blast} on grid roll`]);
+        rows.push(['#8a95a0', 'number on a piece = spaces away']);
+        rows.push(['#00ccff', 'tap empty cell = walk distance']);
+        el.innerHTML = `<div class="ph-legend-head"><span>👁 ${esc(ent.label || '')}</span><button class="ph-legend-x" title="Hide">✕</button></div>` +
+            rows.map(r => `<div class="ph-legend-row"><span class="ph-legend-sw" style="background:${r[0]}"></span>${esc(r[1])}</div>`).join('');
+        el.style.display = 'block';
+        const x = el.querySelector('.ph-legend-x');
+        if (x) x.onclick = () => { this.app.clearInspect(); this.app.renderer.draw(); this.renderLegend(); };
     }
 
     _clearSidebarDynamic() {
@@ -544,6 +565,9 @@ class PlayController {
             wrap.innerHTML = `<div class="ph-hand-empty" style="padding:10px 12px;">Pick your seat to see your hand.</div>`;
             return;
         }
+        // teammates who can receive a card (same deck side, e.g. hero → ally hero)
+        const mates = this.gs.state.seats.filter(o => o.id !== seat.id && o.deck === seat.deck && !o.dead);
+        const giveOpts = mates.map(o => `<option value="${o.id}">${esc(o.label)}</option>`).join('');
         const cards = seat.hand.map(inst => {
             const c = this.gs.card(inst.cid); if (!c) return '';
             return `<div class="ph-card" data-iid="${inst.iid}">` +
@@ -551,7 +575,11 @@ class PlayController {
                 `<div class="ph-card-actions">` +
                     `<button class="ph-play-btn" data-play="${inst.iid}" title="Play — trigger its effect, then discard">▶ Play</button>` +
                     `<button class="ph-disc-btn" data-disc="${inst.iid}" title="Discard without effect">Discard</button>` +
+                    (giveOpts ? `<button class="ph-give-btn" data-give="${inst.iid}" title="Hand this card to a teammate">Give ▸</button>` : '') +
                 `</div>` +
+                (giveOpts ? `<div class="ph-give-row" data-giverow="${inst.iid}" style="display:none">` +
+                    `<select class="ph-give-to">${giveOpts}</select>` +
+                    `<button class="ph-give-send" data-send="${inst.iid}">Send</button></div>` : '') +
             `</div>`;
         }).join('');
         wrap.className = 'ph-hand' + (this.handOpen ? ' open' : '');
@@ -572,6 +600,18 @@ class PlayController {
             b.onclick = (e) => { e.stopPropagation(); this.gs.playCard(this.gs.mySeatId, b.dataset.play); });
         wrap.querySelectorAll('[data-disc]').forEach(b =>
             b.onclick = (e) => { e.stopPropagation(); this.gs.discard(this.gs.mySeatId, b.dataset.disc); });
+        wrap.querySelectorAll('.ph-give-btn').forEach(b =>
+            b.onclick = (e) => {
+                e.stopPropagation();
+                const row = wrap.querySelector(`.ph-give-row[data-giverow="${b.dataset.give}"]`);
+                if (row) row.style.display = row.style.display === 'none' ? 'flex' : 'none';
+            });
+        wrap.querySelectorAll('.ph-give-send').forEach(b =>
+            b.onclick = (e) => {
+                e.stopPropagation();
+                const row = b.closest('.ph-give-row'), sel = row && row.querySelector('.ph-give-to');
+                if (sel && sel.value) this.gs.giveCard(this.gs.mySeatId, b.dataset.send, sel.value);
+            });
     }
 
     // Resolve a combat color key (from GameLogic) to a CSS hex.
@@ -752,7 +792,7 @@ class PlayController {
     losBtn() { return `<button class="ph-btn ph-los-btn" title="Light up this piece's reach (and, for a monster, its sight) on the board, with a distance number on every enemy. Then tap an empty cell for walk distance." style="width:100%;margin-bottom:8px;">👁 Show reach / sight on board</button>`; }
     wireLosBtn(pop, id) {
         const b = pop.querySelector('.ph-los-btn');
-        if (b) b.onclick = () => { this.app.inspectPieceId = id; this.closePopover(); this.app.renderer.draw(); };
+        if (b) b.onclick = () => { this.app.inspectPieceId = id; this.app.pathTargetCell = null; this.closePopover(); this.app.renderer.draw(); this.renderLegend(); };
     }
 
     // Which side a piece fights on: heroes + their pets vs the monster + its
@@ -1001,7 +1041,7 @@ class PlayController {
         const pet = pop.querySelector('.ph-hero-pet');
         if (pet) pet.onclick = () => {
             const c = this.nearCell(seat);
-            this.gs.addMinion({ x: c.x, y: c.y, side: 'hero', pet: true, attack: 1, defense: 1, hp: 3, label: seat.label + "'s pet" });
+            this.gs.addMinion({ x: c.x, y: c.y, side: 'hero', pet: true, attack: 1, defense: 1, hp: 3, ownerColor: seat.color, label: seat.label + "'s pet" });
             this.closePopover();
         };
     }

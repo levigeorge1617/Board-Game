@@ -5,7 +5,7 @@
  */
 const DZ_STORE_KEY = 'board_designer_data';
 const DZ_VERSION_KEY = 'board_designer_version';
-const DZ_VERSION = 3;   // bump when the data schema changes to drop stale local copies
+const DZ_VERSION = 4;   // bump when the data schema changes to drop stale local copies
 
 // Declarative field schema drives the editor form for each entity type.
 const DZ_FIELDS = {
@@ -54,17 +54,19 @@ const DZ_FIELDS = {
         { key: 'copies', label: 'Copies in deck', type: 'number' },
         { key: 'art', label: 'Art', type: 'art' },
         { key: 'text', label: 'Card text', type: 'textarea' },
-        // --- structured effect: applied when the card is *played* (not discarded) ---
-        { key: 'effect.scope', label: 'Effect — scope', type: 'select', options: ['', 'action', 'move', 'attack', 'defense', 'any'],
-          hint: 'Which roll this card modifies. Blank = no wired effect (falls back to text inference for +N cards).' },
-        { key: 'effect.flat', label: 'Effect — flat bonus to roll (+/−)', type: 'number', hint: 'e.g. SpellBook +1 → scope action, flat 1.' },
-        { key: 'effect.extraDie', label: 'Effect — extra die on the roll', type: 'die' },
-        { key: 'effect.attackDice', label: 'Effect — extra attack dice (combat)', type: 'number' },
-        { key: 'effect.defenseDice', label: 'Effect — extra defense dice (combat)', type: 'number' },
-        { key: 'effect.skull', label: 'Effect — flat skulls ☠ (combat)', type: 'number' },
-        { key: 'effect.shield', label: 'Effect — flat shields 🛡 (combat)', type: 'number' },
-        { key: 'effect.duration', label: 'Effect — lasts', type: 'select', options: ['once', 'turn', 'persist'],
-          hint: 'once = next matching roll · turn = until end of your turn · persist = permanent.' },
+        // --- structured effect: auto-applies to the player when the card is *played* ---
+        { type: 'divider', label: '⚙ Wired effect — optional',
+          hint: 'Fill these to make the card auto-apply an effect when played (queued on the piece, then spent). Leave ALL blank for a plain text-only card.' },
+        { key: 'effect.scope', label: 'Scope (which roll/exchange)', type: 'select', options: ['', 'action', 'move', 'attack', 'defense', 'any'],
+          hint: 'action/move = a die roll · attack/defense = a combat exchange · any = both. Set this whenever you set a value below.' },
+        { key: 'effect.duration', label: 'Lasts', type: 'select', options: ['once', 'turn', 'persist'],
+          hint: 'once = next matching roll/exchange · turn = until end of your turn · persist = permanent.' },
+        { key: 'effect.flat', label: '+/− flat bonus to an action/move roll', type: 'number', hint: 'e.g. SpellBook +1 → scope action, flat 1.' },
+        { key: 'effect.extraDie', label: 'Extra die added to the roll', type: 'die' },
+        { key: 'effect.attackDice', label: '+ attack dice (combat)', type: 'number', hint: 'e.g. Whetstone → scope attack, attack dice 2.' },
+        { key: 'effect.defenseDice', label: '+ defense dice (combat)', type: 'number' },
+        { key: 'effect.skull', label: '+ flat skulls ☠ (auto hits, combat)', type: 'number' },
+        { key: 'effect.shield', label: '+ flat shields 🛡 (auto blocks, combat)', type: 'number' },
     ],
 };
 
@@ -223,6 +225,12 @@ class Designer {
     }
 
     fieldRow(field, item) {
+        if (field.type === 'divider') {
+            const d = document.createElement('div');
+            d.className = 'dz-divider';
+            d.innerHTML = `<span>${this.esc(field.label)}</span>` + (field.hint ? `<div class="dz-hint">${this.esc(field.hint)}</div>` : '');
+            return d;
+        }
         const row = document.createElement('div');
         row.className = 'dz-field';
         const label = document.createElement('label');
@@ -326,13 +334,28 @@ class Designer {
 
     cardPreview(item) {
         const dark = item.deck === 'Black';
+        const eff = this.effectSummary(item.effect);
         return `<div class="dz-card dz-playcard ${dark ? 'dz-black' : 'dz-white'}">` +
             `<div class="dz-pc-head"><span class="dz-pc-cost">${this.icon(item.cost || '0')}</span>` +
             `<span class="dz-pc-deck">${this.esc(item.deck)} · ${this.esc(item.timing || '')}</span></div>` +
             `<div class="dz-card-art">${this.artTag(item.art)}</div>` +
             `<div class="dz-card-title">${this.esc(item.name || '')}<span>×${item.copies || 1}</span></div>` +
             `<div class="dz-block"><p>${this.fmt(item.text || '')}</p></div>` +
+            (eff ? `<div class="dz-effect-badge">⚙ ${this.esc(eff)}</div>` : '') +
         `</div>`;
+    }
+    // A short human summary of a card's wired effect (null if none set).
+    effectSummary(e) {
+        if (!e) return '';
+        const bits = [];
+        if (e.flat) bits.push(`${e.flat >= 0 ? '+' : ''}${e.flat} roll`);
+        if (e.extraDie) bits.push(`+d${e.extraDie}`);
+        if (e.attackDice) bits.push(`+${e.attackDice}⚔`);
+        if (e.defenseDice) bits.push(`+${e.defenseDice}🛡`);
+        if (e.skull) bits.push(`+${e.skull}☠`);
+        if (e.shield) bits.push(`+${e.shield}🛡 block`);
+        if (!bits.length) return '';
+        return `${bits.join(', ')} · ${e.scope || 'any'} · ${e.duration || 'once'}`;
     }
 
     dieChip(label, n) {
@@ -373,8 +396,19 @@ class Designer {
 
     // ---- import / export --------------------------------------------------
     exportFile(type) {
-        // keep card side in sync with deck on export
-        if (type === 'cards') this.data.cards.forEach(c => c.side = c.deck === 'Black' ? 'monster' : 'hero');
+        // keep card side in sync with deck, and drop empty/placeholder effect blocks
+        if (type === 'cards') this.data.cards.forEach(c => {
+            c.side = c.deck === 'Black' ? 'monster' : 'hero';
+            const e = c.effect;
+            if (e && !(e.flat || e.extraDie || e.attackDice || e.defenseDice || e.skull || e.shield)) delete c.effect;
+            else if (e) {   // keep only meaningful keys
+                const clean = {};
+                ['scope', 'duration', 'flat', 'extraDie', 'attackDice', 'defenseDice', 'skull', 'shield'].forEach(k => { if (e[k]) clean[k] = e[k]; });
+                if (!clean.scope) clean.scope = 'any';
+                if (!clean.duration) clean.duration = 'once';
+                c.effect = clean;
+            }
+        });
         const blob = JSON.stringify(this.data[type], null, 2);
         const a = document.createElement('a');
         a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(blob);
